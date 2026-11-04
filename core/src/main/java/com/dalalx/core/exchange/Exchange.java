@@ -142,7 +142,7 @@ public final class Exchange {
     private SymbolWorker workerFor(String symbol) {
         SymbolWorker worker = workers.get(symbol);
         if (worker == null) {
-            throw new IllegalArgumentException("unknown symbol: " + symbol);
+            throw new UnknownSymbolException(symbol);
         }
         return worker;
     }

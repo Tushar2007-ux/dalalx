@@ -11,6 +11,8 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': 'http://localhost:8080',
+      // Live market data: STOMP over WebSocket.
+      '/ws': { target: 'http://localhost:8080', ws: true },
     },
   },
   test: {

@@ -2,6 +2,7 @@ package com.dalalx.server;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Entry point of the DalalX Spring Boot server.
@@ -13,6 +14,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * plain Java.
  */
 @SpringBootApplication
+@EnableScheduling
 public class DalalXServerApplication {
 
     public static void main(String[] args) {
