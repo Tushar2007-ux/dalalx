@@ -36,6 +36,8 @@ export interface Level {
   price: number
   totalQty: number
   orderCount: number
+  /** The trader with the most shares at this price (X-Ray mode shows their stamp). */
+  mainTrader?: string | null
 }
 
 export interface BookSnapshot {
@@ -166,3 +168,41 @@ export interface Storylines {
 }
 
 export type BotStyle = 'CONTRARIAN' | 'MOMENTUM' | 'MARKET_MAKER' | 'NOISE'
+
+/** GET /api/xray/latest: how one of your orders was matched, step by step. */
+export interface XRayLevel {
+  price: number
+  orders: { orderId: number; traderId: string; remainingQty: number }[]
+}
+
+export interface XRayFill {
+  price: number
+  qty: number
+  counterparty: string
+  restingOrderId: number
+  /** Index into bookBefore (0 = best). */
+  level: number
+}
+
+export interface XRayStep {
+  kind: 'ARRIVE' | 'CHECK' | 'FILL' | 'STOP' | 'OUTCOME'
+  title: string
+  body: string
+}
+
+export interface XRay {
+  orderId: number
+  symbol: string
+  traderId: string
+  side: Side
+  type: OrderType
+  limitPrice: number
+  qty: number
+  time: string
+  bookBefore: XRayLevel[]
+  fills: XRayFill[]
+  status: OrderStatus
+  remaining: number
+  reason: string | null
+  steps: XRayStep[]
+}

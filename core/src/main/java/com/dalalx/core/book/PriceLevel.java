@@ -3,6 +3,8 @@ package com.dalalx.core.book;
 import com.dalalx.core.model.Order;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * All resting orders at one price on one side of the book, in arrival order.
@@ -95,6 +97,29 @@ final class PriceLevel {
     }
 
     LevelSnapshot toSnapshot() {
-        return new LevelSnapshot(price, totalQty, queue.size());
+        return new LevelSnapshot(price, totalQty, queue.size(), mainTrader());
+    }
+
+    /** The trader with the most shares here (ties go to whoever queued first). */
+    private String mainTrader() {
+        Map<String, Long> byTrader = new LinkedHashMap<>();
+        for (Order order : queue) {
+            byTrader.merge(order.traderId(), order.remainingQty(), Long::sum);
+        }
+        String best = null;
+        long most = -1;
+        for (Map.Entry<String, Long> e : byTrader.entrySet()) {
+            if (e.getValue() > most) {
+                best = e.getKey();
+                most = e.getValue();
+            }
+        }
+        return best;
+    }
+
+    /** @return every order in the queue, oldest first, as immutable values */
+    LevelDetail toDetail() {
+        return new LevelDetail(price, queue.stream()
+                .map(o -> new RestingOrder(o.id(), o.traderId(), o.remainingQty())).toList());
     }
 }

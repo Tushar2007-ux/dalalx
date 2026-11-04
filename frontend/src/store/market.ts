@@ -135,13 +135,19 @@ export const useMarket = create<MarketState>()((set, get) => ({
   },
   setXray: (xray) => set({ xray }),
   setCandles: (symbol, interval, candles) => set({ chart: { key: chartKey(symbol, interval), candles } }),
-  setTape: (symbol, trades) => set((s) => ({ tapes: { ...s.tapes, [symbol]: trades.slice(0, TAPE_SIZE) } })),
+  setTape: (symbol, trades) => set((s) => {
+    const byId = new Map([...trades, ...(s.tapes[symbol] ?? [])].map((t) => [t.id, t]))
+    return { tapes: { ...s.tapes, [symbol]: [...byId.values()].sort((a, b) => b.id - a.id).slice(0, TAPE_SIZE) } }
+  }),
 
   applyBook: (book) => set((s) => ({ books: { ...s.books, [book.symbol]: book } })),
 
-  applyTrades: (symbol, trades) => {
-    if (!trades.length) return
+  applyTrades: (symbol, incoming) => {
     const s = get()
+    // The REST snapshot and the stream can overlap by a few trades; never count one twice.
+    const known = new Set((s.tapes[symbol] ?? []).map((t) => t.id))
+    const trades = incoming.filter((t) => !known.has(t.id))
+    if (!trades.length) return
     const newestFirst = [...trades].reverse()
     const myOrders = { ...s.myOrders }
     for (const trade of trades) {

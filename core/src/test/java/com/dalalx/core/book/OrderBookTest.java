@@ -101,10 +101,14 @@ class OrderBookTest {
             BookSnapshot snap = book.snapshot(5);
 
             assertThat(snap.symbol()).isEqualTo("TCS");
-            assertThat(snap.bids()).containsExactly(
+            assertThat(snap.bids())
+                    .usingRecursiveFieldByFieldElementComparatorIgnoringFields("mainTrader") // trader names are new in Step 11
+                    .containsExactly(
                     new LevelSnapshot(9900, 25, 2),
                     new LevelSnapshot(9800, 7, 1));
-            assertThat(snap.asks()).containsExactly(new LevelSnapshot(10100, 4, 1));
+            assertThat(snap.asks())
+                    .usingRecursiveFieldByFieldElementComparatorIgnoringFields("mainTrader") // trader names are new in Step 11
+                    .containsExactly(new LevelSnapshot(10100, 4, 1));
         }
 
         @Test
@@ -121,7 +125,9 @@ class OrderBookTest {
             book.add(orders.limit(Side.SELL, 10100, 10));
             book.fillBest(Side.SELL, 4);
 
-            assertThat(book.snapshot(1).asks()).containsExactly(new LevelSnapshot(10100, 6, 1));
+            assertThat(book.snapshot(1).asks())
+                    .usingRecursiveFieldByFieldElementComparatorIgnoringFields("mainTrader") // trader names are new in Step 11
+                    .containsExactly(new LevelSnapshot(10100, 6, 1));
         }
 
         @Test
@@ -131,7 +137,9 @@ class OrderBookTest {
 
             book.add(orders.limit(Side.BUY, 9900, 10)); // change the book afterwards
 
-            assertThat(snap.bids()).containsExactly(new LevelSnapshot(9900, 10, 1));
+            assertThat(snap.bids())
+                    .usingRecursiveFieldByFieldElementComparatorIgnoringFields("mainTrader") // trader names are new in Step 11
+                    .containsExactly(new LevelSnapshot(9900, 10, 1));
             assertThatThrownBy(() -> snap.bids().add(new LevelSnapshot(1, 1, 1)))
                     .isInstanceOf(UnsupportedOperationException.class);
         }
@@ -181,7 +189,9 @@ class OrderBookTest {
 
             book.remove(a.id());
 
-            assertThat(book.snapshot(10).bids()).containsExactly(new LevelSnapshot(9900, 5, 1));
+            assertThat(book.snapshot(10).bids())
+                    .usingRecursiveFieldByFieldElementComparatorIgnoringFields("mainTrader") // trader names are new in Step 11
+                    .containsExactly(new LevelSnapshot(9900, 5, 1));
         }
 
         @Test

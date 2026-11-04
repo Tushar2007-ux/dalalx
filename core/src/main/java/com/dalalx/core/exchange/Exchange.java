@@ -10,6 +10,7 @@ import com.dalalx.core.matching.MatchingStrategies;
 import com.dalalx.core.matching.OrderFactory;
 import com.dalalx.core.matching.SymbolEngine;
 import com.dalalx.core.model.OrderRequest;
+import com.dalalx.core.xray.XRayRecorder;
 import java.time.Clock;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -113,6 +114,11 @@ public final class Exchange {
     }
 
     /** Starts every symbol's worker thread. */
+    /** Lets {@code recorder} X-Ray the orders it wants, on every stock. Call before {@link #start()}. */
+    public void recordXRays(XRayRecorder recorder) {
+        workers.values().forEach(w -> w.engine().recordXRays(recorder));
+    }
+
     public void start() {
         workers.values().forEach(SymbolWorker::start);
         startClock();

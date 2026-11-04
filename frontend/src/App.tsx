@@ -1,4 +1,5 @@
 import { Correspondents } from './pages/Correspondents'
+import { XRayPage } from './pages/XRayPage'
 import { useRoute } from './shell/route'
 import { Terminal } from './terminal/Terminal'
 import { useMarketData } from './terminal/useMarketData'
@@ -10,5 +11,9 @@ import { useMarketData } from './terminal/useMarketData'
 export default function App() {
   useMarketData()
   const route = useRoute()
-  return route === 'correspondents' ? <Correspondents /> : <Terminal />
+  switch (route) {
+    case 'correspondents': return <Correspondents />
+    case 'xray': return <XRayPage />
+    default: return <Terminal />
+  }
 }

@@ -47,6 +47,14 @@ final class SymbolWorker {
     private final Thread thread;
     private volatile boolean accepting = true;
 
+    /**
+     * The engine this worker owns. Only for setup before {@link #start()};
+     * after that, reach it through {@link #enqueue} like everyone else.
+     */
+    SymbolEngine engine() {
+        return engine;
+    }
+
     SymbolWorker(SymbolEngine engine) {
         this.engine = Objects.requireNonNull(engine, "engine must not be null");
         this.thread = new Thread(this::runLoop, "worker-" + engine.symbol());

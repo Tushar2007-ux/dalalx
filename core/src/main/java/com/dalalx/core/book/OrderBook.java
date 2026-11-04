@@ -188,6 +188,17 @@ public final class OrderBook {
         return levels.values().stream().limit(depth).map(PriceLevel::toSnapshot).toList();
     }
 
+    /**
+     * Returns the best {@code depth} levels of one side with every order in
+     * them, for X-Ray. Heavier than {@link #snapshot}, so only used on demand.
+     *
+     * @param side BUY for the bids, SELL for the asks
+     */
+    public List<LevelDetail> detail(Side side, int depth) {
+        NavigableMap<Long, PriceLevel> levels = side == Side.BUY ? bids : asks;
+        return levels.values().stream().limit(depth).map(PriceLevel::toDetail).toList();
+    }
+
     /** @return the resting order with this id, if any (O(1)) */
     public Optional<Order> find(long orderId) {
         return Optional.ofNullable(ordersById.get(orderId));

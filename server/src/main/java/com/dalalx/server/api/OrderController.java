@@ -24,7 +24,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/orders")
 public class OrderController {
 
-    static final String DEFAULT_TRADER = "YOU";
+    /** The trader id of the person at the screen (orders without a traderId are theirs). */
+    public static final String HUMAN = "YOU";
 
     private final Exchange exchange;
 
@@ -35,7 +36,7 @@ public class OrderController {
     /** {@code POST /api/orders}: place an order; answers with its fills. */
     @PostMapping
     public OrderResult place(@RequestBody PlaceOrder body) {
-        String trader = body.traderId() == null || body.traderId().isBlank() ? DEFAULT_TRADER : body.traderId();
+        String trader = body.traderId() == null || body.traderId().isBlank() ? HUMAN : body.traderId();
         // The OrderRequest constructor validates (qty > 0, price for LIMIT/IOC, ...).
         OrderRequest request = new OrderRequest(body.symbol(), trader, body.side(), body.type(), body.price(), body.qty());
         return OrderResult.of(Futures.await(exchange.submit(request)));

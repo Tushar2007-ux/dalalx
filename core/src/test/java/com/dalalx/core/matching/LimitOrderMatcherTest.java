@@ -90,7 +90,9 @@ class LimitOrderMatcherTest {
                 tuple(10100L, 2L));
         assertThat(result.incoming().status()).isEqualTo(OrderStatus.FILLED);
         assertThat(result.filledQty()).isEqualTo(12);
-        assertThat(book.snapshot(10).asks()).containsExactly(
+        assertThat(book.snapshot(10).asks())
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("mainTrader") // trader names are new in Step 11
+                .containsExactly(
                 new LevelSnapshot(10100, 3, 1),
                 new LevelSnapshot(10200, 5, 1));
     }
@@ -107,7 +109,9 @@ class LimitOrderMatcherTest {
         assertThat(result.rested()).isTrue();
         assertThat(result.incoming().status()).isEqualTo(OrderStatus.PARTIALLY_FILLED);
         assertThat(result.incoming().remainingQty()).isEqualTo(5);
-        assertThat(book.snapshot(10).bids()).containsExactly(new LevelSnapshot(10050, 5, 1));
+        assertThat(book.snapshot(10).bids())
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("mainTrader") // trader names are new in Step 11
+                .containsExactly(new LevelSnapshot(10050, 5, 1));
         assertThat(book.bestAsk()).hasValue(10100);
     }
 

@@ -1,11 +1,16 @@
 package com.dalalx.server.config;
 
+import com.dalalx.core.bots.BotRunner;
 import com.dalalx.core.breaker.StatusBoard;
 import com.dalalx.core.events.EventBus;
 import com.dalalx.core.exchange.Exchange;
 import com.dalalx.core.marketdata.CandleAggregator;
 import com.dalalx.core.marketdata.TradeHistory;
+import com.dalalx.core.xray.XRayDesk;
+import com.dalalx.server.api.OrderController;
 import java.time.Clock;
+import java.util.Set;
+import org.springframework.beans.factory.ObjectProvider;
 import java.util.concurrent.TimeUnit;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -60,9 +65,21 @@ public class ExchangeConfig {
         return board;
     }
 
+    /**
+     * X-Rays the human trader's orders. Bot names are looked up lazily (the
+     * bots are created after the exchange), so the narration can say
+     * "The Munim's order..." instead of "MUNIM's order...".
+     */
+    @Bean
+    public XRayDesk xrayDesk(ObjectProvider<BotRunner> runner) {
+        return new XRayDesk(Set.of(OrderController.HUMAN), id -> OrderController.HUMAN.equals(id) ? "You"
+                : runner.getIfAvailable() == null ? id : runner.getObject().nameOf(id));
+    }
+
     @Bean(destroyMethod = "")
-    public Exchange exchange(EventBus bus, Clock clock, TradeHistory history, CandleAggregator candles) {
+    public Exchange exchange(EventBus bus, Clock clock, TradeHistory history, CandleAggregator candles, XRayDesk xrays) {
         Exchange exchange = new Exchange(Exchange.DEFAULT_STOCKS, bus, clock);
+        exchange.recordXRays(xrays);
         exchange.start();
         return exchange;
     }

@@ -1,6 +1,7 @@
 package com.dalalx.core.matching;
 
 import com.dalalx.core.book.BookSnapshot;
+import com.dalalx.core.book.LevelDetail;
 import com.dalalx.core.breaker.MarketState;
 import com.dalalx.core.breaker.TradingSession;
 import com.dalalx.core.book.OrderBook;
@@ -16,6 +17,7 @@ import com.dalalx.core.model.Order;
 import com.dalalx.core.model.OrderRequest;
 import com.dalalx.core.model.OrderStatus;
 import com.dalalx.core.model.Trade;
+import com.dalalx.core.xray.XRayRecorder;
 import java.time.Clock;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -61,6 +63,9 @@ public final class SymbolEngine implements MatchingEngine {
     /** How many price levels per side a {@link BookChanged} event carries. */
     public static final int EVENT_DEPTH = 10;
 
+    /** How many levels of the opposite side an X-Ray captures. */
+    static final int XRAY_DEPTH = 10;
+
     static final String CANCELLED_BY_TRADER = "cancelled by trader";
 
     private final String symbol;
@@ -71,6 +76,7 @@ public final class SymbolEngine implements MatchingEngine {
     private final EventBus events;
     private final Clock clock;
     private final TradingSession session;
+    private XRayRecorder xrays = XRayRecorder.NONE;
 
     /**
      * An engine whose events go nowhere (handy in tests that only check results).
@@ -143,13 +149,31 @@ public final class SymbolEngine implements MatchingEngine {
         recentOrders.put(order.id(), order);
         Optional<String> refusal = session.refusal();
         if (refusal.isPresent()) {
-            return refuse(order, refusal.get());
+            MatchResult refused = refuse(order, refusal.get());
+            if (xrays.wants(request)) {
+                xrays.record(OrderView.of(order), List.of(), refused, clock.instant());
+            }
+            return refused;
         }
         OrderView arrived = OrderView.of(order); // frozen before matching changes it
+        boolean xray = xrays.wants(request);
+        List<LevelDetail> before = xray ? book.detail(order.side().opposite(), XRAY_DEPTH) : List.of();
         MatchResult result = strategies.forType(order.type()).match(order, book);
         publishOutcome(arrived, result);
+        if (xray) {
+            xrays.record(arrived, before, result, clock.instant());
+        }
         watchForBreaker(result.trades());
         return result;
+    }
+
+    /**
+     * Starts recording X-Rays for the orders {@code recorder} wants. Must be
+     * called before the worker thread starts (the exchange does this), so the
+     * thread start publishes it safely.
+     */
+    public void recordXRays(XRayRecorder recorder) {
+        this.xrays = Objects.requireNonNull(recorder, "recorder must not be null");
     }
 
     /** Rejects an order the current phase doesn't allow (e.g. during a halt). */

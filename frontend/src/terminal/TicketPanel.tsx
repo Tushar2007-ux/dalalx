@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  Button, Modal, OrderTypeToggle, PriceInput, RubberStamp, RuledPanel, SectionLabel, SideToggle,
+  Button, MarginNote, Modal, OrderTypeToggle, PriceInput, RubberStamp, RuledPanel, SectionLabel, SideToggle, XRayToggle,
 } from '../design'
 import { api, ApiError } from '../lib/api'
 import { clockTime, formatPaise, formatQty } from '../lib/format'
@@ -23,6 +23,7 @@ export function TicketPanel() {
       {connection === 'offline'
         ? <ClosedTicket />
         : halted ? <HaltedTicket symbol={selected} /> : <Ticket key={selected} symbol={selected} />}
+      <XRaySwitch />
       <YourOrders />
       <BotsSection />
     </RuledPanel>
@@ -144,6 +145,20 @@ function Ticket({ symbol }: { symbol: string }) {
           <span style={{ color: 'var(--ink-muted)' }}>Estimated value</span><span className="dx-num">₹{formatPaise(estimate)}</span>
         </div>}
       </Modal>
+    </div>
+  )
+}
+
+/** X-Ray mode: the book shows whose orders are at each price, plus a link to the step-by-step explainer. */
+function XRaySwitch() {
+  const xray = useMarket((s) => s.xray)
+  const setXray = useMarket((s) => s.setXray)
+  return (
+    <div style={{ marginTop: 12, display: 'grid', gap: 6 }}>
+      <XRayToggle on={xray} onChange={setXray} />
+      {xray && <MarginNote tone="ink" side="below">
+        Each book level now shows the stamp of the trader behind it. <a href="#/xray">See how your last order was matched →</a>
+      </MarginNote>}
     </div>
   )
 }

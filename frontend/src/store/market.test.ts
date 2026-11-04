@@ -36,6 +36,14 @@ describe('market store', () => {
     expect(s.chart?.candles[0].volume).toBe(3)
   })
 
+  it('ignores trades it has already seen (REST snapshot and stream overlap)', () => {
+    useMarket.getState().setTape('TCS', [trade(5, 'BUY', 7)])
+    useMarket.getState().applyTrades('TCS', [trade(5, 'BUY', 7), trade(3, 'BUY', 8)])
+    expect(useMarket.getState().tapes.TCS.map((t) => t.id)).toEqual([8, 7])
+    useMarket.getState().setTape('TCS', [trade(5, 'BUY', 7)])
+    expect(useMarket.getState().tapes.TCS.map((t) => t.id)).toEqual([8, 7])
+  })
+
   it('marks my order cancelled when the exchange says so', () => {
     useMarket.getState().trackOrder(mine)
     useMarket.getState().applyActivity([{ kind: 'CANCELLED', symbol: 'TCS', orderId: 5, traderId: 'YOU', side: 'SELL', type: 'LIMIT', price: 409000, qty: 30, remainingQty: 30, reason: 'cancelled by trader' }])

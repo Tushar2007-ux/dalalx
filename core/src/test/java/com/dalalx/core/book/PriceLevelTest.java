@@ -29,7 +29,8 @@ class PriceLevelTest {
 
         assertThat(level.totalQty()).isEqualTo(100);
         assertThat(level.orderCount()).isEqualTo(2);
-        assertThat(level.toSnapshot()).isEqualTo(new LevelSnapshot(10000, 100, 2));
+        assertThat(level.toSnapshot()).usingRecursiveComparison().ignoringFields("mainTrader")
+                .isEqualTo(new LevelSnapshot(10000, 100, 2));
     }
 
     @Test
