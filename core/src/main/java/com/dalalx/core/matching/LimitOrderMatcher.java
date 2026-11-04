@@ -3,18 +3,15 @@ package com.dalalx.core.matching;
 import com.dalalx.core.book.OrderBook;
 import com.dalalx.core.model.Order;
 import com.dalalx.core.model.OrderType;
-import com.dalalx.core.model.Side;
 import com.dalalx.core.model.Trade;
 import java.time.Clock;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.LongSupplier;
 
 /**
  * Matching {@link MatchingStrategy} for LIMIT orders, using price-time priority.
  *
- * <p><b>The algorithm:</b>
+ * <p><b>The algorithm</b> (the loop itself is in {@link AbstractOrderMatcher}):
  * <ol>
  *   <li>Look at the best order on the opposite side: the lowest ask for a BUY,
  *       the highest bid for a SELL.</li>
@@ -34,75 +31,33 @@ import java.util.function.LongSupplier;
  * {@link Clock} (dependency injection), so tests can use fixed, predictable
  * values.
  */
-public final class LimitOrderMatcher implements MatchingStrategy {
-
-    private final LongSupplier tradeIds;
-    private final Clock clock;
+public final class LimitOrderMatcher extends AbstractOrderMatcher {
 
     /**
      * @param tradeIds source of unique trade ids
      * @param clock    source of trade timestamps
      */
     public LimitOrderMatcher(LongSupplier tradeIds, Clock clock) {
-        this.tradeIds = Objects.requireNonNull(tradeIds, "tradeIds must not be null");
-        this.clock = Objects.requireNonNull(clock, "clock must not be null");
+        super(tradeIds, clock);
     }
 
     @Override
-    public MatchResult match(Order incoming, OrderBook book) {
-        validate(incoming, book);
-        List<Trade> trades = new ArrayList<>();
-        Side restingSide = incoming.side().opposite();
-        while (incoming.isActive() && bestCrosses(incoming, book, restingSide)) {
-            trades.add(tradeWithBest(incoming, book, restingSide));
-        }
-        boolean rested = incoming.isActive(); // anything left over waits in the book
+    protected OrderType handledType() {
+        return OrderType.LIMIT;
+    }
+
+    @Override
+    protected boolean acceptsPrice(Order incoming, long restingPrice) {
+        return withinLimit(incoming, restingPrice);
+    }
+
+    /** A LIMIT order's unfilled remainder waits in the book for a counterparty. */
+    @Override
+    protected MatchResult finish(Order incoming, OrderBook book, List<Trade> trades) {
+        boolean rested = incoming.isActive();
         if (rested) {
             book.add(incoming);
         }
         return new MatchResult(incoming, trades, rested);
-    }
-
-    private static void validate(Order incoming, OrderBook book) {
-        if (incoming.type() != OrderType.LIMIT) {
-            throw new IllegalArgumentException("LimitOrderMatcher only handles LIMIT orders: " + incoming);
-        }
-        if (!incoming.isActive()) {
-            throw new IllegalArgumentException("incoming order is not active: " + incoming);
-        }
-        if (!incoming.symbol().equals(book.symbol())) {
-            throw new IllegalArgumentException("order is for " + incoming.symbol() + ", book is " + book.symbol());
-        }
-    }
-
-    private static boolean bestCrosses(Order incoming, OrderBook book, Side restingSide) {
-        return book.peekBest(restingSide)
-                .map(resting -> crosses(incoming, resting.limitPrice()))
-                .orElse(false);
-    }
-
-    /** A buyer accepts any price up to its limit; a seller accepts any price down to its limit. */
-    private static boolean crosses(Order incoming, long restingPrice) {
-        return incoming.side() == Side.BUY
-                ? restingPrice <= incoming.limitPrice()
-                : restingPrice >= incoming.limitPrice();
-    }
-
-    /** Executes one trade between {@code incoming} and the best resting order. */
-    private Trade tradeWithBest(Order incoming, OrderBook book, Side restingSide) {
-        Order resting = book.peekBest(restingSide).orElseThrow();
-        long qty = Math.min(incoming.remainingQty(), resting.remainingQty());
-        long price = resting.limitPrice(); // trades always execute at the RESTING price
-        book.fillBest(restingSide, qty);
-        incoming.fill(qty);
-        return newTrade(incoming, resting, price, qty);
-    }
-
-    private Trade newTrade(Order incoming, Order resting, long price, long qty) {
-        Order buy = incoming.side() == Side.BUY ? incoming : resting;
-        Order sell = incoming.side() == Side.SELL ? incoming : resting;
-        return new Trade(tradeIds.getAsLong(), incoming.symbol(), price, qty,
-                buy.id(), sell.id(), buy.traderId(), sell.traderId(),
-                incoming.side(), clock.instant());
     }
 }
