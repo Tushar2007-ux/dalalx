@@ -1,0 +1,163 @@
+<!-- @dsCard group="Trading Floor" viewport="1440x1000" name="X-Ray explainer" subtitle="Order-matching explainer graphic over the terminal: slip, circled levels, numbered fills, RESTED" -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>DalalX · X-Ray</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+<script src="../../ds-loader.js"></script>
+</head><body><div id="root"></div>
+<script type="text/babel">
+DalalX.ready.then(() => {
+const D = DalalX;
+const fmt = (n) => n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const NUM = ['①', '②', '③'];
+const ORDER = { side: 'buy', qty: 200, limit: 2487.5, sym: 'RELIANCE', id: 'A-2294' };
+const ASKS = [
+  { price: 2488.5, qty: 1200, bot: 'whale' }, { price: 2488.25, qty: 300, bot: 'momentum' }, { price: 2488.0, qty: 520, bot: 'munim' },
+  { price: 2487.75, qty: 400, bot: 'munim' }, { price: 2487.25, qty: 30, bot: 'panic' }, { price: 2487.0, qty: 80, bot: 'momentum' }, { price: 2486.75, qty: 50, bot: 'munim' },
+];
+const BIDS = [
+  { price: 2486.25, qty: 260, bot: 'munim' }, { price: 2486.0, qty: 610, bot: 'whale' }, { price: 2485.75, qty: 140, bot: 'momentum' },
+  { price: 2485.5, qty: 900, bot: 'munim' }, { price: 2485.25, qty: 330, bot: 'panic' },
+];
+const FILLS = [ // index into ASKS, best first
+  { i: 6, qty: 50, price: 2486.75, bot: 'munim' }, { i: 5, qty: 80, price: 2487.0, bot: 'momentum' }, { i: 4, qty: 30, price: 2487.25, bot: 'panic' },
+];
+const MAX = 1200;
+const STEPS = [
+  { t: 'The order arrives', b: 'You send a limit order to buy 200 RELIANCE at no more than ₹2,487.50 a share. It goes to the sell side of the book first.' },
+  { t: 'Check the best ask', b: 'The cheapest seller is asking ₹2,486.75. That is at or below your limit, so the order can trade straight away.' },
+  { t: '① 50 shares at ₹2,486.75', b: 'The Munim’s 50 shares are taken in full. 150 shares still to buy.' },
+  { t: '② 80 shares at ₹2,487.00', b: 'The next level is still within your limit. Momentum Chaser’s 80 shares fill. 70 still to buy.' },
+  { t: '③ 30 shares at ₹2,487.25', b: 'Panic Seller’s 30 shares fill. 40 still to buy.' },
+  { t: 'The next ask is too dear', b: 'The next seller wants ₹2,487.75, above your ₹2,487.50 limit. Matching stops here.' },
+  { t: 'The rest waits in the book', b: 'The remaining 40 shares rest as a bid at ₹2,487.50. You are now the best bid; a seller at that price will fill you.' },
+];
+const SPEEDS = [{ value: '0.25', label: '0.25×' }, { value: '0.5', label: '0.5×' }, { value: '0.75', label: '0.75×' }, { value: '1', label: '1×' }];
+const lbl = { fontFamily: 'var(--font-ui)', fontSize: 'var(--text-label)', fontWeight: 700, letterSpacing: 'var(--tracking-label)', textTransform: 'uppercase' };
+const COLS = '34px 128px 150px 30px 120px minmax(0,1fr)';
+
+function Slip({ step, remaining }) {
+  const docked = step >= 1;
+  return (
+    <div style={{ position: 'relative', paddingTop: 10, transform: docked ? 'none' : 'translateX(-56px)', opacity: step < 0 ? 0 : 1, transition: 'transform 420ms var(--ease-out), opacity 180ms var(--ease-out)' }} className="dx-depth">
+      <span aria-hidden="true" style={{ position: 'absolute', left: 6, top: 0, fontSize: 13, color: 'var(--ink-muted)', background: 'var(--paper)', padding: '0 3px', zIndex: 1 }}>✂</span>
+      <div style={{ clipPath: 'polygon(0 3px, 9% 1px, 22% 3px, 37% 0, 52% 2px, 66% 0, 81% 3px, 100% 1px, 100% 100%, 0 100%)', background: 'var(--surface)', border: '1px dashed var(--rule-strong)', padding: '12px 14px 10px', display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '2px 16px', alignItems: 'baseline' }}>
+        <span style={{ ...lbl, color: 'var(--buy)' }}><span aria-hidden="true">▲</span> Buy order</span>
+        <span className="dx-num" style={{ fontSize: 11, color: 'var(--ink-muted)' }}>#{ORDER.id} · Limit · 14:32:07.412</span>
+        <span style={{ ...lbl, color: 'var(--ink-muted)' }}>Still to buy</span>
+        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22 }}>Buy {ORDER.qty} {ORDER.sym}</span>
+        <span className="dx-num" style={{ fontSize: 15 }}>limit ₹{fmt(ORDER.limit)}</span>
+        <span className="dx-num" style={{ fontSize: 22, fontWeight: 600, justifySelf: 'end', color: remaining ? 'var(--ink)' : 'var(--ink-muted)' }}>{remaining}</span>
+      </div>
+      <div aria-hidden="true" style={{ position: 'absolute', right: -22, top: '58%', fontSize: 18, color: 'var(--ink)', opacity: step >= 1 && step < 6 ? 1 : 0, transition: 'opacity 180ms' }}>→</div>
+    </div>
+  );
+}
+
+function Row({ side, r, fill, n, consumed, limitLine, step, resting }) {
+  const c = side === 'ask' ? 'var(--sell)' : 'var(--buy)';
+  const left = consumed ? 0 : r.qty;
+  const active = fill && step === n + 2;
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: COLS, alignItems: 'center', columnGap: 12, minHeight: 36, borderBottom: limitLine ? '2px dashed var(--pencil)' : '1px solid var(--rule)', background: active ? 'var(--surface)' : resting ? 'var(--surface)' : 'transparent', position: 'relative' }}>
+      <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, lineHeight: 1, color: 'var(--pencil-text)', textAlign: 'center' }}>{fill && step >= n + 2 ? NUM[n] : ''}</span>
+      <span className="dx-num" style={{ textAlign: 'right', fontSize: 17, fontWeight: 600, color: c }}>
+        {fill && step >= n + 2 ? <D.RedPencilCircle drawKey={'f' + n} label="Matched level" style={{ padding: '3px 14px' }}>{fmt(r.price)}</D.RedPencilCircle> : fmt(r.price)}
+      </span>
+      <span className="dx-num" style={{ textAlign: 'right', fontSize: 17, display: 'flex', justifyContent: 'flex-end', gap: 10, alignItems: 'baseline' }}>
+        {consumed ? <><span style={{ textDecoration: 'line-through', textDecorationColor: 'var(--pencil)', textDecorationThickness: 2, color: 'var(--ink-muted)' }}>{r.qty}</span><span style={{ fontSize: 13, color: 'var(--ink-muted)' }}>→ 0</span></> : r.qty.toLocaleString('en-IN')}
+      </span>
+      <span style={{ display: 'grid', placeItems: 'center' }}><D.Monogram bot={r.bot} size={22} /></span>
+      <span aria-hidden="true" style={{ height: 16, position: 'relative', ['border' + (side === 'bid' ? 'Left' : 'Right')]: '1px solid var(--rule)' }}>
+        <span className="dx-hatch dx-depth" style={{ position: 'absolute', [side === 'bid' ? 'left' : 'right']: 0, top: 0, bottom: 0, width: (left / MAX) * 100 + '%', minWidth: left ? 2 : 0, color: c, ['border' + (side === 'bid' ? 'Right' : 'Left')]: left ? '1.5px solid ' + c : 'none' }} />
+        {consumed && <span className="dx-hatch" style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: (r.qty / MAX) * 100 + '%', minWidth: 3, color: 'var(--rule)' }} />}
+      </span>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+        {fill && step >= n + 2 && <>
+          <span aria-hidden="true" style={{ width: 28, flex: 'none', borderTop: '1.5px dotted var(--pencil)' }} />
+          <span className="dx-anim-slip" style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14, lineHeight: 1.25, color: 'var(--pencil-text)' }}>
+            {NUM[n]} Filled {fill.qty} @ ₹{fmt(fill.price)} — {n === 0 ? 'best ask' : 'next ask'} ≤ your limit ₹{fmt(ORDER.limit)}
+          </span></>}
+        {limitLine && step >= 5 && <span className="dx-anim-slip" style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14, color: 'var(--pencil-text)' }}>✎ ₹2,487.75 &gt; your limit — matching stops</span>}
+        {resting && <D.RubberStamp text="Rested" sub="40 @ 2,487.50" size="sm" angle={-5} animate slamKey="rest" backed />}
+      </span>
+    </div>
+  );
+}
+
+function App() {
+  const q = new URLSearchParams(location.search);
+  const [ed, setEd] = React.useState(q.get('edition') || 'day');
+  const [step, setStep] = React.useState(q.get('step') != null ? +q.get('step') : 0);
+  const [speed, setSpeed] = React.useState('0.5');
+  const [playing, setPlaying] = React.useState(false);
+  const last = STEPS.length - 1;
+  React.useEffect(() => {
+    if (!playing) return;
+    if (step >= last) { setPlaying(false); return; }
+    const t = setTimeout(() => setStep((s) => s + 1), 1400 / +speed);
+    return () => clearTimeout(t);
+  }, [playing, step, speed]);
+  const filled = FILLS.filter((f, n) => step >= n + 2).reduce((a, f) => a + f.qty, 0);
+  const remaining = ORDER.qty - filled;
+  const filledIdx = (i) => FILLS.findIndex((f) => f.i === i);
+  const edBtn = <button onClick={() => setEd(ed === 'day' ? 'night' : 'day')} className="dx-focus" style={{ appearance: 'none', background: 'none', border: '1px solid var(--rule-strong)', color: 'var(--ink)', fontFamily: 'var(--font-ui)', fontSize: 12, fontWeight: 600, padding: '3px 9px', cursor: 'pointer', borderRadius: 0 }}>{ed === 'day' ? 'Night edition →' : 'Day edition →'}</button>;
+  return (
+    <D.Edition edition={ed} style={{ minHeight: '100vh', padding: '0 24px 18px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
+      <D.Masthead strip editionName={ed === 'day' ? 'Day Edition' : 'Night Edition'} status="live" right={edBtn} />
+      <D.HeadlineBanner kicker="X-Ray" headline="How your order for 200 RELIANCE was matched" deck="An explainer, set over the live terminal. The market is paused while you read." time="14:32:07" />
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'end', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--rule)' }}>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'end', flexWrap: 'wrap' }}>
+          <div style={{ display: 'grid', gap: 4 }}><span style={lbl}>Speed</span><D.OrderTypeToggle value={speed} onChange={setSpeed} options={SPEEDS} showHint={false} style={{ width: 260 }} /></div>
+          <D.Button variant="primary" onClick={() => { if (step >= last) setStep(0); setPlaying(!playing); }}>{playing ? '❚❚ Pause' : step >= last ? '↺ Replay' : '▶ Play'}</D.Button>
+          <D.Button variant="secondary" disabled={step >= last} onClick={() => { setPlaying(false); setStep((s) => Math.min(last, s + 1)); }}>Step →</D.Button>
+          <D.Button variant="ghost" disabled={step === 0} onClick={() => { setPlaying(false); setStep((s) => Math.max(0, s - 1)); }}>← Back</D.Button>
+          <span className="dx-num" style={{ fontSize: 13, color: 'var(--ink-muted)', paddingBottom: 9 }}>Step {step + 1} of {STEPS.length}</span>
+        </div>
+        <a href="../trading-floor-v2/index.html" style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 15, paddingBottom: 8 }}>Exit X-Ray ←</a>
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', marginTop: 14, flex: 1 }}>
+        <section style={{ flex: '2.2 1 720px', minWidth: 0, paddingRight: 16 }}>
+          <D.SectionLabel meta="RELIANCE · enlarged">Order Book</D.SectionLabel>
+          <div style={{ maxWidth: 560, margin: '6px 0 14px' }}><Slip step={step} remaining={remaining} /></div>
+          <div style={{ display: 'grid', gridTemplateColumns: COLS, columnGap: 12, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-muted)', padding: '2px 0' }}>
+            <span /><span style={{ textAlign: 'right' }}>▼ Ask</span><span style={{ textAlign: 'right' }}>Qty</span><span>Bot</span><span>Depth</span><span>Explainer</span>
+          </div>
+          {ASKS.map((r, i) => { const n = filledIdx(i); return <Row key={'a' + i} side="ask" r={r} fill={n >= 0 ? FILLS[n] : null} n={n} consumed={n >= 0 && step >= n + 2} limitLine={i === 3} step={step} />; })}
+          <div className="dx-num" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--ink-muted)', padding: '5px 0', borderTop: '1px solid var(--rule-strong)', borderBottom: '1px solid var(--rule-strong)' }}>
+            <span>Your limit ₹{fmt(ORDER.limit)}</span><span>{step >= last ? 'Spread ₹0.25 (2,487.50 / 2,487.75)' : 'Spread ₹0.50'}</span>
+          </div>
+          {step >= last && <Row side="bid" r={{ price: 2487.5, qty: 40, bot: 'you' }} step={step} resting />}
+          {BIDS.map((r, i) => <Row key={'b' + i} side="bid" r={r} step={step} />)}
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-muted)', padding: '3px 0' }}>▲ Bids</div>
+        </section>
+
+        <aside style={{ flex: '1 1 340px', minWidth: 0, borderLeft: '1px solid var(--rule)', paddingLeft: 16 }}>
+          <D.SectionLabel meta={filled + ' of 200 filled'}>How this order was matched</D.SectionLabel>
+          <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid' }}>
+            {STEPS.map((s, i) => (
+              <li key={i} aria-current={i === step ? 'step' : undefined} onClick={() => { setPlaying(false); setStep(i); }}
+                style={{ display: 'grid', gridTemplateColumns: '26px minmax(0,1fr)', gap: 8, padding: '9px 0', borderBottom: '1px solid var(--rule)', cursor: 'pointer', color: i > step ? 'var(--ink-muted)' : 'var(--ink)' }}>
+                <span className="dx-num" style={{ fontSize: 13, fontWeight: 600, paddingTop: 2, color: i < step ? 'var(--buy)' : 'inherit' }}>{i < step ? '✓' : i + 1}</span>
+                <span>
+                  <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: i === step ? 700 : 600, fontSize: i === step ? 18 : 15, lineHeight: 1.2 }}>{s.t}</span>
+                  {i <= step && <span style={{ display: 'block', marginTop: 3, fontSize: 13.5, lineHeight: 1.45 }}>{s.b}</span>}
+                </span>
+              </li>
+            ))}
+          </ol>
+          {step >= last && <div style={{ marginTop: 12 }}><D.MarginNote author="Inspector" tone="ink" side="below">Average price for the 160 filled: ₹2,486.97. Nothing unusual on this order.</D.MarginNote></div>}
+        </aside>
+      </div>
+      <D.Folio page={1} section="Markets · X-Ray" right="An explainer · the market is paused" style={{ marginTop: 18 }} />
+    </D.Edition>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+});
+</script></body></html>

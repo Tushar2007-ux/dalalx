@@ -1,0 +1,340 @@
+<!-- @dsCard group="Trading Floor" viewport="1440x1000" name="Trading floor v2" subtitle="Strip masthead, candlesticks, 10-level shaped book, tape heads, The Wire, X-Ray" -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>DalalX · Trading Floor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+<script src="../../ds-loader.js"></script>
+</head><body><div id="root"></div>
+<script type="text/babel">
+DalalX.ready.then(() => {
+const D = DalalX;
+const SYMS = { RELIANCE: 2481.5, TCS: 4112.4, INFY: 1534.2, HDFCBANK: 1688.0, TATAMOTORS: 942.35 };
+const PREV = { RELIANCE: 2460.0, TCS: 4098.0, INFY: 1541.6, HDFCBANK: 1683.25, TATAMOTORS: 961.8 };
+const HALTED = 'TATAMOTORS';
+const TRADERS = ['munim', 'momentum', 'panic', 'whale', 'spoofer'];
+const SHORT = { munim: 'The Munim', momentum: 'Momentum Chaser', panic: 'Panic Seller', whale: 'The Whale', spoofer: 'The Spoofer' };
+const r05 = (x) => Math.round(x * 20) / 20;
+const fmt = (n) => n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const hhmm = (d) => d.toTimeString().slice(0, 5);
+const clock = (d) => d.toTimeString().slice(0, 8) + '.' + String(d.getMilliseconds()).padStart(3, '0');
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+
+const IV = { '1m': 60e3, '5m': 300e3, '15m': 900e3, '1D': 864e5 };
+function genCandles(iv, end, n) {
+  const out = []; let c = end; const base = SESSION === 'closed' ? new Date().setHours(15, 29, 0, 0) : Date.now(); const now = Math.floor(base / IV[iv]) * IV[iv]; const vol = iv === '1D' ? 0.014 : iv === '15m' ? 0.004 : iv === '5m' ? 0.0025 : 0.0012;
+  for (let i = 0; i < n; i++) {
+    const o = r05(c * (1 + (Math.random() - 0.5) * vol * 2));
+    const h = r05(Math.max(o, c) * (1 + Math.random() * vol)), l = r05(Math.min(o, c) * (1 - Math.random() * vol));
+    const t = new Date(now - i * IV[iv]);
+    out.unshift({ t: iv === '1D' ? t.getDate() + ' ' + t.toLocaleString('en-IN', { month: 'short' }) : hhmm(t), o, h, l, c, v: Math.round((iv === '1D' ? 4e5 : 2e3) * (0.4 + Math.random() * 1.6)) });
+    c = o;
+  }
+  return out;
+}
+
+function buildBook(mid, spoof) {
+  const asks = [], bids = [];
+  for (let i = 9; i >= 0; i--) asks.push({ price: r05(mid + 0.5 + i * 0.5), qty: Math.round(150 + Math.random() * 900 + i * 260), orders: 1 + Math.floor(Math.random() * 7) });
+  for (let i = 0; i < 10; i++) bids.push({ price: r05(mid - i * 0.5), qty: Math.round(150 + Math.random() * 900 + i * 240), orders: 1 + Math.floor(Math.random() * 7) });
+  asks.forEach((r, i) => (r.bot = i >= 8 ? 'munim' : i === 2 ? 'whale' : pick(['momentum', 'panic', 'munim'])));
+  bids.forEach((r, i) => (r.bot = i <= 1 ? 'munim' : i === 8 ? 'whale' : pick(['momentum', 'munim', 'panic'])));
+  asks[1].qty += 3800; bids[8].qty += 4200;
+  if (spoof) { bids[5].qty = 9800; bids[5].flagged = true; bids[5].bot = 'spoofer'; bids[6].qty = 11200; bids[6].flagged = true; bids[6].bot = 'spoofer'; }
+  const max = Math.max(...asks.concat(bids).map((r) => r.qty));
+  asks.concat(bids).forEach((r) => (r.depth = r.qty / max));
+  return { asks, bids };
+}
+
+const SESSION = new URLSearchParams(location.search).get('session') === 'closed' ? 'closed' : 'open';
+const WIRE_POOL = [
+  (px) => ({ tone: 'up', headline: 'The Whale takes a 40,000-share block of HDFCBANK at ₹' + fmt(px.HDFCBANK) }),
+  (px) => ({ tone: 'down', headline: 'INFY drops 0.6% in ninety seconds as Panic Seller hits every bid' }),
+  (px) => ({ tone: 'up', headline: 'TCS reclaims ₹' + fmt(Math.floor(px.TCS / 10) * 10) + ' on Momentum Chaser buying' }),
+  (px) => ({ tone: null, headline: 'The Munim widens HDFCBANK quotes to ₹1.00 ahead of the close' }),
+  (px) => ({ tone: 'down', headline: 'Momentum Chaser dumps TCS after three red candles' }),
+  (px) => ({ tone: 'up', headline: 'RELIANCE prints its high of the day at ₹' + fmt(px.RELIANCE) }),
+];
+const WIRE0 = [
+  { id: 'w3', time: '14:18', headline: 'The Whale accumulates RELIANCE in three blocks of 40,000', tone: 'up' },
+  { id: 'w2', time: '13:52', headline: 'TATAMOTORS halted after a 2% slide trips the circuit filter', tone: 'alert' },
+  { id: 'w1', time: '13:20', headline: 'INFY drifts lower as Momentum Chaser flips short', tone: 'down' },
+  { id: 'w0', time: '12:45', headline: 'The Munim tightens RELIANCE spread to ₹0.50', tone: null },
+  { id: 'wm', time: '12:10', headline: 'HDFCBANK opens flat; The Whale stays on the sidelines', tone: null },
+];
+
+function useMarket(frozen) {
+  const [m, setM] = React.useState(() => ({
+    px: { ...SYMS }, tape: SESSION === 'closed' ? [
+      { id: 'c1', time: '15:29:59.870', symbol: 'RELIANCE', side: 'buy', price: 2481.5, qty: 120, buyerBot: 'whale', sellerBot: 'munim' },
+      { id: 'c2', time: '15:29:59.412', symbol: 'TCS', side: 'sell', price: 4108.4, qty: 60, buyerBot: 'munim', sellerBot: 'panic' },
+      { id: 'c3', time: '15:29:58.990', symbol: 'RELIANCE', side: 'sell', price: 2481.0, qty: 300, buyerBot: 'momentum', sellerBot: 'panic' },
+      { id: 'c4', time: '15:29:58.105', symbol: 'HDFCBANK', side: 'buy', price: 1687.25, qty: 40, buyerBot: 'you', sellerBot: 'munim', mine: true },
+      { id: 'c5', time: '15:29:57.640', symbol: 'INFY', side: 'sell', price: 1527.65, qty: 210, buyerBot: 'whale', sellerBot: 'momentum' },
+      { id: 'c6', time: '15:29:57.002', symbol: 'RELIANCE', side: 'buy', price: 2481.5, qty: 80, buyerBot: 'munim', sellerBot: 'spoofer' },
+    ] : [], n: 0, spoof: false, wire: WIRE0,
+    candles: Object.fromEntries(Object.keys(IV).map((iv) => [iv, genCandles(iv, SYMS.RELIANCE, iv === '1D' ? 40 : 56)])),
+  }));
+  React.useEffect(() => {
+    if (SESSION === 'closed' || frozen) return;
+    const id = setInterval(() => setM((s) => {
+      const px = { ...s.px };
+      Object.keys(px).forEach((k) => { if (k !== HALTED) px[k] = r05(px[k] * (1 + (Math.random() - 0.49) * 0.0016)); });
+      const sym = Math.random() < 0.6 ? 'RELIANCE' : pick(['TCS', 'INFY', 'HDFCBANK']);
+      const b = pick(TRADERS); const sl = pick(TRADERS.filter((x) => x !== b));
+      const spoofNow = s.spoof || s.n === 14;
+      const t = { id: s.n, time: clock(new Date()), symbol: sym, side: px[sym] >= s.px[sym] ? 'buy' : 'sell', price: px[sym], qty: 10 * Math.ceil(Math.random() * 60), buyerBot: b, sellerBot: sl, flagged: spoofNow && (b === 'spoofer' || sl === 'spoofer') };
+      const p = px.RELIANCE; const candles = {};
+      Object.entries(s.candles).forEach(([iv, cs]) => {
+        let arr = cs.slice(); const last = { ...arr[arr.length - 1] };
+        last.c = p; last.h = Math.max(last.h, p); last.l = Math.min(last.l, p); last.v += sym === 'RELIANCE' ? t.qty : 0;
+        arr[arr.length - 1] = last;
+        const label = hhmm(new Date(Math.floor(Date.now() / IV[iv]) * IV[iv]));
+        if (iv !== '1D' && label !== last.t) arr = arr.slice(1).concat({ t: label, o: p, h: p, l: p, c: p, v: 0 });
+        candles[iv] = arr;
+      });
+      let wire = s.wire;
+      if (spoofNow && !s.spoof) wire = [{ id: 'sp', time: hhmm(new Date()), headline: 'Inspector red-pencils two RELIANCE bids of 9,800 and 11,200', tone: 'alert', fresh: true }].concat(wire);
+      else if (s.n % 22 === 21) {
+        const used = new Set(wire.map((w) => w.headline));
+        const fresh = WIRE_POOL.map((f) => f(px)).filter((w) => !used.has(w.headline) && !used.has(w.headline.replace(/₹[\d,.]+/, '')));
+        if (fresh.length) wire = [{ id: 'g' + s.n, time: hhmm(new Date()), fresh: true, ...fresh[0] }].concat(wire);
+      }
+      return { ...s, px, candles, wire: wire.slice(0, 5).map((w, i) => (i ? { ...w, fresh: false } : w)), tape: [t].concat(s.tape).slice(0, 14), n: s.n + 1, spoof: spoofNow };
+    }), 900);
+    return () => clearInterval(id);
+  }, [frozen]);
+  return [m, setM];
+}
+
+function Ticket({ px, onConfirm, stamp, auction }) {
+  const [side, setSide] = React.useState('buy');
+  const [type, setType] = React.useState('limit');
+  const [price, setPrice] = React.useState(fmt(px));
+  const [qty, setQty] = React.useState('120');
+  const p = parseFloat(String(price).replace(/,/g, '')) || 0;
+  const err = type !== 'market' && (p > px * 1.1 || p < px * 0.9) ? "Outside today's circuit band" : null;
+  const val = (type === 'market' ? px : p) * (parseInt(qty) || 0);
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 12, position: 'relative' }}>
+      <D.SideToggle value={side} onChange={setSide} />
+      <D.OrderTypeToggle value={auction ? 'limit' : type} onChange={setType} options={auction ? [{ value: 'limit', label: 'Limit only', hint: 'During the call auction only limit orders are accepted. All match at one price at 14:45.' }] : undefined} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
+        <D.PriceInput label="Limit price" prefix="₹" value={type === 'market' ? 'Market' : price} onChange={setPrice} disabled={type === 'market'} error={err} hint={type === 'market' ? 'Best available' : 'Band ₹' + fmt(px * 0.9) + '–' + fmt(px * 1.1)} />
+        <D.PriceInput label="Quantity" suffix="qty" value={qty} onChange={setQty} inputMode="numeric" hint="Lot size 1" />
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--ink-muted)', borderTop: '1px solid var(--rule)', paddingTop: 8 }}>
+        <span>Order value</span><span className="dx-num" style={{ color: 'var(--ink)', fontSize: 13 }}>₹{fmt(val)}</span>
+      </div>
+      <D.Button variant={side === 'sell' ? 'danger' : 'primary'} fullWidth size="lg" disabled={!!err || !(parseInt(qty) > 0)} kbd="↵"
+        onClick={() => onConfirm({ side, type, qty: parseInt(qty), price: type === 'market' ? px : p })}>
+        {side === 'buy' ? '▲ Buy' : '▼ Sell'} {qty} RELIANCE
+      </D.Button>
+      {stamp && <D.RubberStamp kind="filled" sub={stamp} animate slamKey={stamp} angle={-5} style={{ position: 'absolute', right: 6, top: 54 }} backed />}
+    </div>
+  );
+}
+
+const small = { fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--ink-muted)' };
+
+function App() {
+  const forced = new URLSearchParams(location.search).get('edition');
+  const [ed, setEd] = React.useState(() => forced || localStorage.getItem('dalalx-edition') || 'day');
+  React.useEffect(() => { if (!forced) localStorage.setItem('dalalx-edition', ed); }, [ed]);
+  const EDN = { day: 'Day Edition', night: 'Night Edition', midnight: 'Night · Midnight Ink', charcoal: 'Night · Charcoal Press', 'pink-night': 'Night · Pink Night' };
+  const [sym, setSym] = React.useState('RELIANCE');
+  const [iv, setIv] = React.useState('1m');
+  const [xray, setXray] = React.useState(false);
+  const [toasts, setToasts] = React.useState([]);
+  const PH = new URLSearchParams(location.search).get('phase');
+  const [phase, setPhase] = React.useState(PH === 'resume' ? 'auction' : PH || 'live');
+  React.useEffect(() => { if (PH === 'resume') { const t = setTimeout(() => setPhase('resume'), 1600); return () => clearTimeout(t); } }, []);
+  const frozenR = phase === 'halt' || phase === 'auction';
+  const [m, setM] = useMarket(frozenR);
+  const [auc, setAuc] = React.useState({ px: 2236.5, vol: 31200, buy: 41800, sell: 37600 });
+  const crashed = React.useRef(false);
+  React.useEffect(() => {
+    if (frozenR && !crashed.current) {
+      crashed.current = true;
+      setM((st) => { const candles = {}; Object.entries(st.candles).forEach(([iv, cs]) => { const l = { ...cs[cs.length - 1] }; l.l = 2214.4; l.c = 2214.4; l.v += 60000; candles[iv] = cs.slice(0, -1).concat(l); }); return { ...st, px: { ...st.px, RELIANCE: 2214.4 }, candles }; });
+    }
+    if (phase === 'resume') {
+      setM((st) => { const candles = {}; Object.entries(st.candles).forEach(([iv, cs]) => { const l = { ...cs[cs.length - 1] }; l.c = auc.px; l.h = Math.max(l.h, auc.px); candles[iv] = cs.slice(0, -1).concat(l); }); return { ...st, px: { ...st.px, RELIANCE: auc.px }, candles }; });
+      setToasts((x) => [{ id: Date.now(), kind: 'info', title: 'RELIANCE reopened at ₹' + fmt(auc.px), detail: 'Call auction crossed ' + auc.vol.toLocaleString('en-IN') + ' shares at one price', time: '14:45:00' }].concat(x).slice(0, 3));
+    }
+    if (phase === 'live') crashed.current = false;
+  }, [phase]);
+  React.useEffect(() => {
+    if (phase !== 'auction') return;
+    const id = setInterval(() => setAuc((a) => ({ px: Math.round((a.px + (Math.random() - 0.45) * 1.5) * 20) / 20, vol: a.vol + Math.round(Math.random() * 12) * 100, buy: a.buy + Math.round(Math.random() * 8) * 100, sell: a.sell + Math.round(Math.random() * 7) * 100 })), 1200);
+    return () => clearInterval(id);
+  }, [phase]);
+  const ends = React.useMemo(() => Date.now() + (phase === 'halt' ? 128000 : 166000), [phase]);
+  const [confirm, setConfirm] = React.useState(null);
+  const [stamp, setStamp] = React.useState(null);
+  const [seen, setSeen] = React.useState(false);
+  const px = m.px.RELIANCE;
+  const bk = React.useMemo(() => buildBook(px, m.spoof), [px, m.spoof]);
+  const tabs = Object.keys(SYMS).map((k) => ({ symbol: k, change: ((m.px[k] - PREV[k]) / PREV[k]) * 100, halted: k === HALTED || (k === 'RELIANCE' && frozenR) }));
+  const live = Object.keys(SYMS).filter((k) => k !== HALTED);
+  const adv = live.filter((k) => m.px[k] > PREV[k]).length, dec = live.filter((k) => m.px[k] < PREV[k]).length;
+  const fill = () => {
+    const o = confirm; setConfirm(null);
+    const t = clock(new Date()).slice(0, 8);
+    setStamp(t + ' · ' + o.qty + ' @ ' + fmt(o.price));
+    setToasts((x) => [{ id: Date.now(), kind: 'filled', title: (o.side === 'buy' ? 'Bought ' : 'Sold ') + o.qty + ' RELIANCE at ₹' + fmt(o.price), detail: '#A-' + (2291 + x.length) + ' · ' + o.type.toUpperCase() + ' · ₹' + fmt(o.qty * o.price), time: t }].concat(x).slice(0, 3));
+  };
+  const nowT = m.tape[0] ? m.tape[0].time.slice(0, 8) : clock(new Date()).slice(0, 8);
+  const headline = phase === 'halt'
+    ? { kicker: 'Stop Press', state: 'breaking', tone: 'down', headline: 'Trading halted in RELIANCE after 10% fall in 60 seconds', deck: 'The circuit breaker tripped at 14:39:52 as Panic Seller dumped 1.2 lakh shares into a thin book.', time: '14:39:52' }
+    : phase === 'auction' ? { kicker: 'Call Auction', state: 'live', tone: 'neutral', headline: 'RELIANCE call auction under way; indicative price ₹' + fmt(auc.px), time: '14:43:20' }
+    : phase === 'resume' ? { kicker: 'Latest', state: 'live', tone: 'up', headline: 'Trading resumes in RELIANCE', deck: 'Reopened at ₹' + fmt(auc.px) + ' after the call auction crossed ' + auc.vol.toLocaleString('en-IN') + ' shares.', time: '14:45:00' }
+    : SESSION === 'closed'
+    ? { kicker: 'Closing Bell', state: 'live', tone: px >= PREV.RELIANCE ? 'up' : 'down', headline: 'The bell has rung: RELIANCE closes at ₹' + fmt(px) + ', up ' + (((px - PREV.RELIANCE) / PREV.RELIANCE) * 100).toFixed(2) + '% on the day', time: '15:30:00' }
+    : m.spoof
+    ? { kicker: 'Stop Press', state: 'breaking', tone: 'down', headline: 'Surveillance flags layered bids in RELIANCE; The Spoofer under review', time: nowT }
+    : { kicker: 'Latest', state: 'live', tone: px >= PREV.RELIANCE ? 'up' : 'down', headline: px >= PREV.RELIANCE ? 'RELIANCE holds above ₹' + fmt(Math.floor(px / 10) * 10) + ' as The Munim tightens quotes' : 'RELIANCE slips under yesterday\'s close', time: nowT };
+  const col = { minWidth: 0, padding: '0 12px' };
+  const edBtn = (
+    <button onClick={() => setEd(ed === 'day' ? 'night' : 'day')} className="dx-focus" style={{ appearance: 'none', background: 'none', border: '1px solid var(--rule-strong)', color: 'var(--ink)', fontFamily: 'var(--font-ui)', fontSize: 12, fontWeight: 600, padding: '3px 9px', cursor: 'pointer', borderRadius: 0 }}>
+      {ed === 'day' ? 'Night edition →' : 'Day edition →'}
+    </button>
+  );
+  return (
+    <D.Edition edition={ed} style={{ minHeight: '100vh', padding: '0 24px 18px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
+      <D.Masthead strip editionName={EDN[ed] || 'Night Edition'} status={phase === 'halt' ? 'halted' : phase === 'auction' ? 'auction' : SESSION === 'closed' ? 'closed' : 'live'} right={edBtn} />
+      <D.HeadlineBanner {...headline} />
+      {phase === 'halt' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) minmax(0,0.8fr) minmax(0,1fr)', gap: 24, padding: '12px 0 14px', borderBottom: '1px solid var(--rule-strong)', alignItems: 'start' }}>
+          <D.AlertNotice severity="critical" label="Circuit breaker" fresh title="Circuit breaker: RELIANCE fell 10.0% in 60 seconds" reference="CB-0031" time="14:39:52">Trading in RELIANCE is paused. Your resting orders stay in the book. It reopens with a call auction: orders are collected for three minutes, then matched at a single price.</D.AlertNotice>
+          <D.Countdown endsAt={ends} label="Next edition in" note="Call auction opens at 14:42:00" size="lg" />
+          <div>
+            <D.SectionLabel under="hair">What happens next</D.SectionLabel>
+            <ol style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 5, fontSize: 13.5, lineHeight: 1.4 }}>
+              <li><strong>Halt</strong> <span className="dx-num" style={{ fontSize: 12, color: 'var(--ink-muted)' }}>14:39:52</span>. No new orders, no trades.</li>
+              <li><strong>Call auction</strong> <span className="dx-num" style={{ fontSize: 12, color: 'var(--ink-muted)' }}>14:42–14:45</span>. Limit orders only; an indicative price is published.</li>
+              <li><strong>Reopen</strong> <span className="dx-num" style={{ fontSize: 12, color: 'var(--ink-muted)' }}>14:45:00</span>. Everything that crosses trades at one price, then normal trading resumes.</li>
+            </ol>
+          </div>
+        </div>
+      )}
+      {phase === 'auction' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) minmax(0,0.8fr) minmax(0,1fr)', gap: 24, padding: '12px 0 14px', borderBottom: '1px solid var(--rule-strong)', alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'auto auto minmax(0,1fr)', gap: '4px 28px', alignItems: 'end' }}>
+            <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-label)', fontWeight: 700, letterSpacing: 'var(--tracking-label)', textTransform: 'uppercase', color: 'var(--ink-muted)' }}>Indicative price</span><span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-label)', fontWeight: 700, letterSpacing: 'var(--tracking-label)', textTransform: 'uppercase', color: 'var(--ink-muted)' }}>Indicative volume</span><span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-label)', fontWeight: 700, letterSpacing: 'var(--tracking-label)', textTransform: 'uppercase', color: 'var(--ink-muted)' }}>Interest</span>
+            <D.PriceCell value={auc.px} size="xl" prefix="₹" align="left" />
+            <span className="dx-num" style={{ fontSize: 32, fontWeight: 500 }}>{auc.vol.toLocaleString('en-IN')}</span>
+            <div style={{ display: 'grid', gap: 4, paddingBottom: 4 }}>
+              <div aria-hidden="true" style={{ display: 'flex', height: 14, border: '1px solid var(--rule-strong)' }}>
+                <span className="dx-depth" style={{ position: 'relative', width: (auc.buy / (auc.buy + auc.sell)) * 100 + '%', color: 'var(--buy)', borderRight: '1.5px solid var(--buy)' }}><span className="dx-hatch" style={{ position: 'absolute', inset: 0, opacity: 0.55 }} /></span>
+                <span style={{ position: 'relative', flex: 1, color: 'var(--sell)' }}><span className="dx-hatch" style={{ position: 'absolute', inset: 0, opacity: 0.55 }} /></span>
+              </div>
+              <div className="dx-num" style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 11.5 }}><span style={{ color: 'var(--buy)' }}>▲ Buy {auc.buy.toLocaleString('en-IN')}</span><span style={{ color: 'var(--sell)' }}>▼ Sell {auc.sell.toLocaleString('en-IN')}</span></div>
+            </div>
+          </div>
+          <D.Countdown endsAt={ends} label="Auction closes in" note="Single-price match at 14:45:00" size="lg" />
+          <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14.5, lineHeight: 1.4 }}>The indicative price is where the most shares would trade if the auction closed now. It moves as orders arrive; nothing trades until 14:45.</p>
+        </div>
+      )}
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', flex: 1 }}>
+      {(phase === 'halt' || phase === 'auction' || phase === 'resume') && (
+        <div key={phase === 'resume' ? 'lift' : 'stamp'} aria-hidden={phase === 'resume'} style={{ position: 'absolute', left: '50%', top: 230, zIndex: 30, pointerEvents: 'none', transform: 'translateX(-50%) scale(2.2)', opacity: phase === 'auction' ? 0.55 : 1 }}>
+          <div className={phase === 'resume' ? 'dx-anim-lift' : undefined}>
+            <D.RubberStamp kind="stop-press" size="lg" angle={-9} sub={phase === 'halt' ? 'Circuit breaker · RELIANCE' : 'Call auction · RELIANCE'} animate={phase === 'halt'} slamKey="halt" />
+          </div>
+        </div>
+      )}
+      <div className="dx-depth" aria-disabled={frozenR || undefined} style={{ display: 'flex', flexDirection: 'column', flex: 1, filter: phase === 'halt' ? 'grayscale(1) sepia(0.3) contrast(0.92)' : phase === 'auction' ? 'grayscale(0.8) sepia(0.2)' : 'none', transition: 'filter 900ms var(--ease-out)' }}>
+      <div style={{ marginTop: 12 }}><D.StockTabs tabs={tabs} value={sym} onChange={setSym} /></div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', rowGap: 24, marginTop: 14, flex: 1 }}>
+        <D.RuledPanel label="Markets" meta="5 stocks" style={{ ...col, flex: '0.8 1 230px', paddingLeft: 0 }}>
+          {Object.keys(SYMS).map((k) => (
+            <div key={k} style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'baseline', padding: '6px 0', borderBottom: '1px solid var(--rule)' }}>
+              <span style={{ fontWeight: 600, fontSize: 12.5, letterSpacing: '0.04em', color: k === HALTED ? 'var(--ink-muted)' : 'var(--ink)' }}>{k}</span>
+              <D.PriceCell value={m.px[k]} halted={k === HALTED || (k === 'RELIANCE' && frozenR)} />
+              <span />
+              {k === HALTED
+                ? <span className="dx-num" style={{ fontSize: 11, color: 'var(--ink-muted)', textAlign: 'right' }}>Since 13:52 · last {fmt(m.px[k])}</span>
+                : <D.PriceCell value={m.px[k]} change={m.px[k] - PREV[k]} changePct={((m.px[k] - PREV[k]) / PREV[k]) * 100} changeOnly size="sm" />}
+            </div>
+          ))}
+          <div style={{ marginTop: 14 }}>{SESSION === 'closed' ? <D.Countdown seconds={0} label="Closing bell" /> : <D.Countdown endsAt={window.__bell || (window.__bell = Date.now() + 4360000)} />}</div>
+          <div style={{ marginTop: 14 }}>
+            <D.SectionLabel meta="Newest first">The Wire</D.SectionLabel>
+            <D.TheWire items={m.wire} />
+          </div>
+          <div style={{ marginTop: 14 }}>
+            <D.SectionLabel under="hair">Market Breadth</D.SectionLabel>
+            <D.BreadthBar advancing={adv} declining={dec} unchanged={live.length - adv - dec} halted={1} style={{ marginTop: 4 }} />
+          </div>
+        </D.RuledPanel>
+
+        <D.RuledPanel label="RELIANCE" meta="Reliance-sim · NSE board" columnRule="left" style={{ ...col, flex: '1.65 1 440px', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, margin: '4px 0 6px', flexWrap: 'wrap' }}>
+            <D.PriceCell value={px} size="xl" prefix="₹" align="left" />
+            <D.PriceCell value={px} change={px - PREV.RELIANCE} changePct={((px - PREV.RELIANCE) / PREV.RELIANCE) * 100} changeOnly size={20} align="left" />
+          </div>
+          <div style={{ flex: 1, minHeight: 340, display: 'flex' }}>
+            <D.CandleChart candles={m.candles[iv]} prevClose={iv === '1D' ? undefined : PREV.RELIANCE} interval={iv} onInterval={setIv} minHeight={340} />
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <D.SectionLabel count={m.tape.length} meta={SESSION === 'closed' ? <span>■ Frozen at 15:30:00</span> : 'Newest first · hover badges for names'}>Trade Tape</D.SectionLabel>
+            {m.tape.slice(0, 8).map((t, i) => <D.TradeTapeRow key={t.id} {...t} fresh={i === 0 && SESSION !== 'closed'} style={SESSION === 'closed' ? { color: 'var(--ink-muted)' } : undefined} />)}
+          </div>
+        </D.RuledPanel>
+
+        <D.RuledPanel label="Order Book" meta="RELIANCE · 10 levels" columnRule="left" style={{ ...col, flex: '1 1 300px' }}>
+          <div style={{ ...small, display: 'grid', gridTemplateColumns: '14px minmax(0,1fr) minmax(0,1fr) 36px 96px', columnGap: 10, padding: '2px 6px 2px 4px' }}>
+            <span /><span style={{ textAlign: 'right' }}>▼ Ask</span><span style={{ textAlign: 'right' }}>Qty</span><span style={{ textAlign: 'right' }}>{xray ? 'Bot' : 'Ord'}</span><span>Depth</span>
+          </div>
+          {bk.asks.map((r, i) => <D.OrderBookRow key={'a' + i} side="ask" {...r} best={i === 9} xray={xray} />)}
+          <div className="dx-num" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--ink-muted)', padding: '4px 6px', borderBottom: '1px solid var(--rule-strong)', borderTop: '1px solid var(--rule-strong)' }}>
+            <span style={{ whiteSpace: 'nowrap' }}>Last ₹{fmt(px)}</span><span style={{ whiteSpace: 'nowrap' }}>Spread ₹0.50</span>
+          </div>
+          {bk.bids.map((r, i) => <D.OrderBookRow key={'b' + i} side="bid" {...r} best={i === 0} xray={xray} />)}
+          <div style={{ ...small, padding: '3px 4px' }}>▲ Bids</div>
+          {m.spoof && <div style={{ marginTop: 6 }}><D.MarginNote author="Inspector" time={headline.time.slice(0, 5)}>Two outsized bids, cancelled and re-entered every second. Watching.</D.MarginNote></div>}
+        </D.RuledPanel>
+
+        <D.RuledPanel label="Order Ticket" meta="RELIANCE" columnRule="left" style={{ ...col, flex: '1 1 300px', paddingRight: 0 }}>
+          {phase === 'halt'
+            ? <div style={{ display: 'grid', gap: 10 }}><D.SideToggle value="buy" disabled /><D.OrderTypeToggle value="limit" disabled showHint={false} /><D.Button fullWidth size="lg" disabled>Order entry paused · RELIANCE halted</D.Button><p style={{ margin: 0, fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14, color: 'var(--ink-muted)' }}>New orders are refused until the call auction opens at 14:42. Your resting orders stay in the book.</p></div>
+            : phase === 'auction' ? <Ticket px={auc.px} stamp={stamp} onConfirm={setConfirm} auction />
+            : SESSION === 'closed'
+            ? <div style={{ display: 'grid', gap: 10 }}><D.SideToggle value="buy" disabled /><D.OrderTypeToggle value="limit" disabled showHint={false} /><D.Button fullWidth size="lg" disabled>Market closed · opens 09:15</D.Button><p style={{ margin: 0, fontFamily: 'var(--font-display)', fontStyle: 'italic', color: 'var(--ink-muted)', fontSize: 14 }}>Orders reopen with the pre-open auction at 09:00.</p></div>
+            : <Ticket px={px} stamp={stamp} onConfirm={setConfirm} />}
+          <div style={{ marginTop: 12, display: 'grid', gap: 6 }}>
+            <D.XRayToggle on={xray} onChange={setXray} />
+            {xray && <D.MarginNote tone="ink" side="below">Each book level now shows the stamp of the bot behind it. Hover a tape badge for buyer and seller.</D.MarginNote>}
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <D.SectionLabel meta={m.spoof ? <span style={{ color: 'var(--pencil-text)' }}>◆ 1 case open</span> : 'All quiet'}>Surveillance</D.SectionLabel>
+            {m.spoof && !seen && <div style={{ margin: '6px 0 10px' }}><D.AlertNotice severity="critical" fresh title="The Spoofer under investigation" reference="SV-0412" time={headline.time} onDismiss={() => setSeen(true)}>Bids of <D.RedPencilCircle label="Flagged">9,800</D.RedPencilCircle> and 11,200 cancelled within 0.4s, nine times.</D.AlertNotice></div>}
+            {['munim', 'whale', 'spoofer', 'inspector'].map((b) => <D.BotByline key={b} bot={b} layout="compact" status={b === 'spoofer' && m.spoof ? 'flagged' : b === 'inspector' ? 'duty' : b === 'whale' ? 'idle' : 'active'} stats={[{ label: b === 'inspector' ? 'Cases' : 'P&L', value: b === 'inspector' ? (m.spoof ? '1' : '0') : b === 'munim' ? '₹4,210' : b === 'whale' ? '₹22,400' : '₹610', dir: b === 'inspector' ? undefined : 'up' }]} />)}
+          </div>
+        </D.RuledPanel>
+      </div>
+
+      </div>
+      </div>
+      <D.Folio page={1} section="Markets" right={<span style={{ display: 'flex', gap: 10, alignItems: 'baseline' }}>Demo:{['live', 'halt', 'auction', 'resume'].map((p) => <button key={p} onClick={() => setPhase(p)} className="dx-focus" style={{ appearance: 'none', border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: 12, fontWeight: phase === p ? 700 : 400, color: 'var(--ink)', textDecoration: phase === p ? 'none' : 'underline', textUnderlineOffset: 2 }}>{p[0].toUpperCase() + p.slice(1)}</button>)}</span>} style={{ marginTop: 18 }} />
+
+      <div aria-live="polite" style={{ position: 'fixed', top: 16, right: 16, display: 'grid', gap: 8, zIndex: 40 }}>
+        {toasts.map((t) => <D.Toast key={t.id} {...t} onClose={() => setToasts((x) => x.filter((y) => y.id !== t.id))} />)}
+      </div>
+      <D.Modal open={!!confirm} kicker="Confirm order" title={confirm ? (confirm.side === 'buy' ? 'Buy ' : 'Sell ') + confirm.qty + ' RELIANCE' + (confirm.type === 'market' ? ' at market?' : ' at ₹' + fmt(confirm.price) + '?') : ''} onClose={() => setConfirm(null)}
+        actions={<><D.Button variant="secondary" onClick={() => setConfirm(null)}>Keep editing</D.Button><D.Button variant={confirm && confirm.side === 'sell' ? 'danger' : 'primary'} onClick={fill}>{confirm && confirm.side === 'sell' ? '▼ Sell' : '▲ Buy'}</D.Button></>}>
+        {confirm && <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 16px' }}>
+          <span style={{ color: 'var(--ink-muted)' }}>Type</span><span>{confirm.type === 'ioc' ? 'IOC' : confirm.type[0].toUpperCase() + confirm.type.slice(1)}</span>
+          <span style={{ color: 'var(--ink-muted)' }}>Estimated value</span><span className="dx-num">₹{fmt(confirm.qty * confirm.price)}</span>
+        </div>}
+      </D.Modal>
+    </D.Edition>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+});
+</script></body></html>

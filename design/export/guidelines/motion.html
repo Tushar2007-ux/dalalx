@@ -1,0 +1,60 @@
+<!-- @dsCard group="Motion" viewport="700x470" name="Print-metaphor motion" subtitle="Ink-in, typeset, pen, hatched depth, stamp slam, pencil draw — click a row to replay" -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Motion</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+body{font-family:var(--font-ui)}
+.cap{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-muted)}
+.row{display:grid;grid-template-columns:130px 210px minmax(0,1fr);gap:14px;align-items:center;min-height:44px;border-bottom:1px solid var(--rule);cursor:pointer}
+.row:hover{background:var(--surface-sunk)}
+.n{font-weight:600;font-size:13px}
+button{appearance:none;border:1px solid var(--rule-strong);background:transparent;color:var(--ink);font:600 12px var(--font-ui);height:28px;padding:0 10px;cursor:pointer;border-radius:0}
+button[aria-pressed=true]{background:var(--ink);color:var(--ink-inverse)}
+</style></head><body>
+<div id="root" data-edition="day" class="dx-paper" style="padding:12px 20px 16px">
+  <div style="display:flex;justify-content:space-between;align-items:center;border-top:2px solid var(--rule-strong);padding-top:6px;margin-bottom:4px">
+    <span style="font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase">Motion spec · click a row</span>
+    <span style="display:flex;gap:6px"><button id="all">Replay all</button><button id="rm" aria-pressed="false">Reduced motion</button><button id="ed" aria-pressed="false">Night</button></span>
+  </div>
+  <div class="row" data-k="ink"><span class="n">Price ink-in</span><span class="cap">520ms · ease-out (0.2,0.7,0.2,1)<br>spread 0–160ms, tint fades out</span>
+    <span class="dx-num" style="font-size:22px;font-weight:500;display:flex;gap:20px"><span id="p1">2,481.50</span><span id="p2">2,478.25</span></span></div>
+  <div class="row" data-k="type"><span class="n">Tape typesets</span><span class="cap">180ms · steps(14) · row-by-row<br>40ms stagger, max 3 rows animated</span>
+    <span id="tape" class="dx-num" style="font-size:12.5px;display:grid"></span></div>
+  <div class="row" data-k="pen"><span class="n">Chart pen</span><span class="cap">360ms · ease-in-out · newest segment only</span>
+    <svg id="pen" width="300" height="40" viewBox="0 0 300 40" style="overflow:visible"></svg></div>
+  <div class="row" data-k="depth"><span class="n">Depth hatch</span><span class="cap">240ms · ease-out · width only</span>
+    <span style="display:grid;gap:4px;width:220px"><span id="d1" class="dx-hatch dx-depth" style="height:10px;color:var(--buy);border-right:1.5px solid var(--buy);width:40%"></span><span id="d2" class="dx-hatch dx-depth" style="height:10px;color:var(--sell);border-right:1.5px solid var(--sell);width:70%"></span></span></div>
+  <div class="row" data-k="stamp"><span class="n">Stamp slam</span><span class="cap">220ms · ease-in (0.55,0,0.9,0.4)<br>scale 1.45→1 at −6°, no rebound</span>
+    <span id="stampwrap" style="height:40px;display:flex;align-items:center"></span></div>
+  <div class="row" data-k="pencil"><span class="n">Red-pencil circle</span><span class="cap">480ms · ease-in-out · stroke draws</span>
+    <span class="dx-num" style="font-size:14px;position:relative;display:inline-block;padding:2px 8px;justify-self:start">×48,000
+      <svg viewBox="0 0 200 80" preserveAspectRatio="none" style="position:absolute;left:-6px;top:-7px;width:calc(100% + 12px);height:calc(100% + 14px);overflow:visible"><path id="loop" d="M 22 46 C 16 20, 70 6, 116 8 C 164 10, 196 26, 190 46 C 184 68, 128 76, 86 73 C 42 70, 6 60, 12 40 C 16 27, 44 15, 74 12" pathLength="100" fill="none" stroke="var(--pencil)" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke" stroke-dasharray="100" stroke-dashoffset="100" class="dx-anim-draw"/></svg></span></div>
+  <div class="cap" style="margin-top:8px;line-height:1.5">Hover/press 120ms. Toast slip 180ms. Modal fade 200ms. Reduced motion: all of the above become instant; colour tints are skipped; final states are identical.</div>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const restart = (el, cls) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+let px = 2481.5, pts = [30, 26, 28, 18, 22, 14, 16, 8];
+const run = {
+  ink() { px += 0.5; $('p1').textContent = px.toLocaleString('en-IN', { minimumFractionDigits: 2 }); restart($('p1'), 'dx-anim-ink-up'); setTimeout(() => restart($('p2'), 'dx-anim-ink-down'), 140); },
+  type() {
+    const t = $('tape'); const rows = ['14:32:07.412 ▲ B RELNC 2,481.50 ×120', '14:32:07.455 ▼ S RELNC 2,481.00 ×40'];
+    t.innerHTML = ''; rows.forEach((r, i) => setTimeout(() => { const d = document.createElement('div'); d.textContent = r; d.className = 'dx-anim-typeset'; t.appendChild(d); }, i * 40));
+  },
+  pen() {
+    const s = $('pen'); const next = Math.max(2, Math.min(38, pts[pts.length - 1] + (Math.random() * 16 - 9))); pts = pts.slice(-9).concat(next);
+    const X = (i) => i * (280 / (pts.length - 1)); const head = pts.slice(0, -1).map((v, i) => (i ? 'L' : 'M') + X(i) + ' ' + v).join(' ');
+    const a = [X(pts.length - 2), pts[pts.length - 2]], b = [X(pts.length - 1), next], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    s.innerHTML = '<path d="' + head + '" fill="none" stroke="var(--ink)" stroke-width="1.5"/><line class="dx-anim-pen" x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="' + L + '" stroke-dashoffset="' + L + '"/>';
+  },
+  depth() { $('d1').style.width = (15 + Math.random() * 80) + '%'; $('d2').style.width = (15 + Math.random() * 80) + '%'; },
+  stamp() { $('stampwrap').innerHTML = '<span class="dx-anim-stamp" style="--stamp-angle:-6deg;display:inline-block;transform:rotate(-6deg);padding:4px 10px;border:3px solid var(--stamp);outline:1px solid var(--stamp);outline-offset:2px;border-radius:3px;color:var(--stamp);font:700 14px var(--font-ui);letter-spacing:.14em;text-transform:uppercase">Stop Press</span>'; },
+  pencil() { restart($('loop'), 'dx-anim-draw'); },
+};
+document.querySelectorAll('.row').forEach((r) => r.addEventListener('click', () => run[r.dataset.k]()));
+$('all').onclick = () => Object.values(run).forEach((f) => f());
+$('rm').onclick = (e) => { const on = e.target.getAttribute('aria-pressed') !== 'true'; e.target.setAttribute('aria-pressed', on); on ? $('root').setAttribute('data-motion', 'reduced') : $('root').removeAttribute('data-motion'); };
+$('ed').onclick = (e) => { const on = e.target.getAttribute('aria-pressed') !== 'true'; e.target.setAttribute('aria-pressed', on); $('root').setAttribute('data-edition', on ? 'night' : 'day'); };
+run.type(); run.pen(); run.stamp();
+</script>
+</body></html>

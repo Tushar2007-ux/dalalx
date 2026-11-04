@@ -1,0 +1,25 @@
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --rule-hair: 1px;           /* column rules, row separators (var(--rule)) */
+  --rule-bold: 2px;           /* panel heads (var(--rule-strong)) */
+  --rule-double: 4px;         /* masthead/dateline: 1px + 2px gap + 1px, border-style double */
+
+  --radius: 0;                /* newsprint has no rounded corners */
+  --radius-stamp: 3px;        /* rubber stamps only */
+
+  --row-book: 24px;
+  --row-tape: 22px;
+  --control-h: 36px;
+  --control-h-sm: 28px;
+  --gutter: 20px;             /* column gutter; rule sits in the middle */
+  --column-min: 240px;
+
+  --avatar-head-max: 47px;    /* <48px renders the tight head crop */
+}

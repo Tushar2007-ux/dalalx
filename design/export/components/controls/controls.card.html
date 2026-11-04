@@ -1,0 +1,43 @@
+<!-- @dsCard group="Components" viewport="700x1060" name="Buttons, toggles, inputs" subtitle="All button variants × states; order-type and side toggles; ₹ input" -->
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+<script src="../../ds-loader.js"></script>
+</head><body><div id="root"></div>
+<script type="text/babel">
+DalalX.ready.then(() => {
+const D = DalalX;
+const cap = { fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--ink-muted)' };
+const S = ({ l, children, style }) => <div style={{ display: 'grid', gap: 5, alignContent: 'start', ...style }}><span style={cap}>{l}</span>{children}</div>;
+const Both = ({ render }) => <div>{['day', 'night'].map((ed) => <D.Edition key={ed} edition={ed} style={{ padding: '14px 20px 18px' }}><div style={{ ...cap, fontFamily: 'var(--font-ui)', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>{ed === 'day' ? 'Day edition' : 'Night edition'}</div>{render(ed)}</D.Edition>)}</div>;
+
+const states = [['default', {}], ['hover', { state: 'hover' }], ['pressed', { state: 'active' }], ['focus', { state: 'focus' }], ['disabled', { disabled: true }], ['loading', { loading: true }]];
+function Card() { return <Both render={(ed) => (
+  <div style={{ display: 'grid', gap: 16 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '64px repeat(6, minmax(0,1fr))', gap: '8px 8px', alignItems: 'center' }}>
+      <span />{states.map(([l]) => <span key={l} style={cap}>{l}</span>)}
+      {[['primary', 'Place order'], ['secondary', 'Modify'], ['danger', 'Cancel all'], ['ghost', 'Details']].map(([v, t]) => (
+        <React.Fragment key={v}><span style={cap}>{v}</span>{states.map(([l, p]) => <D.Button key={l} variant={v} size="sm" {...p}>{t}</D.Button>)}</React.Fragment>))}
+    </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: 16 }}>
+      <S l="order type · Limit"><D.OrderTypeToggle value="limit" /></S>
+      <S l="hover Market · focus IOC"><D.OrderTypeToggle value="ioc" hoverValue="market" focusValue="ioc" /></S>
+      <S l="disabled (market closed)"><D.OrderTypeToggle value="limit" disabled showHint={false} /></S>
+      <S l="side · Buy"><D.SideToggle value="buy" /></S>
+      <S l="side · Sell, hover Buy"><D.SideToggle value="sell" hoverValue="buy" /></S>
+      <S l="disabled"><D.SideToggle value="buy" disabled /></S>
+      <S l="default"><D.PriceInput label="Limit price" prefix="₹" suffix="/ share" value="2,481.50" hint="Circuit band ₹2,205 – ₹2,695" /></S>
+      <S l="focus"><D.PriceInput label="Quantity" suffix="qty" value="120" state="focus" hint="Lot size 1" /></S>
+      <S l="error"><D.PriceInput label="Limit price" prefix="₹" suffix="/ share" value="2,900.00" error="Outside today's circuit band" /></S>
+      <S l="disabled"><D.PriceInput label="Limit price" prefix="₹" value="Market" disabled hint="Market orders take the best price" /></S>
+      <S l="read-only total"><D.PriceInput label="Order value" prefix="₹" value="2,97,780.00" readOnly /></S>
+      <S l="x-ray off / on"><D.XRayToggle /><D.XRayToggle on /></S>
+      <S l="primary full width"><div style={{ paddingTop: 18 }}><D.Button fullWidth kbd="↵">▲ Buy 120 RELNC</D.Button></div></S>
+    </div>
+  </div>)} />; }
+ReactDOM.createRoot(document.getElementById('root')).render(<Card />);
+});
+</script></body></html>

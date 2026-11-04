@@ -1,0 +1,146 @@
+<!-- @dsCard group="Trading Floor" viewport="1440x1500" name="Landing page" subtitle="Broadsheet front page: full masthead, lead headline, In this edition, matching explainer, imprint" -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>DalalX · Watch a stock market think</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+<script src="../../ds-loader.js"></script>
+</head><body><div id="root"></div>
+<script type="text/babel">
+DalalX.ready.then(() => {
+const D = DalalX;
+const lbl = { fontFamily: 'var(--font-ui)', fontSize: 'var(--text-label)', fontWeight: 700, letterSpacing: 'var(--tracking-label)', textTransform: 'uppercase' };
+const fmt = (n) => n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const SYMS = { RELIANCE: 2481.5, TCS: 4112.4, INFY: 1534.2, HDFCBANK: 1688.0, TATAMOTORS: 942.35 };
+const PREV = { RELIANCE: 2460.0, TCS: 4098.0, INFY: 1541.6, HDFCBANK: 1683.25, TATAMOTORS: 961.8 };
+
+function Jump({ href, children, page, big }) {
+  const [h, setH] = React.useState(false);
+  return (
+    <a href={href} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)} className="dx-focus"
+      style={{ display: 'inline-grid', gap: 2, textDecoration: 'none', color: 'var(--ink)', borderTop: '2px solid var(--rule-strong)', borderBottom: '1px solid var(--rule-strong)', padding: '8px 2px 7px', minWidth: 220 }}>
+      <span style={{ whiteSpace: 'nowrap', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: big ? 22 : 18, lineHeight: 1.1, textDecoration: h ? 'underline' : 'none', textUnderlineOffset: 4, textDecorationThickness: 1 }}>{children} →</span>
+      <span style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 13, color: 'var(--ink-muted)' }}>Continued on page {page}</span>
+    </a>
+  );
+}
+
+const EDITION = [
+  { title: 'Matching Engine', kick: 'Page 2', href: '../xray/index.html', sum: 'Every order meets the book in price-time priority. Watch each fill happen, step by step, in X-Ray.', art: 'book' },
+  { title: 'Bots With Personalities', kick: 'Page 4', href: '../correspondents/index.html', sum: 'A market maker, a momentum chaser, a panic seller, a whale and a spoofer, each trading in its own style.', art: 'whale' },
+  { title: 'The Circuit Breaker', kick: 'Page 3', href: '../trading-floor-v2/index.html?phase=halt', sum: 'Fall 10% in a minute and trading stops. It reopens with a call auction at a single price.', art: 'stamp' },
+  { title: 'Market Surveillance', kick: 'Page 6', href: '../surveillance/index.html', sum: 'The Inspector reads the tape for spoofing, layering, wash trades and pumps, and can suspend a trader.', art: 'inspector' },
+];
+const STEPS = [
+  ['You place an order', 'Buy or sell, at a limit price or at market. It arrives as a slip with a time stamp to the millisecond.'],
+  ['The engine checks the book', 'Best price first; at the same price, whoever came first. Each match prints as a fill.'],
+  ['The tape records it', 'Fills appear on the trade tape. Anything left over rests in the book until someone meets your price.'],
+];
+
+function Art({ kind }) {
+  if (kind === 'book') return (
+    <div style={{ display: 'grid', alignContent: 'center', height: 150, padding: '0 4px' }}>
+      {[['ask', 2482.5, 900, 0.5], ['ask', 2482.0, 650, 0.36], null, ['bid', 2481.5, 1200, 0.66], ['bid', 2481.0, 1800, 1]].map((r, i) => r ? (
+        <div key={i} style={{ display: 'grid', gridTemplateColumns: '14px minmax(0,1fr) minmax(0,1fr) 64px', columnGap: 10, alignItems: 'center', height: 24, borderBottom: '1px solid var(--rule)' }}>
+          <span aria-hidden="true" style={{ fontSize: 9, color: r[0] === 'bid' ? 'var(--buy)' : 'var(--sell)' }}>{r[0] === 'bid' ? '▲' : '▼'}</span>
+          <span className="dx-num" style={{ textAlign: 'right', fontSize: 13, fontWeight: 500, color: r[0] === 'bid' ? 'var(--buy)' : 'var(--sell)' }}>{fmt(r[1])}</span>
+          <span className="dx-num" style={{ textAlign: 'right', fontSize: 13 }}>{r[2].toLocaleString('en-IN')}</span>
+          <span aria-hidden="true" style={{ height: 12, position: 'relative', borderLeft: '1px solid var(--rule)' }}><span className="dx-hatch" style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: r[3] * 100 + '%', color: r[0] === 'bid' ? 'var(--buy)' : 'var(--sell)', borderRight: '1.5px solid currentColor' }} /></span>
+        </div>) : <div key={i} className="dx-num" style={{ fontSize: 10.5, color: 'var(--ink-muted)', textAlign: 'center', padding: '2px 0' }}>spread ₹0.50</div>)}
+    </div>
+  );
+  if (kind === 'stamp') return <div style={{ height: 150, display: 'grid', placeItems: 'center' }}><D.RubberStamp kind="stop-press" size="lg" angle={-8} sub="Circuit breaker" /></div>;
+  return <div style={{ height: 150, display: 'grid', placeItems: 'center' }}><D.Portrait bot={kind} size={150} /></div>;
+}
+
+function useTicker() {
+  const [px, setPx] = React.useState(SYMS);
+  React.useEffect(() => { const id = setInterval(() => setPx((p) => Object.fromEntries(Object.entries(p).map(([k, v]) => [k, k === 'TATAMOTORS' ? v : Math.round(v * (1 + (Math.random() - 0.49) * 0.0014) * 20) / 20]))), 1100); return () => clearInterval(id); }, []);
+  return px;
+}
+
+function App() {
+  const [ed, setEd] = React.useState(new URLSearchParams(location.search).get('edition') || 'day');
+  const px = useTicker();
+  const live = Object.keys(px).filter((k) => k !== 'TATAMOTORS');
+  const adv = live.filter((k) => px[k] > PREV[k]).length;
+  const edBtn = <button onClick={() => setEd(ed === 'day' ? 'night' : 'day')} className="dx-focus" style={{ appearance: 'none', background: 'none', border: '1px solid var(--rule-strong)', color: 'var(--ink)', font: 'inherit', padding: '1px 8px', cursor: 'pointer', borderRadius: 0 }}>{ed === 'day' ? 'Night edition →' : 'Day edition →'}</button>;
+  const colRule = { borderTop: '1px solid var(--rule)', paddingTop: 10 };
+  return (
+    <D.Edition edition={ed} style={{ minHeight: '100vh', padding: '0 32px 20px', boxSizing: 'border-box' }}>
+      <div style={{ maxWidth: 1320, margin: '0 auto' }}>
+        <D.Masthead editionName={ed === 'day' ? 'Day Edition' : 'Night Edition'} leftMeta="Vol. I · A simulated stock exchange" rightMeta={<span style={{ display: 'inline-flex', gap: 12, alignItems: 'center' }}>Free · paper money only {edBtn}</span>} status="live" style={{ marginBottom: 0 }} />
+
+        <h2 style={{ margin: '26px 0 18px', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'clamp(48px, 7.4vw, 108px)', lineHeight: 0.95, letterSpacing: '-0.02em', fontVariationSettings: '"opsz" 144', textAlign: 'center', textWrap: 'balance' }}>WATCH A STOCK MARKET THINK</h2>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px 32px', borderTop: '3px double var(--rule-strong)', paddingTop: 18 }}>
+          <div style={{ display: 'grid', gap: 18, alignContent: 'start', ...colRule }}>
+            <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 24, lineHeight: 1.3, textWrap: 'pretty' }}>A live exchange where every order is matched in plain sight — by bots with personalities, under the eye of a surveillance desk.</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+              <Jump href="../trading-floor-v2/index.html" page={2} big>Open the terminal</Jump>
+              <Jump href="../xray/index.html" page={3} big>See how matching works</Jump>
+            </div>
+            <a href="../xray/index.html?step=0" className="dx-focus" style={{ display: 'grid', gridTemplateColumns: 'auto minmax(0,1fr)', gap: 14, alignItems: 'center', textDecoration: 'none', color: 'var(--ink-inverse)', background: 'var(--ink)', padding: '12px 16px' }}>
+              <span aria-hidden="true" style={{ fontSize: 22 }}>▶</span>
+              <span><span style={{ ...lbl, display: 'block', opacity: 0.9 }}>Demo autopilot</span><span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 18 }}>Read today's story — a 3-minute guided tour</span></span>
+            </a>
+          </div>
+          <figure style={{ margin: 0, ...colRule }}>
+            <D.Portrait bot="munim" size={300} style={{ width: '100%', height: 'auto', aspectRatio: '1', maxWidth: 360 }} />
+            <figcaption style={{ marginTop: 8, fontSize: 12.5, color: 'var(--ink-muted)', borderTop: '1px solid var(--rule)', paddingTop: 6 }}><strong style={{ color: 'var(--ink)' }}>The Munim</strong>, the market maker, has quoted both sides of every stock since the opening bell.</figcaption>
+          </figure>
+          <div style={colRule}>
+            <D.SectionLabel meta="Live">Markets at a glance</D.SectionLabel>
+            {Object.keys(px).map((k) => (
+              <div key={k} style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto auto', gap: 12, alignItems: 'baseline', padding: '7px 0', borderBottom: '1px solid var(--rule)' }}>
+                <span style={{ fontWeight: 600, fontSize: 13, letterSpacing: '0.04em', color: k === 'TATAMOTORS' ? 'var(--ink-muted)' : 'var(--ink)' }}>{k}</span>
+                <D.PriceCell value={px[k]} halted={k === 'TATAMOTORS'} />
+                {k === 'TATAMOTORS' ? <span /> : <D.PriceCell value={px[k]} change={px[k] - PREV[k]} changePct={((px[k] - PREV[k]) / PREV[k]) * 100} changeOnly size="sm" />}
+              </div>
+            ))}
+            <D.BreadthBar advancing={adv} declining={live.length - adv} halted={1} style={{ marginTop: 12 }} />
+          </div>
+        </div>
+
+        <div style={{ marginTop: 34 }}>
+          <D.SectionLabel rule="double" meta="Four stories inside">In this edition</D.SectionLabel>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '28px 32px', marginTop: 12 }}>
+            {EDITION.map((e, i) => (
+              <article key={e.title} style={{ display: 'grid', gap: 8, alignContent: 'start', borderTop: '1px solid var(--rule)', paddingTop: 10 }}>
+                <Art kind={e.art} />
+                <span style={{ ...lbl, color: 'var(--accent)' }}>{e.kick}</span>
+                <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 23, lineHeight: 1.1 }}>{e.title}</h3>
+                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.45, textWrap: 'pretty' }}>{e.sum}</p>
+                <a href={e.href} style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14 }}>Continued on {e.kick.toLowerCase()} →</a>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 34 }}>
+          <D.SectionLabel rule="double" meta={<a href="../xray/index.html" style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>See it in X-Ray →</a>}>How your order gets matched</D.SectionLabel>
+          <ol style={{ listStyle: 'none', margin: '12px 0 0', padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 0 }}>
+            {STEPS.map(([t, b], i) => (
+              <li key={t} style={{ display: 'grid', gridTemplateColumns: 'auto minmax(0,1fr)', gap: '4px 12px', padding: '4px 20px 4px 0', position: 'relative' }}>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 40, lineHeight: 1, color: 'var(--pencil-text)', gridRow: 'span 2' }}>{['①', '②', '③'][i]}</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 19, lineHeight: 1.2, display: 'flex', alignItems: 'center', gap: 10 }}>{t}{i < 2 && <span aria-hidden="true" style={{ flex: 1, minWidth: 20, borderTop: '1.5px dotted var(--pencil)' }} />}</span>
+                <span style={{ fontSize: 14, lineHeight: 1.45 }}>{b}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <footer style={{ marginTop: 40, display: 'grid', gap: 8, textAlign: 'center', borderTop: '4px double var(--rule-strong)', paddingTop: 12 }}>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22 }}>DalalX</span>
+          <span style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14 }}>Printed with Java 21, Spring Boot and React · An IIIT Allahabad OOM project</span>
+        </footer>
+        <D.Folio page={1} section="Front Page" right="A simulated exchange · paper money only" style={{ marginTop: 14 }} />
+      </div>
+    </D.Edition>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+});
+</script></body></html>

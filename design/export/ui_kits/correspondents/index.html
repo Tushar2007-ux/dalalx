@@ -1,0 +1,191 @@
+<!-- @dsCard group="Trading Floor" viewport="1440x1200" name="Our Correspondents" subtitle="Bots & scenarios: byline cards with sliders, hire dialog, Today's Storylines" -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>DalalX · Our Correspondents</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../styles.css">
+<style>input[type=range]{accent-color:var(--ink);width:100%;height:18px;margin:0;cursor:pointer}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+<script src="../../ds-loader.js"></script>
+</head><body><div id="root"></div>
+<script type="text/babel">
+DalalX.ready.then(() => {
+const D = DalalX;
+const lbl = { fontFamily: 'var(--font-ui)', fontSize: 'var(--text-label)', fontWeight: 700, letterSpacing: 'var(--tracking-label)', textTransform: 'uppercase' };
+const link = { appearance: 'none', border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14, color: 'var(--ink)', textDecoration: 'underline', textUnderlineOffset: 3 };
+const SIZE = ['Small lots', 'Modest', 'Standard', 'Large', 'Block size'];
+const AGG = ['Patient', 'Measured', 'Active', 'Pushy', 'Relentless'];
+
+const START = [
+  { key: 'munim', title: 'Senior Market Correspondent', line: 'Quotes both sides all session and keeps the spread honest.', opm: 118, pnl: 4210, agg: 2, size: 2, on: true },
+  { key: 'momentum', title: 'Trends Correspondent', line: 'Buys what is rising. Sells what is falling. Rarely early.', opm: 46, pnl: 1960, agg: 3, size: 2, on: true },
+  { key: 'panic', title: 'Breaking News Desk', line: 'Sells first, reads the news later.', opm: 31, pnl: -8730, agg: 4, size: 3, on: true },
+  { key: 'whale', title: 'Chief Block-Trade Correspondent', line: 'Moves size slowly. The book notices anyway.', opm: 3, pnl: 22400, agg: 1, size: 4, on: false },
+  { key: 'spoofer', title: 'Special Correspondent (under review)', line: 'Shows orders it never means to fill.', opm: 212, pnl: 610, agg: 4, size: 3, on: true, flagged: true },
+];
+const STORIES = [
+  { id: 'crash', kicker: 'Markets', head: 'Flash Crash: RELIANCE loses 6% in ninety seconds', deck: 'Panic Seller dumps into a thin book; The Munim pulls quotes. Watch how fast liquidity disappears.', meta: '2 min · RELIANCE, TCS · High volatility', tone: 'down' },
+  { id: 'bubble', kicker: 'Speculation', head: 'Bubble: INFY runs 12% on nothing but momentum', deck: 'Momentum Chaser feeds on its own buying until the bid runs out. Can you get out at the top?', meta: '5 min · INFY · Rising, then sharp reversal', tone: 'up' },
+  { id: 'dump', kicker: 'Block trades', head: 'Whale Dump: 2 lakh HDFCBANK shares hit the market', deck: 'The Whale unloads in slices. Spot the pattern in the tape before the price gives way.', meta: '3 min · HDFCBANK · Persistent selling', tone: 'down' },
+  { id: 'calm', kicker: 'Quiet day', head: 'Calm Market: tight spreads, small moves, steady tape', deck: 'Every correspondent trades gently. A good session for practising limit orders.', meta: '10 min · All stocks · Low volatility', tone: null },
+];
+const inr = (n) => (n < 0 ? '−' : '') + '₹' + Math.abs(n).toLocaleString('en-IN');
+
+function Slider({ label, value, onChange, words, disabled }) {
+  const id = 'sl-' + label.replace(/\W/g, '') + Math.random().toString(36).slice(2, 5);
+  return (
+    <div style={{ display: 'grid', gap: 3 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <label htmlFor={id} style={{ ...lbl, fontSize: 10, color: 'var(--ink-muted)' }}>{label}</label>
+        <span style={{ fontSize: 12, fontWeight: 600 }}>{words[value]}</span>
+      </div>
+      <input id={id} type="range" min="0" max="4" step="1" value={value} disabled={disabled} onChange={(e) => onChange(+e.target.value)} aria-valuetext={words[value]} />
+      <div aria-hidden="true" style={{ display: 'flex', justifyContent: 'space-between', padding: '0 3px' }}>{words.map((w, i) => <span key={i} style={{ width: 1, height: 5, background: 'var(--rule-strong)', opacity: i === value ? 1 : 0.35 }} />)}</div>
+    </div>
+  );
+}
+
+function Card({ b, set, onRemove }) {
+  const bot = D.BOTS[b.key] || { name: b.name, role: b.title };
+  const [confirm, setConfirm] = React.useState(false);
+  const st = b.on ? { g: '●', t: 'Filing', c: 'var(--buy)' } : { g: '○', t: 'On leave', c: 'var(--ink-muted)' };
+  return (
+    <article style={{ display: 'grid', gap: 10, alignContent: 'start', borderTop: '2px solid var(--rule-strong)', paddingTop: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '120px minmax(0,1fr)', gap: 14, alignItems: 'start' }}>
+        <div style={{ position: 'relative', opacity: b.on ? 1 : 0.6 }}>
+          {D.BOTS[b.key] ? <D.Portrait bot={b.key} size={120} /> : <div style={{ width: 120, height: 120, display: 'grid', placeItems: 'center', border: '1px dashed var(--rule-strong)' }}><D.Monogram bot={b.mono} size={56} /></div>}
+          {b.flagged && <D.RubberStamp kind="under-investigation" size="sm" angle={-8} backed style={{ position: 'absolute', left: -4, bottom: 6 }} text="Under review" />}
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ ...lbl, color: 'var(--ink-muted)' }}>By</div>
+          <h3 style={{ margin: '1px 0 0', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 23, lineHeight: 1.1, fontVariationSettings: '"opsz" 48' }}>{bot.name}</h3>
+          <div style={{ ...lbl, fontWeight: 600, fontSize: 10.5, marginTop: 4, color: 'var(--ink-muted)' }}>{b.title}</div>
+          <p style={{ margin: '6px 0 0', fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14.5, lineHeight: 1.35, textWrap: 'pretty' }}>“{b.line}”</p>
+        </div>
+      </div>
+      <dl style={{ margin: 0, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: 10 }}>
+        {[['Status', <span style={{ color: st.c, fontFamily: 'var(--font-ui)', fontWeight: 600 }}><span aria-hidden="true">{st.g}</span> {st.t}</span>], ['Orders / min', b.on ? b.opm : '—'], ['P&L today', <span style={{ color: b.pnl >= 0 ? 'var(--buy)' : 'var(--sell)' }}>{b.pnl >= 0 ? '▲ ' : '▼ '}{inr(b.pnl)}</span>]].map(([k, v]) => (
+          <div key={k} style={{ borderTop: '1px solid var(--rule)', paddingTop: 4 }}>
+            <dt style={{ ...lbl, fontSize: 10, fontWeight: 600, color: 'var(--ink-muted)' }}>{k}</dt>
+            <dd className="dx-num" style={{ margin: 0, fontSize: 14, fontWeight: 500 }}>{v}</dd>
+          </div>
+        ))}
+      </dl>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 16 }}>
+        <Slider label="Aggressiveness" value={b.agg} words={AGG} onChange={(v) => set({ agg: v })} disabled={!b.on} />
+        <Slider label="Order size" value={b.size} words={SIZE} onChange={(v) => set({ size: v })} disabled={!b.on} />
+      </div>
+      <div style={{ display: 'flex', gap: 18, alignItems: 'baseline', borderTop: '1px solid var(--rule)', paddingTop: 8, minHeight: 22 }}>
+        {confirm ? <>
+          <span style={{ fontSize: 13 }}>Remove {bot.name} from the floor?</span>
+          <button style={{ ...link, color: 'var(--sell)', fontStyle: 'normal', fontFamily: 'var(--font-ui)', fontWeight: 600, fontSize: 13 }} onClick={onRemove}>Remove</button>
+          <button style={{ ...link, fontStyle: 'normal', fontFamily: 'var(--font-ui)', fontSize: 13 }} onClick={() => setConfirm(false)}>Keep</button>
+        </> : <>
+          <button style={link} className="dx-focus" onClick={() => set({ on: !b.on })}>{b.on ? 'Send on leave' : 'Back to filing'}</button>
+          <button style={{ ...link, color: 'var(--sell)' }} className="dx-focus" onClick={() => setConfirm(true)}>Remove</button>
+        </>}
+      </div>
+    </article>
+  );
+}
+
+function Story({ s, running, onRun }) {
+  return (
+    <article style={{ display: 'grid', gap: 8, alignContent: 'start', borderTop: '2px solid var(--rule-strong)', paddingTop: 10, position: 'relative' }}>
+      <span style={{ ...lbl, color: 'var(--accent)' }}>{s.kicker}</span>
+      <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1.12, fontVariationSettings: '"opsz" 72', textWrap: 'pretty' }}>
+        {s.tone && <span aria-hidden="true" style={{ color: s.tone === 'up' ? 'var(--buy)' : 'var(--sell)', fontSize: '0.65em', marginRight: 6, verticalAlign: '0.12em' }}>{s.tone === 'up' ? '▲' : '▼'}</span>}{s.head}
+      </h3>
+      <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14.5, lineHeight: 1.35, color: 'var(--ink-muted)', textWrap: 'pretty' }}>{s.deck}</p>
+      <span className="dx-num" style={{ fontSize: 11.5, color: 'var(--ink-muted)' }}>{s.meta}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
+        {running ? <D.Button variant="danger" size="sm" onClick={() => onRun(null)}>■ Stop this story</D.Button> : <D.Button variant="secondary" size="sm" onClick={() => onRun(s)}>Run this story →</D.Button>}
+      </div>
+      {running && <D.RubberStamp kind="stop-press" text="Now running" size="sm" angle={-6} animate slamKey={s.id} backed style={{ position: 'absolute', right: 0, top: 6 }} />}
+    </article>
+  );
+}
+
+function App() {
+  const q = new URLSearchParams(location.search);
+  const [ed, setEd] = React.useState(q.get('edition') || 'day');
+  const [bots, setBots] = React.useState(START);
+  const [hire, setHire] = React.useState(q.get('dialog') === 'hire');
+  const [draft, setDraft] = React.useState({ name: 'The Contrarian', style: 'contrarian', capital: '5,00,000' });
+  const [ask, setAsk] = React.useState(null);
+  const [running, setRunning] = React.useState(null);
+  const set = (i) => (patch) => setBots((bs) => bs.map((b, j) => (j === i ? { ...b, ...patch } : b)));
+  const filing = bots.filter((b) => b.on).length;
+  const doHire = () => {
+    const mono = draft.name.replace(/^The\s+/i, '').slice(0, 2).toUpperCase();
+    setBots((bs) => bs.concat({ key: 'new' + bs.length, name: draft.name, mono, title: 'Junior Correspondent', line: { contrarian: 'Buys the fear, sells the cheer.', noise: 'Trades at random to keep the tape busy.', mm: 'Quotes a second set of prices beside The Munim.', momentum: 'Follows the trend, a little later than everyone else.' }[draft.style], opm: 20, pnl: 0, agg: 2, size: 1, on: true }));
+    setHire(false);
+  };
+  const edBtn = <button onClick={() => setEd(ed === 'day' ? 'night' : 'day')} className="dx-focus" style={{ appearance: 'none', background: 'none', border: '1px solid var(--rule-strong)', color: 'var(--ink)', fontFamily: 'var(--font-ui)', fontSize: 12, fontWeight: 600, padding: '3px 9px', cursor: 'pointer', borderRadius: 0 }}>{ed === 'day' ? 'Night edition →' : 'Day edition →'}</button>;
+  return (
+    <D.Edition edition={ed} style={{ minHeight: '100vh', padding: '0 24px 18px', boxSizing: 'border-box' }}>
+      <D.Masthead strip editionName={ed === 'day' ? 'Day Edition' : 'Night Edition'} status="live" right={edBtn} />
+      {running
+        ? <D.HeadlineBanner kicker="Stop Press" state="breaking" tone={running.tone || 'neutral'} headline={'Now running: ' + running.head} time="14:32:07" />
+        : <D.HeadlineBanner kicker="Staff" headline="Our Correspondents: who is trading on the floor today" deck="Tune how hard each bot trades, send them on leave, or hire a new one." time="14:32:07" />}
+      <div style={{ marginTop: 18, display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 40, lineHeight: 1, letterSpacing: '-0.01em' }}>Our Correspondents</div>
+          <div className="dx-num" style={{ fontSize: 12, color: 'var(--ink-muted)', marginTop: 6 }}>{bots.length} on staff · {filing} filing · {bots.length - filing} on leave</div>
+        </div>
+        <D.Button variant="primary" onClick={() => setHire(true)}>+ Hire a correspondent</D.Button>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '26px 28px', marginTop: 14 }}>
+        {bots.map((b, i) => <Card key={b.key} b={b} set={set(i)} onRemove={() => setBots((bs) => bs.filter((_, j) => j !== i))} />)}
+        <button onClick={() => setHire(true)} className="dx-focus" style={{ appearance: 'none', borderRadius: 0, cursor: 'pointer', border: '1px dashed var(--rule-strong)', borderTop: '2px solid var(--rule-strong)', background: 'transparent', color: 'var(--ink)', minHeight: 260, display: 'grid', placeItems: 'center', textAlign: 'center', padding: 20 }}>
+          <span style={{ display: 'grid', gap: 6 }}>
+            <span style={{ ...lbl, color: 'var(--ink-muted)' }}>Situations vacant</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 24 }}>Hire a correspondent</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14, color: 'var(--ink-muted)' }}>Add a bot with its own trading style →</span>
+          </span>
+        </button>
+      </div>
+
+      <div style={{ marginTop: 34 }}>
+        <D.SectionLabel rule="double" meta={running ? <span style={{ color: 'var(--stamp)' }}>■ 1 story running</span> : 'One story at a time'}>Today’s Storylines</D.SectionLabel>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px 28px', marginTop: 10 }}>
+          {STORIES.map((s, i) => <div key={s.id} style={{ minWidth: 0 }}><Story s={s} running={running && running.id === s.id} onRun={(x) => (x ? setAsk(x) : setRunning(null))} /></div>)}
+        </div>
+      </div>
+      <D.Folio page={4} section="Correspondents" right="Bots are simulated · paper money only" style={{ marginTop: 26 }} />
+
+      <D.Modal open={hire} kicker="Situations vacant" title="Hire a correspondent" onClose={() => setHire(false)} width={500}
+        actions={<><D.Button variant="secondary" onClick={() => setHire(false)}>Cancel</D.Button><D.Button variant="primary" disabled={!draft.name.trim()} onClick={doHire}>{'Hire ' + (draft.name.trim() || 'correspondent')}</D.Button></>}>
+        <div style={{ display: 'grid', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '56px minmax(0,1fr)', gap: 12, alignItems: 'end' }}>
+            <D.Monogram bot={(draft.name.replace(/^The\s+/i, '').slice(0, 2) || '??').toUpperCase()} size={56} />
+            <D.PriceInput label="Byline name" value={draft.name} onChange={(v) => setDraft({ ...draft, name: v })} inputMode="text" align="left" hint="Shown on the tape as a stamp monogram" />
+          </div>
+          <div style={{ display: 'grid', gap: 5 }}>
+            <span style={lbl}>Trading style</span>
+            <D.OrderTypeToggle value={draft.style} onChange={(v) => setDraft({ ...draft, style: v })} options={[
+              { value: 'contrarian', label: 'Contrarian', hint: 'Buys the fear, sells the cheer.' },
+              { value: 'momentum', label: 'Momentum', hint: 'Follows the trend, a little later than everyone else.' },
+              { value: 'mm', label: 'Maker', hint: 'Quotes both sides and earns the spread.' },
+              { value: 'noise', label: 'Noise', hint: 'Trades at random to keep the tape busy.' }]} />
+          </div>
+          <D.PriceInput label="Starting capital" prefix="₹" suffix="paper" value={draft.capital} onChange={(v) => setDraft({ ...draft, capital: v })} hint="Between ₹1,00,000 and ₹50,00,000" />
+        </div>
+      </D.Modal>
+
+      <D.Modal open={!!ask} kicker="Run this story" title={ask ? ask.head.split(':')[0] + '?' : ''} onClose={() => setAsk(null)} width={480}
+        actions={<><D.Button variant="secondary" onClick={() => setAsk(null)}>Not now</D.Button><D.Button variant={ask && ask.tone === 'down' ? 'danger' : 'primary'} onClick={() => { setRunning(ask); setAsk(null); }}>Run the story</D.Button></>}>
+        {ask && <div style={{ display: 'grid', gap: 10 }}>
+          <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 15 }}>{ask.deck}</p>
+          <div className="dx-num" style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>{ask.meta}</div>
+          {running && <D.AlertNotice severity="warning" title={'This stops ' + running.head.split(':')[0]}>Only one storyline runs at a time.</D.AlertNotice>}
+          <p style={{ margin: 0, fontSize: 13 }}>Your open orders stay in the book. Prices will move quickly; check your limits.</p>
+        </div>}
+      </D.Modal>
+    </D.Edition>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+});
+</script></body></html>

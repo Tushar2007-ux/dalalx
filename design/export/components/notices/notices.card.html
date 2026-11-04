@@ -1,0 +1,41 @@
+<!-- @dsCard group="Components" viewport="700x1320" name="Notices, toasts, modal" subtitle="Clipped alert notices by severity, order slips, dialog" -->
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+<script src="../../ds-loader.js"></script>
+</head><body><div id="root"></div>
+<script type="text/babel">
+DalalX.ready.then(() => {
+const D = DalalX;
+const cap = { fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--ink-muted)' };
+const S = ({ l, children, style }) => <div style={{ display: 'grid', gap: 5, alignContent: 'start', ...style }}><span style={cap}>{l}</span>{children}</div>;
+const Both = ({ render }) => <div>{['day', 'night'].map((ed) => <D.Edition key={ed} edition={ed} style={{ padding: '14px 20px 18px' }}><div style={{ ...cap, fontFamily: 'var(--font-ui)', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>{ed === 'day' ? 'Day edition' : 'Night edition'}</div>{render(ed)}</D.Edition>)}</div>;
+
+function Card() { return <Both render={(ed) => (
+  <div style={{ display: 'grid', gap: 14 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <D.AlertNotice severity="info" title="Pre-open auction at 09:00" time="08:45:00">Orders entered now match at a single price.</D.AlertNotice>
+      <D.AlertNotice severity="notice" title="Tick size changes for TATAM" reference="EX-118" time="10:02:11">Minimum price step is now ₹0.05.</D.AlertNotice>
+      <D.AlertNotice severity="warning" title="Unusual cancel rate in TATAM" reference="SV-0411" time="14:31:40" onDismiss={() => {}}>94% of bids cancelled within 2s.</D.AlertNotice>
+      <D.AlertNotice severity="critical" title="The Spoofer suspended from TATAM" reference="SV-0412" time="14:32:07">All resting orders cancelled. Ruling at close.</D.AlertNotice>
+    </div>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      <D.Toast kind="filled" title="Bought 120 RELNC at ₹2,481.50" detail="#A-2291 · Limit · ₹2,97,780.00" time="14:32:07" onClose={() => {}} animate={false} style={{ width: '100%' }} />
+      <D.Toast kind="partial" title="Sold 300 of 500 TATAM" detail="#A-2292 · IOC · 200 cancelled" time="14:32:09" animate={false} style={{ width: '100%' }} />
+      <D.Toast kind="rejected" title="Order rejected: outside circuit band" detail="#A-2293 · Limit ₹2,900.00" time="14:32:12" action={{ label: 'Edit order', onClick: () => {} }} animate={false} style={{ width: '100%' }} />
+      <D.Toast kind="cancelled" title="Cancelled bid for 40 INFOS" detail="#A-2290" time="14:31:58" animate={false} style={{ width: '100%' }} />
+    </div>
+    <D.Modal inline kicker="Confirm order" title="Sell 500 RELNC at market?" onClose={() => {}} width={440}
+      actions={<><D.Button variant="secondary" size="sm">Keep editing</D.Button><D.Button variant="danger" size="sm">▼ Sell 500</D.Button></>}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '4px 16px' }}>
+        <span style={{ color: 'var(--ink-muted)' }}>Best bid</span><span className="dx-num">₹2,481.50</span>
+        <span style={{ color: 'var(--ink-muted)' }}>Estimated value</span><span className="dx-num">₹12,40,750.00</span>
+      </div>
+    </D.Modal>
+  </div>)} />; }
+ReactDOM.createRoot(document.getElementById('root')).render(<Card />);
+});
+</script></body></html>

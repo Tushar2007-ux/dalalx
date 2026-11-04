@@ -1,0 +1,38 @@
+<!-- @dsCard group="Components" viewport="700x1280" name="Section label, ruled panel, stock tabs" subtitle="Labels on rules, column panel states, newspaper section tabs" -->
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+<script src="../../ds-loader.js"></script>
+</head><body><div id="root"></div>
+<script type="text/babel">
+DalalX.ready.then(() => {
+const D = DalalX;
+const cap = { fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--ink-muted)' };
+const S = ({ l, children, style }) => <div style={{ display: 'grid', gap: 5, alignContent: 'start', ...style }}><span style={cap}>{l}</span>{children}</div>;
+const Both = ({ render }) => <div>{['day', 'night'].map((ed) => <D.Edition key={ed} edition={ed} style={{ padding: '14px 20px 18px' }}><div style={{ ...cap, fontFamily: 'var(--font-ui)', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>{ed === 'day' ? 'Day edition' : 'Night edition'}</div>{render(ed)}</D.Edition>)}</div>;
+
+const tabs = [{ symbol: 'RELIANCE', change: 1.24 }, { symbol: 'TATAMOTORS', change: -2.06, halted: true }, { symbol: 'INFY', change: 0 }, { symbol: 'HDFCBANK', change: 0.31 }, { symbol: 'TCS', change: 0.25 }];
+function Card() { const [v, setV] = React.useState('RELIANCE'); return <Both render={(ed) => (
+  <div style={{ display: 'grid', gap: 14 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: 20 }}>
+      <S l="rule=bold"><D.SectionLabel meta="Live">Markets</D.SectionLabel></S>
+      <S l="rule=hair · count"><D.SectionLabel rule="hair" count={12}>Trade Tape</D.SectionLabel></S>
+      <S l="rule=double"><D.SectionLabel rule="double">Surveillance</D.SectionLabel></S>
+    </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 20 }}>
+      <div><D.SectionLabel meta="Newest first">The Wire</D.SectionLabel><D.TheWire items={[{ time: '14:32', headline: 'The Spoofer under review for layered bids', tone: 'alert' }, { time: '14:18', headline: 'The Whale buys three blocks of RELIANCE', tone: 'up' }, { time: '13:20', headline: 'INFY drifts lower', tone: 'down' }]} /></div>
+      <S l="folio"><D.Folio page={1} section="Markets" right="Paper money only" /></S>
+    </div>
+    <S l="active RELIANCE · hover TCS · focus INFY · halted TATAMOTORS"><D.StockTabs tabs={tabs} value={v} onChange={setV} hoverSymbol="TCS" focusSymbol="INFY" /></S>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))' }}>
+      <D.RuledPanel label="Order Book" state="loading" columnRule="right" style={{ paddingRight: 10 }} />
+      <D.RuledPanel label="Your Orders" state="empty" emptyText="No open orders this session." columnRule="right" style={{ padding: '0 10px' }} />
+      <D.RuledPanel label="Trade Tape" state="stale" meta="6s ago" style={{ paddingLeft: 10 }}><div className="dx-num" style={{ fontSize: 13 }}>14:32:01 RELIANCE 2,481.50</div></D.RuledPanel>
+    </div>
+  </div>)} />; }
+ReactDOM.createRoot(document.getElementById('root')).render(<Card />);
+});
+</script></body></html>

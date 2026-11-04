@@ -1,0 +1,37 @@
+<!-- @dsCard group="Components" viewport="700x620" name="Stamps & red pencil" subtitle="STOP PRESS, UNDER INVESTIGATION, FILLED; pencil circle and margin note" -->
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+<script src="../../ds-loader.js"></script>
+</head><body><div id="root"></div>
+<script type="text/babel">
+DalalX.ready.then(() => {
+const D = DalalX;
+const cap = { fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--ink-muted)' };
+const S = ({ l, children, style }) => <div style={{ display: 'grid', gap: 5, alignContent: 'start', ...style }}><span style={cap}>{l}</span>{children}</div>;
+const Both = ({ render }) => <div>{['day', 'night'].map((ed) => <D.Edition key={ed} edition={ed} style={{ padding: '14px 20px 18px' }}><div style={{ ...cap, fontFamily: 'var(--font-ui)', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>{ed === 'day' ? 'Day edition' : 'Night edition'}</div>{render(ed)}</D.Edition>)}</div>;
+
+function Card() { const [k, setK] = React.useState(0); React.useEffect(() => { const id = setInterval(() => setK((x) => x + 1), 4000); return () => clearInterval(id); }, []); return <Both render={(ed) => (
+  <div style={{ display: 'grid', gap: 18 }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 28, alignItems: 'center' }}>
+      <D.RubberStamp kind="stop-press" animate slamKey={k} />
+      <D.RubberStamp kind="under-investigation" sub="Ref. SV-0412" angle={-4} animate slamKey={k} />
+      <D.RubberStamp kind="filled" sub="120 @ 2,481.50" angle={5} animate slamKey={k} />
+      <D.RubberStamp kind="filled" size="sm" angle={-3} />
+      <D.RubberStamp kind="stop-press" size="lg" angle={-7} />
+    </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 210px', gap: 20, alignItems: 'start' }}>
+      <div className="dx-num" style={{ fontSize: 13, display: 'grid', gap: 6 }}>
+        <div>14:32:01.002  TATAM  ▼ S  912.35  ×300</div>
+        <div>14:32:01.240  TATAM  bid  912.30  ×<D.RedPencilCircle drawKey={k} label="Flagged by surveillance">48,000</D.RedPencilCircle>  cxl 0.4s</div>
+        <div>14:32:01.655  TATAM  bid  912.25  ×<D.RedPencilCircle drawKey={k} draw={false}>52,000</D.RedPencilCircle>  cxl 0.3s</div>
+      </div>
+      <D.MarginNote author="Inspector" time="14:32">Nine of ten bids cancelled inside two seconds. Layering?</D.MarginNote>
+    </div>
+  </div>)} />; }
+ReactDOM.createRoot(document.getElementById('root')).render(<Card />);
+});
+</script></body></html>

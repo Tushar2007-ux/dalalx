@@ -1,0 +1,27 @@
+<!-- @dsCard group="Components" viewport="700x1060" name="Masthead & headline" subtitle="Nameplate, dateline, market status; live headline banner states" -->
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+<script src="../../ds-loader.js"></script>
+</head><body><div id="root"></div>
+<script type="text/babel">
+DalalX.ready.then(() => {
+const D = DalalX;
+const cap = { fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--ink-muted)' };
+const S = ({ l, children, style }) => <div style={{ display: 'grid', gap: 5, alignContent: 'start', ...style }}><span style={cap}>{l}</span>{children}</div>;
+const Both = ({ render }) => <div>{['day', 'night'].map((ed) => <D.Edition key={ed} edition={ed} style={{ padding: '14px 20px 18px' }}><div style={{ ...cap, fontFamily: 'var(--font-ui)', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 10 }}>{ed === 'day' ? 'Day edition' : 'Night edition'}</div>{render(ed)}</D.Edition>)}</div>;
+
+function Card() { return <Both render={(ed) => (
+  <div style={{ display: 'grid', gap: 14 }}>
+    <D.Masthead editionName={ed === 'day' ? 'Day Edition' : 'Night Edition'} />
+    <D.HeadlineBanner kicker="Latest" tone="up" headline="The Whale lifts RELNC through ₹2,480 on a 40,000-share block" deck="The Munim widened his quotes twice before the print." time="14:31:52" />
+    <D.HeadlineBanner kicker="Stop Press" state="breaking" tone="down" headline="RELNC slides 4% as Panic Seller dumps 12,000 shares" time="14:32:07" />
+    <D.HeadlineBanner kicker="Latest" state="stale" headline="Surveillance desk reviewing layered orders in TATAM" time="4 min ago" />
+    <S l="compact · status=halted"><D.Masthead compact status="halted" editionName={ed === 'day' ? 'Day Edition' : 'Night Edition'} right={<span className="dx-num" style={{ fontSize: 12 }}>₹1,00,000.00</span>} /></S>
+  </div>)} />; }
+ReactDOM.createRoot(document.getElementById('root')).render(<Card />);
+});
+</script></body></html>

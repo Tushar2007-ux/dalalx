@@ -1,0 +1,205 @@
+<!-- @dsCard group="Trading Floor" viewport="1440x1200" name="Investigations desk" subtitle="Market surveillance: alert feed, case file with evidence timeline, suspend, rules of the desk" -->
+<!doctype html>
+<html><head><meta charset="utf-8"><title>DalalX · Investigations</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin></script>
+<script src="../../ds-loader.js"></script>
+</head><body><div id="root"></div>
+<script type="text/babel">
+DalalX.ready.then(() => {
+const D = DalalX;
+const lbl = { fontFamily: 'var(--font-ui)', fontSize: 'var(--text-label)', fontWeight: 700, letterSpacing: 'var(--tracking-label)', textTransform: 'uppercase' };
+const fmt = (n) => n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// Deterministic evidence: t in seconds before now (−30..0), price, qty, side, outcome, end time.
+function evidence(kind) {
+  const o = []; let s = 7;
+  const rnd = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
+  if (kind === 'spoof' || kind === 'layer') {
+    for (let i = 0; i < 10; i++) { const t = -28 + i * 2.8 + rnd() * 0.6; o.push({ t, end: t + 0.3 + rnd() * 0.2, price: 2480.0 + (kind === 'layer' ? (i % 3) * 0.25 : 0.5), qty: 9800 + Math.round(rnd() * 14) * 100, side: 'bid', out: 'cancelled', flag: true }); }
+    [[-22.4, 2482.5, 60], [-13.1, 2482.75, 80], [-4.2, 2483.0, 40]].forEach(([t, p, q]) => o.push({ t, end: t + 0.6, price: p, qty: q, side: 'ask', out: 'filled' }));
+    for (let i = 0; i < 4; i++) { const t = -26 + i * 6.5; o.push({ t, end: t + 3, price: 2481.75 + i * 0.25, qty: 20 + i * 10, side: 'ask', out: 'cancelled' }); }
+  } else if (kind === 'pump') {
+    for (let i = 0; i < 12; i++) { const t = -29 + i * 2.4; o.push({ t, end: t + 0.2, price: 1528 + i * 0.75, qty: 400 + Math.round(rnd() * 6) * 100, side: 'bid', out: 'filled', flag: i > 6 }); }
+  } else {
+    for (let i = 0; i < 6; i++) { const t = -27 + i * 4.6; const p = 1688 + (i % 2) * 0.25; o.push({ t, end: t + 0.15, price: p, qty: 5000, side: 'bid', out: 'filled', flag: true }); o.push({ t: t + 0.02, end: t + 0.15, price: p, qty: 5000, side: 'ask', out: 'filled', flag: true }); }
+  }
+  return o.sort((a, b) => a.t - b.t);
+}
+
+const CASES = [
+  { id: 'SV-0412', sev: 'critical', rule: 'Spoofing', bot: 'spoofer', sym: 'RELIANCE', time: '14:32:07', kind: 'spoof', ev: '10 bids ×9,800–11,200 · 94% cancelled · avg 0.38s', figs: [['Cancel ratio', '94%'], ['Order value placed', '₹2.47 Cr'], ['Avg time to cancel', '0.38s'], ['Filled', '3 of 17']], notes: ['Ten large bids, none meant to fill.', 'Sells into the price the bids pushed up.'] },
+  { id: 'SV-0411', sev: 'warning', rule: 'Layering', bot: 'spoofer', sym: 'RELIANCE', time: '14:31:40', kind: 'layer', ev: '3 price levels stacked · cancelled < 0.5s · 9 times', figs: [['Cancel ratio', '88%'], ['Order value placed', '₹2.44 Cr'], ['Avg time to cancel', '0.41s'], ['Levels stacked', '3']], notes: ['Same pattern on three ticks.', 'Stack lifted before each sale.'] },
+  { id: 'SV-0409', sev: 'warning', rule: 'Pump', bot: 'momentum', sym: 'INFY', time: '14:24:12', kind: 'pump', ev: '+0.54% in 30s · 71% of buying from one trader', figs: [['Share of buying', '71%'], ['Price move', '+₹8.25'], ['Orders', '12'], ['All filled', '12 of 12']], notes: ['Buys at every higher price.', 'Nobody else is buying.'] },
+  { id: 'SV-0406', sev: 'notice', rule: 'Wash Trade', bot: 'whale', sym: 'HDFCBANK', time: '14:02:55', kind: 'wash', ev: '6 matched pairs ×5,000 · same owner both sides', figs: [['Matched pairs', '6'], ['Volume created', '30,000'], ['Net position change', '0'], ['Time apart', '0.02s']], notes: ['Buys from itself.', 'Volume with no change of owner.'] },
+];
+const RULES0 = [
+  { id: 'spoof', name: 'Spoofing', on: true, th: 'Cancel ratio > 85% in 30s on orders ≥ 5,000' },
+  { id: 'layer', name: 'Layering', on: true, th: '≥ 3 stacked levels within 5 ticks, cancelled < 1s' },
+  { id: 'wash', name: 'Wash Trade', on: true, th: 'Same owner on both sides within 0.5s' },
+  { id: 'pump', name: 'Pump', on: true, th: 'Price +0.5% in 30s with > 60% of buying from one trader' },
+  { id: 'ramp', name: 'Closing Ramp', on: false, th: 'Price +1% in final 5 min on < 10 orders' },
+];
+
+function Switch({ on, onChange, label }) {
+  return (
+    <button role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(!on)} className="dx-focus"
+      style={{ appearance: 'none', borderRadius: 0, cursor: 'pointer', display: 'grid', gridTemplateColumns: '1fr 1fr', border: '1px solid var(--rule-strong)', padding: 0, height: 24, width: 74, background: 'transparent', fontFamily: 'var(--font-ui)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em' }}>
+      <span style={{ display: 'grid', placeItems: 'center', background: on ? 'var(--ink)' : 'transparent', color: on ? 'var(--ink-inverse)' : 'var(--ink-muted)' }}>ON</span>
+      <span style={{ display: 'grid', placeItems: 'center', background: on ? 'transparent' : 'var(--ink)', color: on ? 'var(--ink-muted)' : 'var(--ink-inverse)' }}>OFF</span>
+    </button>
+  );
+}
+
+function Timeline({ c }) {
+  const o = React.useMemo(() => evidence(c.kind), [c.kind]);
+  const W = 760, H = 330, L = 8, R = 72, T = 56, B = 30;
+  const noteX = (tx) => Math.max(L, Math.min(tx - 110, W - R - 300));
+  const lo = Math.min(...o.map((x) => x.price)) - 0.5, hi = Math.max(...o.map((x) => x.price)) + 0.5;
+  const X = (t) => L + ((t + 30) / 30) * (W - L - R), Y = (p) => T + (1 - (p - lo) / (hi - lo)) * (H - T - B);
+  const flagged = o.filter((x) => x.flag);
+  const fx0 = X(Math.min(...flagged.map((x) => x.t))) - 10, fx1 = X(Math.max(...flagged.map((x) => x.end))) + 10;
+  const fy = flagged.map((x) => Y(x.price)), fy0 = Math.min(...fy) - 14, fy1 = Math.max(...fy) + 14;
+  const cx = (fx0 + fx1) / 2, cy = (fy0 + fy1) / 2, rx = (fx1 - fx0) / 2, ry = (fy1 - fy0) / 2;
+  const loop = `M ${cx - rx * 0.9} ${cy + ry * 0.5} C ${cx - rx * 1.05} ${cy - ry * 1.2}, ${cx + rx * 0.9} ${cy - ry * 1.25}, ${cx + rx * 1.02} ${cy - ry * 0.1} C ${cx + rx * 1.1} ${cy + ry * 1.1}, ${cx - rx * 0.7} ${cy + ry * 1.3}, ${cx - rx * 1.0} ${cy + ry * 0.2} C ${cx - rx * 1.04} ${cy - ry * 0.4}, ${cx - rx * 0.7} ${cy - ry * 0.8}, ${cx - rx * 0.4} ${cy - ry * 0.95}`;
+  const ticks = Array.from(new Set(o.map((x) => x.price))).sort((a, b) => a - b);
+  const every = Math.ceil(ticks.length / 6);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={'Evidence timeline for ' + c.id + ': ' + o.length + ' orders in the last 30 seconds'} style={{ width: '100%', height: 'auto', display: 'block', overflow: 'visible' }}>
+      {ticks.filter((_, i) => i % every === 0).map((p) => <g key={p}><line x1={L} x2={W - R} y1={Y(p)} y2={Y(p)} stroke="var(--rule)" /><text x={W - R + 6} y={Y(p) + 3.5} fontFamily="var(--font-mono)" fontSize="10.5" fill="var(--ink-muted)">{fmt(p)}</text></g>)}
+      {[-30, -25, -20, -15, -10, -5, 0].map((t) => <g key={t}><line x1={X(t)} x2={X(t)} y1={T} y2={H - B} stroke="var(--rule)" strokeDasharray="1 3" /><text x={X(t)} y={H - B + 16} textAnchor="middle" fontFamily="var(--font-mono)" fontSize="10.5" fill={t === 0 ? 'var(--ink)' : 'var(--ink-muted)'} fontWeight={t === 0 ? 600 : 400}>{t === 0 ? c.time : t + 's'}</text></g>)}
+      <line x1={L} x2={W - R} y1={H - B} y2={H - B} stroke="var(--rule-strong)" />
+      {o.map((x, i) => {
+        const col = x.side === 'bid' ? 'var(--buy)' : 'var(--sell)', y = Y(x.price), x0 = X(x.t), x1 = Math.max(X(x.end), x0 + 3);
+        const th = Math.max(1.5, Math.min(6, x.qty / 2000));
+        return (
+          <g key={i}>
+            <line x1={x0} x2={x1} y1={y} y2={y} stroke={col} strokeWidth={th} strokeLinecap="butt" />
+            <rect x={x0 - 3} y={y - 3} width="6" height="6" fill="var(--paper)" stroke={col} strokeWidth="1.2" />
+            {x.out === 'cancelled' ? <path d={`M ${x1 - 3} ${y - 3} l 6 6 M ${x1 + 3} ${y - 3} l -6 6`} stroke={col} strokeWidth="1.5" /> : <circle cx={x1} cy={y} r="3.2" fill={col} />}
+          </g>
+        );
+      })}
+      <path key={c.id} d={loop} pathLength="100" fill="none" stroke="var(--pencil)" strokeWidth="2" strokeLinecap="round" strokeDasharray="100" strokeDashoffset="100" className="dx-anim-draw" />
+      <line x1={cx} y1={cy - ry * 0.98} x2={Math.min(Math.max(cx, noteX(cx) + 12), W - R - 8)} y2={18} stroke="var(--pencil)" strokeWidth="1.2" strokeDasharray="2 2" />
+      <text x={noteX(cx) + 16} y={16} fontFamily="var(--font-display)" fontStyle="italic" fontSize="14" fill="var(--pencil-text)">① {c.notes[0]}</text>
+      {(() => { const f = c.kind === 'spoof' || c.kind === 'layer' ? o.find((x) => x.out === 'filled' && x.side === 'ask') : flagged[flagged.length - 1]; return f && <g><circle cx={X(f.end)} cy={Y(f.price)} r="11" fill="none" stroke="var(--pencil)" strokeWidth="1.6" pathLength="100" strokeDasharray="100" strokeDashoffset="100" className="dx-anim-draw" /><line x1={X(f.end)} y1={Y(f.price) - 11} x2={Math.min(Math.max(X(f.end), noteX(X(f.end)) + 12), W - R - 8)} y2={40} stroke="var(--pencil)" strokeWidth="1.2" strokeDasharray="2 2" /><text x={noteX(X(f.end)) + 16} y={38} fontFamily="var(--font-display)" fontStyle="italic" fontSize="14" fill="var(--pencil-text)">② {c.notes[1]}</text></g>; })()}
+    </svg>
+  );
+}
+
+function Legend() {
+  const it = (sym, t) => <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>{sym}<span>{t}</span></span>;
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, fontSize: 12, color: 'var(--ink-muted)' }}>
+      {it(<svg width="10" height="10"><rect x="2" y="2" width="6" height="6" fill="none" stroke="var(--ink)" /></svg>, 'Placed')}
+      {it(<span style={{ color: 'var(--ink)' }}>✕</span>, 'Cancelled')}
+      {it(<svg width="10" height="10"><circle cx="5" cy="5" r="3.2" fill="var(--ink)" /></svg>, 'Filled')}
+      {it(<span style={{ color: 'var(--buy)', fontWeight: 600 }}>▲ Bid</span>, '')}{it(<span style={{ color: 'var(--sell)', fontWeight: 600 }}>▼ Ask</span>, '')}
+      {it(<span style={{ width: 22, borderTop: '5px solid var(--ink)' }} />, 'Line thickness = size, length = time alive')}
+    </div>
+  );
+}
+
+function App() {
+  const q = new URLSearchParams(location.search);
+  const [ed, setEd] = React.useState(q.get('edition') || 'day');
+  const [sel, setSel] = React.useState(0);
+  const [status, setStatus] = React.useState(() => ({ 'SV-0412': q.get('state') === 'suspended' ? 'suspended' : 'open' }));
+  const [ask, setAsk] = React.useState(false);
+  const [rules, setRules] = React.useState(RULES0);
+  const c = CASES[sel];
+  const st = status[c.id] || 'open';
+  const name = D.BOTS[c.bot].name;
+  const openCount = CASES.filter((x) => (status[x.id] || 'open') === 'open').length;
+  const edBtn = <button onClick={() => setEd(ed === 'day' ? 'night' : 'day')} className="dx-focus" style={{ appearance: 'none', background: 'none', border: '1px solid var(--rule-strong)', color: 'var(--ink)', fontFamily: 'var(--font-ui)', fontSize: 12, fontWeight: 600, padding: '3px 9px', cursor: 'pointer', borderRadius: 0 }}>{ed === 'day' ? 'Night edition →' : 'Day edition →'}</button>;
+  return (
+    <D.Edition edition={ed} style={{ minHeight: '100vh', padding: '0 24px 18px', boxSizing: 'border-box' }}>
+      <D.Masthead strip editionName={ed === 'day' ? 'Day Edition' : 'Night Edition'} status="live" right={edBtn} />
+      {status['SV-0412'] === 'suspended'
+        ? <D.HeadlineBanner kicker="Stop Press" state="breaking" tone="down" headline="The Spoofer suspended from RELIANCE; all resting orders cancelled" time="14:33:12" />
+        : <D.HeadlineBanner kicker="Investigations" headline="Surveillance desk opens a spoofing case against The Spoofer" deck="Ten large RELIANCE bids placed and pulled in under half a second each." time="14:32:07" />}
+      <header style={{ display: 'flex', alignItems: 'center', gap: 16, margin: '16px 0 12px' }}>
+        <D.Portrait bot="inspector" size={76} />
+        <div>
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 40, lineHeight: 1, letterSpacing: '-0.01em' }}>Investigations</div>
+          <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 15, marginTop: 4 }}>Filed by the Surveillance Inspector · <span className="dx-num" style={{ fontStyle: 'normal', fontSize: 13 }}>{openCount}</span> open cases</div>
+        </div>
+      </header>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', rowGap: 24 }}>
+        <section style={{ flex: '1 1 320px', minWidth: 0, paddingRight: 14 }}>
+          <D.SectionLabel count={CASES.length} meta="Newest first">Alert Feed</D.SectionLabel>
+          <div style={{ display: 'grid', gap: 10, marginTop: 6 }}>
+            {CASES.map((x, i) => {
+              const s = status[x.id] || 'open';
+              return (
+                <div key={x.id} role="button" tabIndex={0} aria-pressed={i === sel} onClick={() => setSel(i)} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setSel(i)} className="dx-focus"
+                  style={{ cursor: 'pointer', outline: i === sel ? '2px solid var(--rule-strong)' : 'none', outlineOffset: 3, opacity: s === 'dismissed' ? 0.6 : 1 }}>
+                  <D.AlertNotice severity={s === 'open' ? x.sev : 'info'} title={x.rule + ' · ' + x.sym} reference={x.id + (s !== 'open' ? ' · ' + (s === 'suspended' ? 'Suspended' : 'Dismissed') : '')} time={x.time}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                      <D.Monogram bot={x.bot} size={24} />
+                      <span style={{ fontWeight: 600 }}>{D.BOTS[x.bot].name}</span>
+                    </div>
+                    <div className="dx-num" style={{ fontSize: 12, marginTop: 5 }}>{x.ev}</div>
+                  </D.AlertNotice>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section style={{ flex: '2.4 1 640px', minWidth: 0, borderLeft: '1px solid var(--rule)', padding: '0 14px', position: 'relative' }}>
+          <D.SectionLabel meta={c.id + ' · last 30 seconds'}>Case File</D.SectionLabel>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 16, margin: '6px 0 10px' }}>
+            <div>
+              <div style={{ ...lbl, color: st === 'open' ? 'var(--stamp)' : 'var(--ink-muted)' }}>{c.rule} · {c.sym}</div>
+              <h2 style={{ margin: '3px 0 0', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1.1 }}>{name}: {c.ev.split(' · ')[0]}</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}><D.Monogram bot={c.bot} size={28} /><span style={{ fontSize: 13 }}>{D.BOTS[c.bot].role} · trader since session 1</span></div>
+            </div>
+            <D.RubberStamp key={c.id + st} kind="under-investigation" text={st === 'suspended' ? 'Suspended' : st === 'dismissed' ? 'Dismissed' : 'Under Investigation'} color={st === 'dismissed' ? 'var(--ink-muted)' : undefined} sub={c.id} size="md" angle={-6} animate backed />
+          </div>
+          <dl style={{ margin: '0 0 12px', display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: 12 }}>
+            {c.figs.map(([k, v]) => <div key={k} style={{ borderTop: '1px solid var(--rule-strong)', paddingTop: 5 }}><dt style={{ ...lbl, fontSize: 10, fontWeight: 600, color: 'var(--ink-muted)' }}>{k}</dt><dd className="dx-num" style={{ margin: '2px 0 0', fontSize: 24, fontWeight: 500 }}>{v}</dd></div>)}
+          </dl>
+          <div style={{ border: '1px solid var(--rule)', background: 'var(--surface)', padding: '10px 12px 8px' }}><Timeline c={c} /></div>
+          <div style={{ marginTop: 8 }}><Legend /></div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: 16, alignItems: 'end', marginTop: 14, borderTop: '3px double var(--rule-strong)', paddingTop: 10 }}>
+            <D.MarginNote author="Inspector" time={c.time.slice(0, 5)} side="below">
+              {st === 'suspended' ? 'Suspended. Resting orders cancelled; ruling at the close.' : st === 'dismissed' ? 'Dismissed after review. No further action.' : c.notes[0] + ' ' + c.notes[1]}
+            </D.MarginNote>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {st === 'open'
+                ? <><D.Button variant="secondary" onClick={() => setStatus({ ...status, [c.id]: 'dismissed' })}>Dismiss</D.Button><D.Button variant="danger" onClick={() => setAsk(true)}>■ Suspend trader</D.Button></>
+                : <D.Button variant="ghost" onClick={() => setStatus({ ...status, [c.id]: 'open' })}>{st === 'suspended' ? 'Reinstate trader' : 'Reopen case'}</D.Button>}
+            </div>
+          </div>
+        </section>
+
+        <aside style={{ flex: '1 1 290px', minWidth: 0, borderLeft: '1px solid var(--rule)', paddingLeft: 14 }}>
+          <D.SectionLabel meta={rules.filter((r) => r.on).length + ' of ' + rules.length + ' on'}>Rules of the Desk</D.SectionLabel>
+          {rules.map((r, i) => (
+            <div key={r.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: '3px 12px', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--rule)' }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 17, color: r.on ? 'var(--ink)' : 'var(--ink-muted)' }}>{r.name}</span>
+              <Switch on={r.on} label={r.name + ' rule'} onChange={(v) => setRules(rules.map((x, j) => (j === i ? { ...x, on: v } : x)))} />
+              <span className="dx-num" style={{ gridColumn: '1 / -1', fontSize: 12, color: 'var(--ink-muted)', textDecoration: r.on ? 'none' : 'line-through' }}>{r.th}</span>
+            </div>
+          ))}
+          <p style={{ margin: '10px 0 0', fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 13.5, color: 'var(--ink-muted)' }}>Switching a rule off stops new alerts; open cases stay on file.</p>
+        </aside>
+      </div>
+      <D.Folio page={6} section="Investigations" right="Simulated surveillance · no real traders" style={{ marginTop: 24 }} />
+
+      <D.Modal open={ask} kicker={'Case ' + c.id} title={'Suspend ' + name + ' from ' + c.sym + '?'} onClose={() => setAsk(false)} width={480}
+        actions={<><D.Button variant="secondary" onClick={() => setAsk(false)}>Keep investigating</D.Button><D.Button variant="danger" onClick={() => { setStatus({ ...status, [c.id]: 'suspended' }); setAsk(false); }}>■ Suspend</D.Button></>}>
+        <p style={{ margin: 0 }}>All of {name}’s resting orders in {c.sym} are cancelled and it cannot place new ones until the ruling at the close.</p>
+      </D.Modal>
+    </D.Edition>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+});
+</script></body></html>
