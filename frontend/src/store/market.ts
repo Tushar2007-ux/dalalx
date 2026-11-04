@@ -4,7 +4,8 @@ import {
 } from '../lib/market'
 import { formatPaise, formatQty } from '../lib/format'
 import type {
-  BookSnapshot, Candle, Interval, OrderActivity, OrderView, SymbolInfo, Trade, WireHeadline,
+  BookSnapshot, Candle, Interval, MarketStatus, MarketStatusChanged, OrderActivity, OrderView, SymbolInfo, Trade,
+  WireHeadline,
 } from '../lib/types'
 
 /**
@@ -47,6 +48,8 @@ export interface MarketState {
   chart: { key: string; candles: Candle[] } | null
   myOrders: Record<number, OrderView>
   toasts: ToastItem[]
+  /** Each stock's trading phase (open, halted by the circuit breaker, auction). */
+  status: Record<string, MarketStatus>
   /** The Wire, newest first. */
   wire: WireHeadline[]
   /** Price (paise) the ticket should show after a click on a book level; bumped `nonce` re-applies the same price. */
@@ -69,6 +72,7 @@ export interface MarketState {
   prefillTicket: (price: number) => void
   setWire: (wire: WireHeadline[]) => void
   applyHeadline: (headline: WireHeadline) => void
+  applyStatus: (status: MarketStatusChanged) => void
 }
 
 let nextToastId = 1
@@ -114,10 +118,12 @@ export const useMarket = create<MarketState>()((set, get) => ({
   toasts: [],
   ticketPrefill: null,
   wire: [],
+  status: {},
 
   setConnection: (connection) => set({ connection }),
   setSymbols: (symbols) => set((s) => ({
     symbols,
+    status: Object.fromEntries(symbols.map((x) => [x.symbol, { phase: x.phase ?? 'OPEN', reason: x.reason ?? null, until: x.until ?? null, since: x.since ?? null }])),
     lastPrice: Object.fromEntries(symbols.map((x) => [x.symbol, s.lastPrice[x.symbol] ?? x.lastPrice])),
     selected: symbols.some((x) => x.symbol === s.selected) ? s.selected : symbols[0]?.symbol ?? s.selected,
   })),
@@ -184,6 +190,15 @@ export const useMarket = create<MarketState>()((set, get) => ({
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
   prefillTicket: (price) => set((s) => ({ ticketPrefill: { price, nonce: (s.ticketPrefill?.nonce ?? 0) + 1 } })),
   // Merge rather than replace: a pushed headline may arrive before the REST snapshot does.
+  applyStatus: (st) => {
+    const before = get().status[st.symbol]?.phase
+    set((s) => ({ status: { ...s.status, [st.symbol]: { phase: st.phase, reason: st.reason, until: st.until, since: st.timestamp } } }))
+    if (st.phase === 'HALTED') {
+      get().toast({ kind: 'rejected', title: `Trading halted in ${st.symbol}`, detail: st.reason ?? 'Circuit breaker' })
+    } else if (st.phase === 'OPEN' && before && before !== 'OPEN') {
+      get().toast({ kind: 'info', title: `Trading resumes in ${st.symbol}` })
+    }
+  },
   setWire: (wire) => set((s) => {
     const byId = new Map([...wire, ...s.wire].map((h) => [h.id, h]))
     return { wire: [...byId.values()].sort((a, b) => b.id - a.id).slice(0, WIRE_SIZE) }

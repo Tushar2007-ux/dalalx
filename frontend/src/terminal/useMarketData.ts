@@ -36,6 +36,7 @@ export function useMarketData(): void {
           onTrades: (sym, t) => useMarket.getState().applyTrades(sym, t),
           onActivity: (a) => useMarket.getState().applyActivity(a),
           onHeadline: (h) => useMarket.getState().applyHeadline(h),
+          onStatus: (st) => useMarket.getState().applyStatus(st),
           onConnection: (up) => useMarket.getState().setConnection(up ? 'live' : 'offline'),
         })
         symbols.forEach((s) => stream?.watch(s.symbol))

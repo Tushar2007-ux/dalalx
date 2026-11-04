@@ -1,9 +1,12 @@
 package com.dalalx.core.matching;
 
 import com.dalalx.core.book.BookSnapshot;
+import com.dalalx.core.breaker.MarketState;
+import com.dalalx.core.breaker.TradingSession;
 import com.dalalx.core.book.OrderBook;
 import com.dalalx.core.events.BookChanged;
 import com.dalalx.core.events.EventBus;
+import com.dalalx.core.events.MarketStatusChanged;
 import com.dalalx.core.events.OrderAccepted;
 import com.dalalx.core.events.OrderCancelled;
 import com.dalalx.core.events.OrderRejected;
@@ -15,6 +18,7 @@ import com.dalalx.core.model.OrderStatus;
 import com.dalalx.core.model.Trade;
 import java.time.Clock;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -39,6 +43,12 @@ import java.util.Optional;
  * any) → BookChanged (if the book changed)}. The engine doesn't know who is
  * listening (screen, surveillance, headlines); it just publishes.
  *
+ * <p><b>Trading phases (State pattern):</b> before matching, the engine asks
+ * its {@link TradingSession} whether orders are allowed right now. While the
+ * circuit breaker has trading halted, new orders are rejected with the reason
+ * (cancels still work). After matching, every trade is shown to the breaker;
+ * if one trips it, a {@link MarketStatusChanged} event follows the usual ones.
+ *
  * <p><b>Thread confinement:</b> not thread-safe. In the multi-stock exchange,
  * exactly one worker thread owns each {@code SymbolEngine}; all other threads
  * reach it through that worker's queue.
@@ -60,6 +70,7 @@ public final class SymbolEngine implements MatchingEngine {
     private final Map<Long, Order> recentOrders;
     private final EventBus events;
     private final Clock clock;
+    private final TradingSession session;
 
     /**
      * An engine whose events go nowhere (handy in tests that only check results).
@@ -81,21 +92,31 @@ public final class SymbolEngine implements MatchingEngine {
      */
     public SymbolEngine(String symbol, OrderFactory factory, MatchingStrategies strategies,
                         EventBus events, Clock clock) {
-        this(symbol, factory, strategies, events, clock, DEFAULT_HISTORY);
+        this(symbol, factory, strategies, events, clock, TradingSession.alwaysOpen(symbol), DEFAULT_HISTORY);
+    }
+
+    /**
+     * @param session decides when trading is allowed (circuit breaker, auctions)
+     */
+    public SymbolEngine(String symbol, OrderFactory factory, MatchingStrategies strategies,
+                        EventBus events, Clock clock, TradingSession session) {
+        this(symbol, factory, strategies, events, clock, session, DEFAULT_HISTORY);
     }
 
     SymbolEngine(String symbol, OrderFactory factory, MatchingStrategies strategies, int historySize) {
-        this(symbol, factory, strategies, new EventBus(), Clock.systemUTC(), historySize);
+        this(symbol, factory, strategies, new EventBus(), Clock.systemUTC(), TradingSession.alwaysOpen(symbol),
+                historySize);
     }
 
     private SymbolEngine(String symbol, OrderFactory factory, MatchingStrategies strategies,
-                         EventBus events, Clock clock, int historySize) {
+                         EventBus events, Clock clock, TradingSession session, int historySize) {
         this.book = new OrderBook(symbol);
         this.symbol = symbol;
         this.factory = Objects.requireNonNull(factory, "factory must not be null");
         this.strategies = Objects.requireNonNull(strategies, "strategies must not be null");
         this.events = Objects.requireNonNull(events, "events must not be null");
         this.clock = Objects.requireNonNull(clock, "clock must not be null");
+        this.session = Objects.requireNonNull(session, "session must not be null");
         this.recentOrders = boundedMap(historySize);
     }
 
@@ -117,12 +138,55 @@ public final class SymbolEngine implements MatchingEngine {
         if (!request.symbol().equals(symbol)) {
             throw new IllegalArgumentException("engine for " + symbol + " got an order for " + request.symbol());
         }
+        tick();
         Order order = factory.create(request);
         recentOrders.put(order.id(), order);
+        Optional<String> refusal = session.refusal();
+        if (refusal.isPresent()) {
+            return refuse(order, refusal.get());
+        }
         OrderView arrived = OrderView.of(order); // frozen before matching changes it
         MatchResult result = strategies.forType(order.type()).match(order, book);
         publishOutcome(arrived, result);
+        watchForBreaker(result.trades());
         return result;
+    }
+
+    /** Rejects an order the current phase doesn't allow (e.g. during a halt). */
+    private MatchResult refuse(Order order, String reason) {
+        order.reject();
+        MatchResult result = new MatchResult(order, List.of(), false, reason);
+        events.publish(new OrderRejected(symbol, clock.instant(), events.nextSequence(), OrderView.of(order), reason));
+        return result;
+    }
+
+    /** Shows each trade to the circuit breaker; announces a halt if one trips it. */
+    private void watchForBreaker(List<Trade> trades) {
+        for (Trade trade : trades) {
+            Optional<MarketState> halted = session.onTrade(trade);
+            if (halted.isPresent()) {
+                publishStatus(halted.get());
+                return;
+            }
+        }
+    }
+
+    /**
+     * Lets time pass for this stock: a halt whose time is up ends. Called before
+     * every order and, by the exchange, a few times a second.
+     */
+    public void tick() {
+        session.onClock(clock.instant()).ifPresent(this::publishStatus);
+    }
+
+    private void publishStatus(MarketState state) {
+        events.publish(new MarketStatusChanged(symbol, clock.instant(), events.nextSequence(), state.phase(),
+                state.reason().orElse(null), state.until().orElse(null)));
+    }
+
+    /** @return the trading session (phase and breaker), for use on the owning thread */
+    public TradingSession session() {
+        return session;
     }
 
     /** Announces one submit, in the documented event order. */

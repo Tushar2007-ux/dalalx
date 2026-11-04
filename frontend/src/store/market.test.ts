@@ -59,3 +59,16 @@ describe('the wire', () => {
     expect(useMarket.getState().wire.map((x) => x.id)).toEqual([5, 4, 3])
   })
 })
+
+describe('market status', () => {
+  it('records a halt with a toast, and announces the reopening', () => {
+    useMarket.setState({ status: { TCS: { phase: 'OPEN', reason: null, until: null } }, toasts: [] })
+    useMarket.getState().applyStatus({ symbol: 'TCS', timestamp: '2026-11-04T09:15:00Z', phase: 'HALTED', reason: 'TCS fell 10.2% in 60 seconds', until: '2026-11-04T09:15:30Z' })
+    expect(useMarket.getState().status.TCS.phase).toBe('HALTED')
+    expect(useMarket.getState().toasts[0].title).toBe('Trading halted in TCS')
+
+    useMarket.getState().applyStatus({ symbol: 'TCS', timestamp: '2026-11-04T09:15:30Z', phase: 'OPEN', reason: null, until: null })
+    expect(useMarket.getState().status.TCS).toEqual({ phase: 'OPEN', reason: null, until: null, since: '2026-11-04T09:15:30Z' })
+    expect(useMarket.getState().toasts[0].title).toBe('Trading resumes in TCS')
+  })
+})

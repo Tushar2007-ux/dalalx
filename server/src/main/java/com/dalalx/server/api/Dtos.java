@@ -1,11 +1,13 @@
 package com.dalalx.server.api;
 
+import com.dalalx.core.breaker.MarketPhase;
 import com.dalalx.core.events.OrderView;
 import com.dalalx.core.matching.CancelResult;
 import com.dalalx.core.matching.MatchResult;
 import com.dalalx.core.model.OrderType;
 import com.dalalx.core.model.Side;
 import com.dalalx.core.model.Trade;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -48,7 +50,9 @@ public final class Dtos {
     }
 
     /** One listed stock with its latest price (paise). */
-    public record SymbolInfo(String symbol, String name, long referencePrice, long lastPrice) {
+    /** A listed stock with its last price and current trading phase (reason/until null when open). */
+    public record SymbolInfo(String symbol, String name, long referencePrice, long lastPrice,
+                             MarketPhase phase, String reason, Instant until, Instant since) {
     }
 
     /** Error body: {@code {"error": "..."}}. */

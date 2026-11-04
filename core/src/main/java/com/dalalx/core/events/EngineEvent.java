@@ -15,7 +15,7 @@ import java.time.Instant;
  * read the same event safely.
  */
 public sealed interface EngineEvent
-        permits OrderAccepted, OrderRejected, OrderCancelled, TradeExecuted, BookChanged {
+        permits OrderAccepted, OrderRejected, OrderCancelled, TradeExecuted, BookChanged, MarketStatusChanged {
 
     /** @return the stock this event is about */
     String symbol();

@@ -48,7 +48,8 @@ class MarketDataControllerTest {
                 .andExpect(jsonPath("$.length()").value(5))
                 .andExpect(jsonPath("$[0].symbol").value("RELIANCE"))
                 .andExpect(jsonPath("$[0].lastPrice").value(246000))
-                .andExpect(jsonPath("$[1].lastPrice").value(409000)); // TCS: no trades yet, so its reference price
+                .andExpect(jsonPath("$[1].lastPrice").value(409000)) // TCS: no trades yet, so its reference price
+                .andExpect(jsonPath("$[1].phase").value("OPEN"));
     }
 
     @Test

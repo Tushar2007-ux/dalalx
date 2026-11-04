@@ -1,5 +1,6 @@
 package com.dalalx.server.config;
 
+import com.dalalx.core.breaker.StatusBoard;
 import com.dalalx.core.events.EventBus;
 import com.dalalx.core.exchange.Exchange;
 import com.dalalx.core.marketdata.CandleAggregator;
@@ -52,6 +53,13 @@ public class ExchangeConfig {
      * the {@link ExchangeShutdown} bean ({@link ExchangeShutdown}) on shutdown, so
      * queued orders finish and the worker threads exit cleanly.
      */
+    @Bean
+    public StatusBoard statusBoard(EventBus bus) {
+        StatusBoard board = new StatusBoard();
+        bus.register(board);
+        return board;
+    }
+
     @Bean(destroyMethod = "")
     public Exchange exchange(EventBus bus, Clock clock, TradeHistory history, CandleAggregator candles) {
         Exchange exchange = new Exchange(Exchange.DEFAULT_STOCKS, bus, clock);

@@ -2,7 +2,9 @@ package com.dalalx.core.headlines;
 
 import com.dalalx.core.events.EngineEvent;
 import com.dalalx.core.events.EngineListener;
+import com.dalalx.core.events.MarketStatusChanged;
 import com.dalalx.core.events.TradeExecuted;
+import com.dalalx.core.breaker.MarketPhase;
 import com.dalalx.core.headlines.Headline.Tone;
 import com.dalalx.core.model.Money;
 import com.dalalx.core.model.Side;
@@ -39,6 +41,7 @@ import java.util.function.ToLongFunction;
  *   <li><b>Block trades</b> — a single trade of {@value #BLOCK_QTY}+ shares,
  *       at most one per stock every {@code BLOCK_QUIET}.</li>
  *   <li><b>Storylines</b> starting and ending.</li>
+ *   <li><b>Circuit-breaker halts</b> and reopenings.</li>
  * </ul>
  *
  * <p><b>Thread safety:</b> trades arrive on five worker threads and storylines
@@ -75,6 +78,8 @@ public final class HeadlineWriter implements EngineListener, ScenarioDirector.Sc
     public void onEvent(EngineEvent event) {
         if (event instanceof TradeExecuted e) {
             onTrade(e.trade());
+        } else if (event instanceof MarketStatusChanged e) {
+            onStatus(e);
         }
     }
 
@@ -134,6 +139,24 @@ public final class HeadlineWriter implements EngineListener, ScenarioDirector.Sc
                 who + (buying ? " buys " : " sells ") + "a block of " + Money.groupIndian(trade.qty())
                         + " " + trade.symbol() + " at " + Money.format(trade.price()),
                 null, buying ? Tone.UP : Tone.DOWN);
+    }
+
+    /** Halts are front-page news; so is the reopening. */
+    synchronized void onStatus(MarketStatusChanged e) {
+        String s = e.symbol();
+        if (e.phase() == MarketPhase.HALTED) {
+            long seconds = e.until() == null ? 0 : Duration.between(e.timestamp(), e.until()).toSeconds();
+            file(e.timestamp(), "Stop Press", s, "Circuit breaker halts trading in " + s,
+                    e.reason() + ". Resting orders stay in the book; trading resumes in " + seconds + " seconds.",
+                    Tone.ALERT);
+        } else if (e.phase() == MarketPhase.OPEN) {
+            file(e.timestamp(), "Latest", s, "Trading resumes in " + s, null, Tone.NEUTRAL);
+        }
+        if (e.phase() != MarketPhase.OPEN) {
+            peakUp.remove(s);   // after a halt, moves are news again from the new level
+            peakDown.remove(s);
+            announcedLevel.remove(s);
+        }
     }
 
     @Override

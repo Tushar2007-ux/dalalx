@@ -8,11 +8,28 @@ export type Side = 'BUY' | 'SELL'
 export type OrderType = 'LIMIT' | 'MARKET' | 'IOC'
 export type OrderStatus = 'NEW' | 'PARTIALLY_FILLED' | 'FILLED' | 'CANCELLED' | 'REJECTED'
 
-export interface SymbolInfo {
+export type MarketPhase = 'OPEN' | 'HALTED' | 'AUCTION'
+
+/** A stock's trading phase; reason and until are null while it is simply open. */
+export interface MarketStatus {
+  phase: MarketPhase
+  reason: string | null
+  until: string | null
+  /** When this phase began (null if the stock has been open all session). */
+  since?: string | null
+}
+
+export interface SymbolInfo extends MarketStatus {
   symbol: string
   name: string
   referencePrice: number
   lastPrice: number
+}
+
+/** Pushed on /topic/status when a stock is halted or reopens. */
+export interface MarketStatusChanged extends MarketStatus {
+  symbol: string
+  timestamp: string
 }
 
 export interface Level {

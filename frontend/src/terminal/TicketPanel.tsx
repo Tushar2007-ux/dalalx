@@ -16,10 +16,13 @@ const italic = { margin: 0, fontFamily: 'var(--font-display)', fontStyle: 'itali
 export function TicketPanel() {
   const selected = useMarket((s) => s.selected)
   const connection = useMarket((s) => s.connection)
+  const halted = useMarket((s) => s.status[s.selected]?.phase === 'HALTED')
   return (
     <RuledPanel label="Order Ticket" meta={selected} columnRule="left"
       style={{ minWidth: 0, padding: '0 0 0 12px', flex: '1 1 300px' }}>
-      {connection === 'offline' ? <ClosedTicket /> : <Ticket key={selected} symbol={selected} />}
+      {connection === 'offline'
+        ? <ClosedTicket />
+        : halted ? <HaltedTicket symbol={selected} /> : <Ticket key={selected} symbol={selected} />}
       <YourOrders />
       <BotsSection />
     </RuledPanel>
@@ -33,6 +36,17 @@ function ClosedTicket() {
       <OrderTypeToggle value="limit" disabled showHint={false} />
       <Button fullWidth size="lg" disabled>Market closed · exchange offline</Button>
       <p style={italic}>Orders reopen as soon as the exchange answers again.</p>
+    </div>
+  )
+}
+
+function HaltedTicket({ symbol }: { symbol: string }) {
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      <SideToggle value="buy" disabled />
+      <OrderTypeToggle value="limit" disabled showHint={false} />
+      <Button fullWidth size="lg" disabled>Order entry paused · {symbol} halted</Button>
+      <p style={italic}>New orders are refused until the halt ends. Your resting orders stay in the book, and you can still cancel them below.</p>
     </div>
   )
 }

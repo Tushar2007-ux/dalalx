@@ -3,11 +3,14 @@ package com.dalalx.core.scenarios;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.dalalx.core.bots.BotRunner;
+import com.dalalx.core.breaker.MarketPhase;
 import com.dalalx.core.bots.ExchangeGateway;
 import com.dalalx.core.bots.LiveMarketView;
 import com.dalalx.core.bots.StandardBots;
 import com.dalalx.core.bots.Ticks;
 import com.dalalx.core.events.EventBus;
+import com.dalalx.core.events.MarketStatusChanged;
+import com.dalalx.core.events.RecordingListener;
 import com.dalalx.core.exchange.Exchange;
 import com.dalalx.core.support.MutableClock;
 import java.time.Duration;
@@ -55,12 +58,20 @@ class StorylinesIntegrationTest {
     }
 
     @Test
-    void flashCrashKnocksRelianceDownMoreThanTenPercent() {
+    void flashCrashTripsTheCircuitBreakerOnReliance() {
+        RecordingListener events = new RecordingListener();
+        bus.register(events);
         warmUp();
         director.start("flash-crash");
         run(Duration.ofSeconds(60));
 
-        assertThat(moveBp("RELIANCE")).isLessThan(-1000);
+        assertThat(events.eventsOf(MarketStatusChanged.class))
+                .anySatisfy(e -> {
+                    assertThat(e.symbol()).isEqualTo("RELIANCE");
+                    assertThat(e.phase()).isEqualTo(MarketPhase.HALTED);
+                    assertThat(e.reason()).startsWith("RELIANCE fell 1");
+                });
+        assertThat(moveBp("RELIANCE")).isLessThan(-900);
     }
 
     @Test

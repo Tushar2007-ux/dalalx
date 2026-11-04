@@ -19,8 +19,12 @@ const navLink = (active: boolean) => ({
  * page links, connection light and edition switch, the headline banner, the
  * folio at the foot and the toasts. Pages only supply their own columns.
  */
-export function Shell({ route, headline, page, section, children }: {
+export function Shell({ route, headline, page, section, status, band, children }: {
   route: Route
+  /** Overrides the masthead's market status (e.g. 'halted' for the selected stock). */
+  status?: 'live' | 'halted' | 'auction' | 'closed'
+  /** Optional band printed between the headline and the page (halt, auction). */
+  band?: ReactNode
   headline: Headline & { time?: string }
   page: number
   section: string
@@ -53,8 +57,9 @@ export function Shell({ route, headline, page, section, children }: {
   return (
     <Edition edition={edition} style={{ minHeight: '100vh', padding: '0 24px 18px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
       <Masthead strip date={today()} editionName={EDITION_NAMES[edition]}
-        status={connection === 'offline' ? 'closed' : 'live'} right={right} />
+        status={connection === 'offline' ? 'closed' : status ?? 'live'} right={right} />
       <HeadlineBanner {...headline} time={headline.time ?? clockTime(Date.now()).slice(0, 8)} />
+      {band}
       {children}
       <Folio page={page} section={section} right={<span>Prices in ₹ · simulated exchange · paper money only</span>} style={{ marginTop: 18 }} />
       <div aria-live="polite" style={{ position: 'fixed', top: 72, right: 16, display: 'grid', gap: 8, zIndex: 40 }}>

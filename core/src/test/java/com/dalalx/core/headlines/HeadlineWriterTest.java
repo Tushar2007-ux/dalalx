@@ -2,6 +2,8 @@ package com.dalalx.core.headlines;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.dalalx.core.breaker.MarketPhase;
+import com.dalalx.core.events.MarketStatusChanged;
 import com.dalalx.core.headlines.Headline.Tone;
 import com.dalalx.core.model.Side;
 import com.dalalx.core.model.Trade;
@@ -78,5 +80,19 @@ class HeadlineWriterTest {
         assertThat(writer.latest(100)).hasSize(HeadlineWriter.CAPACITY);
         assertThat(writer.latest(1).get(0).text()).isEqualTo("story 59");
         assertThat(heard).hasSize(60);
+    }
+
+    @Test
+    void haltsAndReopeningsAreFrontPageNews() {
+        writer.onEvent(new MarketStatusChanged("TCS", T0, 1, MarketPhase.HALTED,
+                "TCS fell 10.4% in 60 seconds (₹1,000.00 → ₹896.00)", T0.plusSeconds(30)));
+        writer.onEvent(new MarketStatusChanged("TCS", T0.plusSeconds(30), 2, MarketPhase.OPEN, null, null));
+
+        List<Headline> news = writer.latest(2).reversed();
+        assertThat(news.get(0)).extracting(Headline::kicker, Headline::text, Headline::tone)
+                .containsExactly("Stop Press", "Circuit breaker halts trading in TCS", Tone.ALERT);
+        assertThat(news.get(0).deck()).isEqualTo(
+                "TCS fell 10.4% in 60 seconds (₹1,000.00 → ₹896.00). Resting orders stay in the book; trading resumes in 30 seconds.");
+        assertThat(news.get(1).text()).isEqualTo("Trading resumes in TCS");
     }
 }

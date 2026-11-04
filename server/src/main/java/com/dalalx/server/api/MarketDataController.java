@@ -1,6 +1,7 @@
 package com.dalalx.server.api;
 
 import com.dalalx.core.book.BookSnapshot;
+import com.dalalx.core.breaker.StatusBoard;
 import com.dalalx.core.exchange.Exchange;
 import com.dalalx.core.exchange.ListedStock;
 import com.dalalx.core.exchange.UnknownSymbolException;
@@ -28,6 +29,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api")
 public class MarketDataController {
 
+    private final StatusBoard statuses;
+
     static final int MAX_DEPTH = 50;
     static final int MAX_TRADES = 500;
 
@@ -35,7 +38,9 @@ public class MarketDataController {
     private final TradeHistory trades;
     private final CandleAggregator candles;
 
-    public MarketDataController(Exchange exchange, TradeHistory trades, CandleAggregator candles) {
+    public MarketDataController(Exchange exchange, TradeHistory trades, CandleAggregator candles,
+                                StatusBoard statuses) {
+        this.statuses = statuses;
         this.exchange = exchange;
         this.trades = trades;
         this.candles = candles;
@@ -49,7 +54,9 @@ public class MarketDataController {
 
     private SymbolInfo info(ListedStock stock) {
         long last = trades.lastPrice(stock.symbol()).orElse(stock.referencePrice());
-        return new SymbolInfo(stock.symbol(), stock.name(), stock.referencePrice(), last);
+        StatusBoard.Status status = statuses.status(stock.symbol());
+        return new SymbolInfo(stock.symbol(), stock.name(), stock.referencePrice(), last,
+                status.phase(), status.reason(), status.until(), status.since());
     }
 
     /** {@code GET /api/books/{symbol}?depth=10}: the top of the order book. */

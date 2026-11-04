@@ -1,6 +1,8 @@
 package com.dalalx.core.exchange;
 
 import com.dalalx.core.book.BookSnapshot;
+import com.dalalx.core.breaker.BreakerRule;
+import com.dalalx.core.breaker.TradingSession;
 import com.dalalx.core.events.EventBus;
 import com.dalalx.core.matching.CancelResult;
 import com.dalalx.core.matching.MatchResult;
@@ -16,6 +18,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
@@ -58,6 +63,10 @@ public final class Exchange {
     private final Map<Long, String> symbolOfOrder;
     private final EventBus events;
     private final AtomicLong ids = new AtomicLong();
+    private ScheduledExecutorService ticker;
+
+    /** How often the exchange clock lets time pass on every worker. */
+    static final long TICK_MILLIS = 200;
 
     /** An exchange for {@link #DEFAULT_STOCKS} using the system clock. */
     public Exchange(EventBus events) {
@@ -70,6 +79,13 @@ public final class Exchange {
      * @param clock  source of timestamps
      */
     public Exchange(List<ListedStock> listed, EventBus events, Clock clock) {
+        this(listed, events, clock, BreakerRule.STANDARD);
+    }
+
+    /**
+     * @param breaker the circuit-breaker rule for every stock, or {@code null} for none
+     */
+    public Exchange(List<ListedStock> listed, EventBus events, Clock clock, BreakerRule breaker) {
         this.events = Objects.requireNonNull(events, "events must not be null");
         this.symbolOfOrder = Collections.synchronizedMap(boundedMap(ROUTE_HISTORY));
         // One counter for order ids, sequences and trade ids: all unique and increasing.
@@ -79,8 +95,11 @@ public final class Exchange {
         MatchingStrategies strategies = MatchingStrategies.standard(ids::incrementAndGet, clock);
         for (ListedStock stock : listed) {
             stocks.put(stock.symbol(), stock);
+            TradingSession session = breaker == null
+                    ? TradingSession.alwaysOpen(stock.symbol())
+                    : TradingSession.withBreaker(stock.symbol(), breaker);
             workers.put(stock.symbol(),
-                    new SymbolWorker(new SymbolEngine(stock.symbol(), factory, strategies, events, clock)));
+                    new SymbolWorker(new SymbolEngine(stock.symbol(), factory, strategies, events, clock, session)));
         }
     }
 
@@ -96,6 +115,35 @@ public final class Exchange {
     /** Starts every symbol's worker thread. */
     public void start() {
         workers.values().forEach(SymbolWorker::start);
+        startClock();
+    }
+
+    /**
+     * A halt must end on time even if nobody sends an order, so a small daemon
+     * thread drops a "tick" command into every worker's queue a few times a
+     * second. The tick itself runs on the worker, like everything else that
+     * touches a book or its session.
+     */
+    private void startClock() {
+        ticker = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "exchange-clock");
+            t.setDaemon(true);
+            return t;
+        });
+        ticker.scheduleAtFixedRate(this::tickAll, TICK_MILLIS, TICK_MILLIS, TimeUnit.MILLISECONDS);
+    }
+
+    private void tickAll() {
+        for (SymbolWorker worker : workers.values()) {
+            try {
+                worker.enqueue("tick", engine -> {
+                    engine.tick();
+                    return null;
+                });
+            } catch (RejectedExecutionException shuttingDown) {
+                return;
+            }
+        }
     }
 
     /**
@@ -154,6 +202,9 @@ public final class Exchange {
      * @return {@code true} if every worker stopped within the timeout
      */
     public boolean shutdown(long timeout, TimeUnit unit) throws InterruptedException {
+        if (ticker != null) {
+            ticker.shutdownNow();
+        }
         workers.values().forEach(SymbolWorker::shutdown);
         boolean allStopped = true;
         for (SymbolWorker worker : workers.values()) {
