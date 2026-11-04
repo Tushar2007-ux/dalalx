@@ -80,3 +80,20 @@ describe('market status', () => {
     expect(useMarket.getState().toasts[0].title).toBe('Trading resumes in TCS')
   })
 })
+
+describe('surveillance cases', () => {
+  const c = (id: string, status: 'OPEN' | 'SUSPENDED') => ({
+    id, ruleId: 'spoofing', ruleName: 'Spoofing', severity: 'CRITICAL' as const, traderId: 'SPOOFER', symbol: 'RELIANCE',
+    openedAt: '2026-11-04T09:15:00Z', summary: '3 large orders', figures: {}, notes: [], evidence: [], flagged: [], status,
+  })
+
+  it('adds new cases with a toast and updates known ones in place', () => {
+    useMarket.setState({ cases: [], toasts: [] })
+    useMarket.getState().applyCase(c('SV-0001', 'OPEN'))
+    expect(useMarket.getState().toasts[0].title).toBe('Spoofing · RELIANCE: case SV-0001 opened')
+    useMarket.getState().applyCase(c('SV-0001', 'SUSPENDED'))
+    expect(useMarket.getState().cases).toHaveLength(1)
+    expect(useMarket.getState().cases[0].status).toBe('SUSPENDED')
+    expect(useMarket.getState().toasts).toHaveLength(1)
+  })
+})

@@ -24,6 +24,7 @@ export function pnlStat(pnl: number): { label: string; value: string; dir?: 'up'
  */
 export function BotsSection() {
   const connection = useMarket((s) => s.connection)
+  const cases = useMarket((s) => s.cases)
   const [bots, setBots] = useState<BotInfo[]>([])
 
   useEffect(() => {
@@ -46,11 +47,13 @@ export function BotsSection() {
       <SectionLabel count={bots.length} meta={bots.length ? `${trading} trading · click to pause` : 'No bots'}>On the Floor</SectionLabel>
       {bots.map((b) => {
         const key = botKey(b.id)
-        const status = !b.running || b.status === 'PAUSED' ? 'idle' : 'active'
+        const suspended = cases.some((c) => c.traderId === b.id && c.status === 'SUSPENDED')
+        const flagged = cases.some((c) => c.traderId === b.id && c.status === 'OPEN')
+        const status = suspended ? 'halted' : flagged ? 'flagged' : !b.running || b.status === 'PAUSED' ? 'idle' : 'active'
         const stats = [pnlStat(b.stats.pnl), { label: 'Trades', value: b.stats.trades.toLocaleString('en-IN') }]
         return key && key !== 'you'
           ? <BotByline key={b.id} bot={key as BotKey} layout="compact" status={status} stats={stats} onClick={() => void toggle(b)} />
-          : <HiredRow key={b.id} bot={b} active={status === 'active'} onClick={() => void toggle(b)} />
+          : <HiredRow key={b.id} bot={b} active={status === 'active' || status === 'flagged'} onClick={() => void toggle(b)} />
       })}
     </div>
   )

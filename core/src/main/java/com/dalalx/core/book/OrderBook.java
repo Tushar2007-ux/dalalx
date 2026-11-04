@@ -199,6 +199,11 @@ public final class OrderBook {
         return levels.values().stream().limit(depth).map(PriceLevel::toDetail).toList();
     }
 
+    /** @return ids of every resting order placed by this trader (O(n): used rarely, on suspension) */
+    public List<Long> orderIdsOf(String traderId) {
+        return ordersById.values().stream().filter(o -> o.traderId().equals(traderId)).map(Order::id).toList();
+    }
+
     /** @return the resting order with this id, if any (O(1)) */
     public Optional<Order> find(long orderId) {
         return Optional.ofNullable(ordersById.get(orderId));

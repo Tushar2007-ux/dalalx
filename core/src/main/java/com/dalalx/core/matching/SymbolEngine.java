@@ -66,7 +66,8 @@ public final class SymbolEngine implements MatchingEngine {
     /** How many levels of the opposite side an X-Ray captures. */
     static final int XRAY_DEPTH = 10;
 
-    static final String CANCELLED_BY_TRADER = "cancelled by trader";
+    /** The reason on an {@code OrderCancelled} event when the trader asked for the cancel. */
+    public static final String CANCELLED_BY_TRADER = "cancelled by trader";
 
     private final String symbol;
     private final OrderBook book;
@@ -77,6 +78,7 @@ public final class SymbolEngine implements MatchingEngine {
     private final Clock clock;
     private final TradingSession session;
     private XRayRecorder xrays = XRayRecorder.NONE;
+    private OrderGate gate = OrderGate.OPEN;
 
     /**
      * An engine whose events go nowhere (handy in tests that only check results).
@@ -147,7 +149,7 @@ public final class SymbolEngine implements MatchingEngine {
         tick();
         Order order = factory.create(request);
         recentOrders.put(order.id(), order);
-        Optional<String> refusal = session.refusal();
+        Optional<String> refusal = gate.refusal(request).or(session::refusal);
         if (refusal.isPresent()) {
             MatchResult refused = refuse(order, refusal.get());
             if (xrays.wants(request)) {
@@ -165,6 +167,26 @@ public final class SymbolEngine implements MatchingEngine {
         }
         watchForBreaker(result.trades());
         return result;
+    }
+
+    /**
+     * Adds a check every order must pass (e.g. surveillance suspensions). Like
+     * {@link #recordXRays}, call it before the worker thread starts.
+     */
+    public void guardWith(OrderGate newGate) {
+        this.gate = Objects.requireNonNull(newGate, "gate must not be null");
+    }
+
+    /**
+     * Cancels every resting order of one trader (used when surveillance
+     * suspends them). Each cancel is announced as usual.
+     *
+     * @return how many orders were cancelled
+     */
+    public int cancelAllFor(String traderId) {
+        List<Long> ids = book.orderIdsOf(traderId);
+        ids.forEach(this::cancel);
+        return ids.size();
     }
 
     /**

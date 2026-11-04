@@ -18,6 +18,8 @@ export function BookPanel() {
   const myOrders = useMarket((s) => s.myOrders)
   const prefill = useMarket((s) => s.prefillTicket)
   const xray = useMarket((s) => s.xray)
+  const cases = useMarket((s) => s.cases)
+  const suspects = new Set(cases.filter((c) => c.status === 'OPEN' && c.symbol === selected).map((c) => c.traderId))
 
   const bids = book?.bids ?? []
   const asks = [...(book?.asks ?? [])].reverse()
@@ -30,7 +32,7 @@ export function BookPanel() {
     <OrderBookRow key={side + l.price} side={side} price={toRupees(l.price)} qty={l.totalQty} orders={l.orderCount}
       depth={l.totalQty / maxQty} best={best && l === (side === 'bid' ? bids[0] : asks[asks.length - 1])}
       mine={myPrices.has(`${side === 'bid' ? 'BUY' : 'SELL'}:${l.price}`)}
-      onClick={() => prefill(l.price)} xray={xray} bot={xray && l.mainTrader ? botKey(l.mainTrader) ?? l.mainTrader.slice(0, 2) : undefined} />
+      onClick={() => prefill(l.price)} flagged={!!l.mainTrader && suspects.has(l.mainTrader)} xray={xray} bot={xray && l.mainTrader ? botKey(l.mainTrader) ?? l.mainTrader.slice(0, 2) : undefined} />
   )
 
   return (

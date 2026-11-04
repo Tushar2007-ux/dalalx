@@ -6,6 +6,7 @@ import com.dalalx.core.events.EventBus;
 import com.dalalx.core.exchange.Exchange;
 import com.dalalx.core.marketdata.CandleAggregator;
 import com.dalalx.core.marketdata.TradeHistory;
+import com.dalalx.core.surveillance.Suspensions;
 import com.dalalx.core.xray.XRayDesk;
 import com.dalalx.server.api.OrderController;
 import java.time.Clock;
@@ -76,10 +77,18 @@ public class ExchangeConfig {
                 : runner.getIfAvailable() == null ? id : runner.getObject().nameOf(id));
     }
 
+    /** Traders barred by surveillance; every engine checks it before accepting an order. */
+    @Bean
+    public Suspensions suspensions() {
+        return new Suspensions();
+    }
+
     @Bean(destroyMethod = "")
-    public Exchange exchange(EventBus bus, Clock clock, TradeHistory history, CandleAggregator candles, XRayDesk xrays) {
+    public Exchange exchange(EventBus bus, Clock clock, TradeHistory history, CandleAggregator candles, XRayDesk xrays,
+                             Suspensions suspensions) {
         Exchange exchange = new Exchange(Exchange.DEFAULT_STOCKS, bus, clock);
         exchange.recordXRays(xrays);
+        exchange.guardWith(request -> suspensions.refusal(request.traderId()));
         exchange.start();
         return exchange;
     }

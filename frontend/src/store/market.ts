@@ -4,7 +4,7 @@ import {
 } from '../lib/market'
 import { formatPaise, formatQty } from '../lib/format'
 import type {
-  BookSnapshot, Candle, Interval, MarketStatus, MarketStatusChanged, OrderActivity, OrderView, SymbolInfo, Trade,
+  BookSnapshot, Candle, Case, Interval, MarketStatus, MarketStatusChanged, OrderActivity, OrderView, SymbolInfo, Trade,
   WireHeadline,
 } from '../lib/types'
 
@@ -50,6 +50,8 @@ export interface MarketState {
   toasts: ToastItem[]
   /** Each stock's trading phase (open, halted by the circuit breaker, auction). */
   status: Record<string, MarketStatus>
+  /** Surveillance cases, newest first. */
+  cases: Case[]
   /** The Wire, newest first. */
   wire: WireHeadline[]
   /** Price (paise) the ticket should show after a click on a book level; bumped `nonce` re-applies the same price. */
@@ -73,6 +75,8 @@ export interface MarketState {
   setWire: (wire: WireHeadline[]) => void
   applyHeadline: (headline: WireHeadline) => void
   applyStatus: (status: MarketStatusChanged) => void
+  setCases: (cases: Case[]) => void
+  applyCase: (c: Case) => void
 }
 
 let nextToastId = 1
@@ -119,6 +123,7 @@ export const useMarket = create<MarketState>()((set, get) => ({
   ticketPrefill: null,
   wire: [],
   status: {},
+  cases: [],
 
   setConnection: (connection) => set({ connection }),
   setSymbols: (symbols) => set((s) => ({
@@ -196,6 +201,14 @@ export const useMarket = create<MarketState>()((set, get) => ({
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
   prefillTicket: (price) => set((s) => ({ ticketPrefill: { price, nonce: (s.ticketPrefill?.nonce ?? 0) + 1 } })),
   // Merge rather than replace: a pushed headline may arrive before the REST snapshot does.
+  setCases: (cases) => set({ cases }),
+  applyCase: (c) => {
+    const known = get().cases.some((x) => x.id === c.id)
+    set((s) => ({ cases: known ? s.cases.map((x) => (x.id === c.id ? c : x)) : [c, ...s.cases] }))
+    if (!known && c.status === 'OPEN') {
+      get().toast({ kind: 'rejected', title: `${c.ruleName} · ${c.symbol}: case ${c.id} opened`, detail: c.summary })
+    }
+  },
   applyStatus: (st) => {
     const before = get().status[st.symbol]?.phase
     set((s) => ({ status: { ...s.status, [st.symbol]: { phase: st.phase, reason: st.reason, until: st.until, since: st.timestamp } } }))

@@ -1,5 +1,5 @@
 import type {
-  BookSnapshot, BotInfo, BotStyle, Candle, Storylines, WireHeadline, XRay, CancelResponse, Interval, OrderResult, PlaceOrder, SymbolInfo, Trade,
+  BookSnapshot, BotInfo, BotStyle, Candle, Case, RuleInfo, Storylines, WireHeadline, XRay, CancelResponse, Interval, OrderResult, PlaceOrder, SymbolInfo, Trade,
 } from './types'
 
 /**
@@ -61,6 +61,14 @@ export const api = {
   wire: (limit = 20) => request<WireHeadline[]>(`/api/wire?limit=${limit}`),
   scenarios: () => request<Storylines>('/api/scenarios'),
   startScenario: (id: string) => request<unknown>(`/api/scenarios/${id}/start`, { method: 'POST' }),
+  cases: () => request<Case[]>('/api/surveillance/cases'),
+  dismissCase: (id: string) => request<Case>(`/api/surveillance/cases/${id}/dismiss`, { method: 'POST' }),
+  suspendCase: (id: string) => request<Case>(`/api/surveillance/cases/${id}/suspend`, { method: 'POST' }),
+  rules: () => request<RuleInfo[]>('/api/surveillance/rules'),
+  setRule: (id: string, enabled: boolean) =>
+    request<RuleInfo[]>(`/api/surveillance/rules/${id}`, { ...json({ enabled }), method: 'PUT' }),
+  suspended: () => request<string[]>('/api/surveillance/suspended'),
+  reinstate: (traderId: string) => request<string[]>(`/api/surveillance/traders/${traderId}/reinstate`, { method: 'POST' }),
   latestXRay: () => request<XRay>('/api/xray/latest'),
   xray: (orderId: number) => request<XRay>(`/api/xray/${orderId}`),
   recentXRays: (limit = 10) => request<XRay[]>(`/api/xray?limit=${limit}`),

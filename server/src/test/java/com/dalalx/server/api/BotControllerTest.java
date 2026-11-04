@@ -24,11 +24,12 @@ class BotControllerTest {
     private MockMvc mvc;
 
     @Test
-    void listsTheFourBotsWithTheirScores() throws Exception {
+    void listsTheFiveBotsWithTheirScores() throws Exception {
         mvc.perform(get("/api/bots"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(4))
+                .andExpect(jsonPath("$.length()").value(5))
                 .andExpect(jsonPath("$[0].id").value("MUNIM"))
+                .andExpect(jsonPath("$[4].id").value("SPOOFER"))
                 .andExpect(jsonPath("$[0].name").value("The Munim"))
                 .andExpect(jsonPath("$[0].role").value("Market Maker"))
                 .andExpect(jsonPath("$[0].tuning.aggressiveness").value(2))
@@ -88,7 +89,7 @@ class BotControllerTest {
                 .andExpect(jsonPath("$.error").value("there is already a bot called THECONTRARIAN"));
 
         mvc.perform(delete("/api/bots/THECONTRARIAN")).andExpect(status().isNoContent());
-        mvc.perform(get("/api/bots")).andExpect(jsonPath("$.length()").value(4));
+        mvc.perform(get("/api/bots")).andExpect(jsonPath("$.length()").value(5));
         mvc.perform(delete("/api/bots/THECONTRARIAN")).andExpect(status().isNotFound());
     }
 }

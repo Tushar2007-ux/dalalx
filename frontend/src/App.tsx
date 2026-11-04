@@ -1,4 +1,5 @@
 import { Correspondents } from './pages/Correspondents'
+import { Investigations } from './pages/Investigations'
 import { XRayPage } from './pages/XRayPage'
 import { useRoute } from './shell/route'
 import { Terminal } from './terminal/Terminal'
@@ -14,6 +15,7 @@ export default function App() {
   switch (route) {
     case 'correspondents': return <Correspondents />
     case 'xray': return <XRayPage />
+    case 'surveillance': return <Investigations />
     default: return <Terminal />
   }
 }

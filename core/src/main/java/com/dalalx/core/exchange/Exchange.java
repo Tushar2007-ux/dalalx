@@ -8,6 +8,7 @@ import com.dalalx.core.matching.CancelResult;
 import com.dalalx.core.matching.MatchResult;
 import com.dalalx.core.matching.MatchingStrategies;
 import com.dalalx.core.matching.OrderFactory;
+import com.dalalx.core.matching.OrderGate;
 import com.dalalx.core.matching.SymbolEngine;
 import com.dalalx.core.model.OrderRequest;
 import com.dalalx.core.xray.XRayRecorder;
@@ -117,6 +118,24 @@ public final class Exchange {
     /** Lets {@code recorder} X-Ray the orders it wants, on every stock. Call before {@link #start()}. */
     public void recordXRays(XRayRecorder recorder) {
         workers.values().forEach(w -> w.engine().recordXRays(recorder));
+    }
+
+    /** Puts {@code gate} in front of every stock's engine. Call before {@link #start()}. */
+    public void guardWith(OrderGate gate) {
+        workers.values().forEach(w -> w.engine().guardWith(gate));
+    }
+
+    /**
+     * Cancels every resting order of a trader on every stock (each cancel runs
+     * on its stock's worker, as always).
+     *
+     * @return how many orders were cancelled, once all workers have answered
+     */
+    public CompletableFuture<Integer> cancelAllFor(String traderId) {
+        List<CompletableFuture<Integer>> perStock = workers.values().stream()
+                .map(w -> w.enqueue("cancel-all", engine -> engine.cancelAllFor(traderId))).toList();
+        return CompletableFuture.allOf(perStock.toArray(CompletableFuture[]::new))
+                .thenApply(done -> perStock.stream().mapToInt(CompletableFuture::join).sum());
     }
 
     public void start() {

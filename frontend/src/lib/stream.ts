@@ -1,5 +1,5 @@
 import { Client, type IMessage, type StompSubscription } from '@stomp/stompjs'
-import type { BookSnapshot, MarketStatusChanged, OrderActivity, Trade, WireHeadline } from './types'
+import type { BookSnapshot, Case, MarketStatusChanged, OrderActivity, Trade, WireHeadline } from './types'
 
 /**
  * Live market data over STOMP (a small messaging protocol on top of WebSocket).
@@ -15,6 +15,7 @@ export interface StreamHandlers {
   onActivity: (activity: OrderActivity[]) => void
   onHeadline: (headline: WireHeadline) => void
   onStatus: (status: MarketStatusChanged) => void
+  onCase: (c: Case) => void
   onConnection: (connected: boolean) => void
 }
 
@@ -58,6 +59,7 @@ export function connectStream(handlers: StreamHandlers): MarketStream {
       })
       // Headlines are rare, so they skip the frame buffer.
       client.subscribe('/topic/wire', (m: IMessage) => handlers.onHeadline(JSON.parse(m.body) as WireHeadline))
+      client.subscribe('/topic/surveillance', (m: IMessage) => handlers.onCase(JSON.parse(m.body) as Case))
       client.subscribe('/topic/status', (m: IMessage) => handlers.onStatus(JSON.parse(m.body) as MarketStatusChanged))
       ;[...watched.keys()].forEach(subscribeSymbol)
     },

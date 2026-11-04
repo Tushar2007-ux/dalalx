@@ -11,12 +11,16 @@ import com.dalalx.core.model.Side;
 import com.dalalx.core.model.Trade;
 import com.dalalx.core.scenarios.Scenario;
 import com.dalalx.core.scenarios.ScenarioDirector;
+import com.dalalx.core.surveillance.Case;
+import com.dalalx.core.surveillance.SurveillanceDesk;
+import com.dalalx.core.surveillance.SurveillanceRule.Severity;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -42,12 +46,14 @@ import java.util.function.ToLongFunction;
  *       at most one per stock every {@code BLOCK_QUIET}.</li>
  *   <li><b>Storylines</b> starting and ending.</li>
  *   <li><b>Circuit-breaker halts</b> and reopenings.</li>
+ *   <li><b>Surveillance</b> opening a case, and suspending a trader.</li>
  * </ul>
  *
  * <p><b>Thread safety:</b> trades arrive on five worker threads and storylines
  * on the bot thread, so every method that touches state is {@code synchronized}.
  */
-public final class HeadlineWriter implements EngineListener, ScenarioDirector.ScenarioListener {
+public final class HeadlineWriter implements EngineListener, ScenarioDirector.ScenarioListener,
+        SurveillanceDesk.CaseListener {
 
     /** How many headlines The Wire keeps. */
     public static final int CAPACITY = 50;
@@ -139,6 +145,21 @@ public final class HeadlineWriter implements EngineListener, ScenarioDirector.Sc
                 who + (buying ? " buys " : " sells ") + "a block of " + Money.groupIndian(trade.qty())
                         + " " + trade.symbol() + " at " + Money.format(trade.price()),
                 null, buying ? Tone.UP : Tone.DOWN);
+    }
+
+    @Override
+    public synchronized void caseChanged(Case c) {
+        String who = names.apply(c.traderId());
+        switch (c.status()) {
+            case OPEN -> file(c.openedAt(), "Investigations", c.symbol(),
+                    "Surveillance flags " + c.ruleName().toLowerCase(Locale.ROOT) + " in " + c.symbol()
+                            + "; " + who + " under investigation",
+                    c.summary() + " (case " + c.id() + ").", c.severity() == Severity.NOTICE ? Tone.NEUTRAL : Tone.ALERT);
+            case SUSPENDED -> file(Instant.now(), "Stop Press", null,
+                    who + " suspended from trading; all resting orders cancelled",
+                    "Ruling on case " + c.id() + " (" + c.ruleName() + ", " + c.symbol() + ").", Tone.ALERT);
+            case DISMISSED -> { }
+        }
     }
 
     /** Halts are front-page news; so is the reopening. */

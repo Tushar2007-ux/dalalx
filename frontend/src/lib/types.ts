@@ -206,3 +206,44 @@ export interface XRay {
   reason: string | null
   steps: XRayStep[]
 }
+
+/** One order's life in a surveillance case's evidence. */
+export interface OrderLife {
+  orderId: number
+  traderId: string
+  symbol: string
+  side: Side
+  price: number
+  qty: number
+  placedAt: string
+  endedAt: string | null
+  outcome: 'LIVE' | 'FILLED' | 'CANCELLED'
+  filled: number
+}
+
+export type Severity = 'NOTICE' | 'WARNING' | 'CRITICAL'
+
+/** A surveillance case (GET /api/surveillance/cases, pushed on /topic/surveillance). */
+export interface Case {
+  id: string
+  ruleId: string
+  ruleName: string
+  severity: Severity
+  traderId: string
+  symbol: string
+  openedAt: string
+  summary: string
+  figures: Record<string, string>
+  notes: string[]
+  evidence: OrderLife[]
+  flagged: number[]
+  status: 'OPEN' | 'DISMISSED' | 'SUSPENDED'
+}
+
+export interface RuleInfo {
+  id: string
+  name: string
+  threshold: string
+  severity: Severity
+  enabled: boolean
+}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  Button, MarginNote, Modal, OrderTypeToggle, PriceInput, RubberStamp, RuledPanel, SectionLabel, SideToggle, XRayToggle,
+  AlertNotice, Button, MarginNote, Modal, OrderTypeToggle, PriceInput, RubberStamp, RuledPanel, SectionLabel, SideToggle, XRayToggle,
 } from '../design'
 import { api, ApiError } from '../lib/api'
 import { clockTime, formatPaise, formatQty } from '../lib/format'
@@ -25,6 +25,7 @@ export function TicketPanel() {
         : halted ? <HaltedTicket symbol={selected} /> : <Ticket key={selected} symbol={selected} />}
       <XRaySwitch />
       <YourOrders />
+      <SurveillanceSection />
       <BotsSection />
     </RuledPanel>
   )
@@ -159,6 +160,26 @@ function XRaySwitch() {
       {xray && <MarginNote tone="ink" side="below">
         Each book level now shows the stamp of the trader behind it. <a href="#/xray">See how your last order was matched →</a>
       </MarginNote>}
+    </div>
+  )
+}
+
+/** The Inspector's latest open case, with a link to the full case file. */
+function SurveillanceSection() {
+  const cases = useMarket((s) => s.cases)
+  const open = cases.filter((c) => c.status === 'OPEN')
+  const latest = open[0]
+  return (
+    <div style={{ marginTop: 16 }}>
+      <SectionLabel meta={open.length ? <span style={{ color: 'var(--pencil-text)' }}>◆ {open.length} open</span> : 'All quiet'}>Surveillance</SectionLabel>
+      {latest
+        ? <div style={{ margin: '6px 0 4px' }}>
+            <AlertNotice severity={latest.severity === 'CRITICAL' ? 'critical' : latest.severity === 'WARNING' ? 'warning' : 'notice'}
+              fresh title={`${latest.ruleName} · ${latest.symbol}`} reference={latest.id} time={clockTime(latest.openedAt).slice(0, 8)}>
+              {latest.summary}. <a href="#/surveillance">Open the case file →</a>
+            </AlertNotice>
+          </div>
+        : <p style={{ ...italic, fontSize: 13, margin: '6px 0' }}>The Inspector reads every line of the tape. Nothing to report.</p>}
     </div>
   )
 }

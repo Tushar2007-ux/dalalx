@@ -12,8 +12,8 @@ public final class StandardBots {
     private StandardBots() {
     }
 
-    /** @return fresh instances of the four regular traders */
+    /** @return fresh instances of the four regular traders and The Spoofer */
     public static List<TradingBot> create() {
-        return List.of(new MarketMakerBot(), new MomentumBot(), new PanicSellerBot(), new WhaleBot());
+        return List.of(new MarketMakerBot(), new MomentumBot(), new PanicSellerBot(), new WhaleBot(), new SpooferBot());
     }
 }
