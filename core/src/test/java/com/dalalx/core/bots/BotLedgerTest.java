@@ -48,6 +48,6 @@ class BotLedgerTest {
 
     @Test
     void unknownTraderHasEmptyStats() {
-        assertThat(ledger.stats("NOBODY")).isEqualTo(new BotStats("NOBODY", 0, 0, 0, Map.of(), 0));
+        assertThat(ledger.stats("NOBODY")).isEqualTo(new BotStats("NOBODY", 0, 0, 0, 0, Map.of(), 0));
     }
 }

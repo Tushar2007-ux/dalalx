@@ -35,9 +35,11 @@ export function useMarketData(): void {
           onBook: (b) => useMarket.getState().applyBook(b),
           onTrades: (sym, t) => useMarket.getState().applyTrades(sym, t),
           onActivity: (a) => useMarket.getState().applyActivity(a),
+          onHeadline: (h) => useMarket.getState().applyHeadline(h),
           onConnection: (up) => useMarket.getState().setConnection(up ? 'live' : 'offline'),
         })
         symbols.forEach((s) => stream?.watch(s.symbol))
+        api.wire().then((w) => !stopped && useMarket.getState().setWire(w)).catch(() => {})
       } catch {
         if (stopped) return
         store.setConnection('offline')

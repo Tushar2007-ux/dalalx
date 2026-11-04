@@ -4,7 +4,8 @@ import * as React from 'react';
  * Ink-stamp monogram badge (MU, WH, SP, MC, PS, SI, YOU) for bot identity below 40px; full name in aria-label.
  */
 export interface MonogramProps {
-  bot?: 'munim' | 'momentum' | 'panic' | 'whale' | 'spoofer' | 'inspector' | 'you';
+  /** A bot key, 'you', or any two letters for a hired correspondent. */
+  bot?: 'munim' | 'momentum' | 'panic' | 'whale' | 'spoofer' | 'inspector' | 'you' | (string & {});
   size?: number;
   angle?: number;
   title?: string;

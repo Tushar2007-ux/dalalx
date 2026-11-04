@@ -4,7 +4,7 @@ import {
 } from '../lib/market'
 import { formatPaise, formatQty } from '../lib/format'
 import type {
-  BookSnapshot, Candle, Interval, OrderActivity, OrderView, SymbolInfo, Trade,
+  BookSnapshot, Candle, Interval, OrderActivity, OrderView, SymbolInfo, Trade, WireHeadline,
 } from '../lib/types'
 
 /**
@@ -29,6 +29,8 @@ export interface ToastItem {
 /** Most trades kept on the tape. */
 export const TAPE_SIZE = 40
 const MAX_TOASTS = 3
+/** Headlines kept for The Wire. */
+export const WIRE_SIZE = 20
 
 export interface MarketState {
   connection: Connection
@@ -45,6 +47,8 @@ export interface MarketState {
   chart: { key: string; candles: Candle[] } | null
   myOrders: Record<number, OrderView>
   toasts: ToastItem[]
+  /** The Wire, newest first. */
+  wire: WireHeadline[]
   /** Price (paise) the ticket should show after a click on a book level; bumped `nonce` re-applies the same price. */
   ticketPrefill: { price: number; nonce: number } | null
 
@@ -63,6 +67,8 @@ export interface MarketState {
   toast: (toast: Omit<ToastItem, 'id'>) => void
   dismissToast: (id: number) => void
   prefillTicket: (price: number) => void
+  setWire: (wire: WireHeadline[]) => void
+  applyHeadline: (headline: WireHeadline) => void
 }
 
 let nextToastId = 1
@@ -107,6 +113,7 @@ export const useMarket = create<MarketState>()((set, get) => ({
   myOrders: {},
   toasts: [],
   ticketPrefill: null,
+  wire: [],
 
   setConnection: (connection) => set({ connection }),
   setSymbols: (symbols) => set((s) => ({
@@ -176,4 +183,12 @@ export const useMarket = create<MarketState>()((set, get) => ({
   })),
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
   prefillTicket: (price) => set((s) => ({ ticketPrefill: { price, nonce: (s.ticketPrefill?.nonce ?? 0) + 1 } })),
+  // Merge rather than replace: a pushed headline may arrive before the REST snapshot does.
+  setWire: (wire) => set((s) => {
+    const byId = new Map([...wire, ...s.wire].map((h) => [h.id, h]))
+    return { wire: [...byId.values()].sort((a, b) => b.id - a.id).slice(0, WIRE_SIZE) }
+  }),
+  applyHeadline: (headline) => set((s) => (s.wire.some((h) => h.id === headline.id)
+    ? s
+    : { wire: [headline, ...s.wire].slice(0, WIRE_SIZE) })),
 }))

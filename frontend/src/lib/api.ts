@@ -1,5 +1,5 @@
 import type {
-  BookSnapshot, BotInfo, Candle, CancelResponse, Interval, OrderResult, PlaceOrder, SymbolInfo, Trade,
+  BookSnapshot, BotInfo, BotStyle, Candle, Storylines, WireHeadline, CancelResponse, Interval, OrderResult, PlaceOrder, SymbolInfo, Trade,
 } from './types'
 
 /**
@@ -31,6 +31,12 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T
 }
 
+/** For endpoints that answer with an empty body (204, or 200 with nothing). */
+async function requestNoBody(url: string, init?: RequestInit): Promise<void> {
+  const response = await fetch(url, init)
+  if (!response.ok) throw new ApiError(response.status, `HTTP ${response.status}`)
+}
+
 const json = (body: unknown): RequestInit => ({
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -48,4 +54,12 @@ export const api = {
   bots: () => request<BotInfo[]>('/api/bots'),
   setBotActive: (id: string, active: boolean) =>
     request<BotInfo>(`/api/bots/${id}/${active ? 'resume' : 'pause'}`, { method: 'POST' }),
+  tuneBot: (id: string, aggressiveness: number, size: number) =>
+    request<BotInfo>(`/api/bots/${id}/tuning`, { ...json({ aggressiveness, size }), method: 'PUT' }),
+  hireBot: (name: string, style: BotStyle) => request<BotInfo>('/api/bots', json({ name, style })),
+  removeBot: (id: string) => requestNoBody(`/api/bots/${id}`, { method: 'DELETE' }),
+  wire: (limit = 20) => request<WireHeadline[]>(`/api/wire?limit=${limit}`),
+  scenarios: () => request<Storylines>('/api/scenarios'),
+  startScenario: (id: string) => request<unknown>(`/api/scenarios/${id}/start`, { method: 'POST' }),
+  stopScenario: () => requestNoBody('/api/scenarios/stop', { method: 'POST' }),
 }

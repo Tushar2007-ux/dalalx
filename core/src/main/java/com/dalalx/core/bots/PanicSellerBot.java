@@ -19,7 +19,7 @@ public final class PanicSellerBot extends AbstractBot {
     static final long DUMP_BP = 50;
 
     public PanicSellerBot() {
-        super(ID, "Liquidity Taker", 3);
+        super(ID, "Panic Seller", "Liquidity Taker", "Sells first, reads the news later.", 3);
     }
 
     @Override

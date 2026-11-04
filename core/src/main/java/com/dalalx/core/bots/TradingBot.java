@@ -11,11 +11,23 @@ public interface TradingBot {
     /** @return the trader id on this bot's orders and trades, e.g. {@code "MUNIM"} */
     String id();
 
-    /** @return a short human description of the behaviour */
+    /** @return the byline, e.g. "The Munim" */
+    String name();
+
+    /** @return a short job title, e.g. "Market Maker" */
     String role();
+
+    /** @return one sentence describing how it trades */
+    String line();
 
     /** @return how often to act, in runner ticks (1 = every tick) */
     int everyTicks();
+
+    /** @return the current dials */
+    BotTuning tuning();
+
+    /** Changes the dials; safe to call from any thread. */
+    void tune(BotTuning tuning);
 
     /** Looks at the market and sends zero or more orders. Called on the bot thread only. */
     void act(BotContext context);

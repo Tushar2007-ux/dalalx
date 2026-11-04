@@ -1,13 +1,15 @@
-import { BreadthBar, PriceCell, RuledPanel, SectionLabel } from '../design'
+import { BreadthBar, PriceCell, RuledPanel, SectionLabel, TheWire } from '../design'
+import { hhmm } from '../lib/format'
 import { changePct, toRupees } from '../lib/format'
 import { useMarket } from '../store/market'
 
-/** Left column: every listed stock with its last price and day change, plus market breadth. */
+/** Left column: every listed stock with its last price and day change, The Wire, and market breadth. */
 export function MarketsPanel() {
   const symbols = useMarket((s) => s.symbols)
   const lastPrice = useMarket((s) => s.lastPrice)
   const selected = useMarket((s) => s.selected)
   const select = useMarket((s) => s.select)
+  const wire = useMarket((s) => s.wire)
 
   const moves = symbols.map((x) => (lastPrice[x.symbol] ?? x.referencePrice) - x.referencePrice)
   const advancing = moves.filter((m) => m > 0).length
@@ -35,6 +37,16 @@ export function MarketsPanel() {
           </button>
         )
       })}
+      <div style={{ marginTop: 14 }}>
+        <SectionLabel meta="Newest first">The Wire</SectionLabel>
+        {wire.length
+          ? <TheWire items={wire.slice(0, 6).map((h, i) => ({
+              id: h.id, time: hhmm(new Date(h.time)), headline: h.text, fresh: i === 0,
+              tone: h.tone === 'UP' ? 'up' : h.tone === 'DOWN' ? 'down' : h.tone === 'ALERT' ? 'alert' : undefined,
+            }))} />
+          : <p style={{ margin: '6px 0', fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 13, color: 'var(--ink-muted)' }}>
+              No news yet. Big moves, block trades and storylines will be printed here.</p>}
+      </div>
       <div style={{ marginTop: 14 }}>
         <SectionLabel under="hair">Market Breadth</SectionLabel>
         <BreadthBar advancing={advancing} declining={declining} unchanged={symbols.length - advancing - declining}

@@ -11,7 +11,7 @@ import java.util.List;
  *
  * <p>Each turn it re-quotes one stock (round robin): cancel its old quotes
  * there, work out a fair price, then place {@link #LEVELS} levels per side.
- * The fair price is the last trade pulled 5% of the way back toward the
+ * The fair price is the last trade pulled 1% of the way back toward the
  * reference price, a gentle mean reversion that stops the simulated market
  * from drifting off forever.
  *
@@ -29,11 +29,22 @@ public final class MarketMakerBot extends AbstractBot {
     static final long HALF_SPREAD_BP = 5;
     /** Gap between quote levels, in basis points. */
     static final long STEP_BP = 4;
+    /**
+     * Mean-reversion strength: the fair price moves 1/100th of the way back to
+     * the reference. Gentle enough that a determined seller can still crash
+     * the price (and trip the circuit breaker), strong enough to stop drift.
+     */
+    static final long REVERSION = 100;
 
     private int next;
 
     public MarketMakerBot() {
-        super(ID, "Market Maker", 1);
+        this(ID, "The Munim", "Quotes both sides all session and keeps the spread honest.");
+    }
+
+    /** A second market maker hired from the Correspondents page. */
+    public MarketMakerBot(String id, String name, String line) {
+        super(id, name, "Market Maker", line, 1);
     }
 
     @Override
@@ -49,9 +60,9 @@ public final class MarketMakerBot extends AbstractBot {
         }
     }
 
-    /** Last price, nudged 1/20th of the way back toward the reference. */
+    /** Last price, nudged 1/{@value #REVERSION}th of the way back toward the reference. */
     static long fairPrice(MarketView market, String symbol) {
         long last = market.lastPrice(symbol);
-        return Ticks.round(last + (market.referencePrice(symbol) - last) / 20);
+        return Ticks.round(last + (market.referencePrice(symbol) - last) / REVERSION);
     }
 }

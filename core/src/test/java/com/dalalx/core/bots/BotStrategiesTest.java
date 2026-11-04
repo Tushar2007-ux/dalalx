@@ -46,7 +46,7 @@ class BotStrategiesTest {
     @Test
     void marketMakerLeansBackTowardTheReferencePrice() {
         FakeMarket market = new FakeMarket().with("TCS", 400000, 440000); // 10% above reference
-        assertThat(MarketMakerBot.fairPrice(market, "TCS")).isEqualTo(438000); // 1/20th of the way back
+        assertThat(MarketMakerBot.fairPrice(market, "TCS")).isEqualTo(439600); // 1/100th of the way back
     }
 
     @Test

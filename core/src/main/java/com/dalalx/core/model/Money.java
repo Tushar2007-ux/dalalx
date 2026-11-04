@@ -54,7 +54,7 @@ public final class Money {
     }
 
     /** Inserts commas in Indian style: last 3 digits, then groups of 2. */
-    private static String groupIndian(long rupees) {
+    public static String groupIndian(long rupees) {
         String digits = Long.toString(rupees);
         if (digits.length() <= 3) {
             return digits;

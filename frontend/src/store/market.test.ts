@@ -47,3 +47,15 @@ describe('market store', () => {
     expect(useMarket.getState().toasts.map((t) => t.title)).toEqual(['t4', 't3', 't2'])
   })
 })
+
+describe('the wire', () => {
+  const h = (id: number) => ({ id, time: '2026-11-04T09:15:00Z', kicker: 'Markets', symbol: 'TCS', text: `story ${id}`, deck: null, tone: 'UP' as const })
+
+  it('merges a late REST snapshot with pushed headlines, newest first, without duplicates', () => {
+    useMarket.setState({ wire: [] })
+    useMarket.getState().applyHeadline(h(5))
+    useMarket.getState().applyHeadline(h(5))
+    useMarket.getState().setWire([h(4), h(3)])
+    expect(useMarket.getState().wire.map((x) => x.id)).toEqual([5, 4, 3])
+  })
+})

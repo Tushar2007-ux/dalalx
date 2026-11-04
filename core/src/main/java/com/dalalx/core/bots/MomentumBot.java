@@ -24,7 +24,12 @@ public final class MomentumBot extends AbstractBot {
     static final int NOISE_CHANCE = 35;
 
     public MomentumBot() {
-        super(ID, "Trend Follower", 2);
+        this(ID, "Momentum Chaser", "Buys what is rising. Sells what is falling.");
+    }
+
+    /** Another trend follower hired from the Correspondents page. */
+    public MomentumBot(String id, String name, String line) {
+        super(id, name, "Trend Follower", line, 2);
     }
 
     @Override

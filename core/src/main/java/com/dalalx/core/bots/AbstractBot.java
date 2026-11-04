@@ -23,14 +23,24 @@ import java.util.Objects;
 public abstract class AbstractBot implements TradingBot {
 
     private final String id;
+    private final String name;
     private final String role;
+    private final String line;
     private final int everyTicks;
+    /**
+     * The only field another thread writes (a web request turning a dial).
+     * {@code volatile} makes the new record visible to the bot thread at once;
+     * the record is immutable, so it can never be seen half-changed.
+     */
+    private volatile BotTuning tuning = BotTuning.NORMAL;
     /** Orders of ours that rested in a book: id → symbol. */
     private final Map<Long, String> resting = new LinkedHashMap<>();
 
-    protected AbstractBot(String id, String role, int everyTicks) {
+    protected AbstractBot(String id, String name, String role, String line, int everyTicks) {
         this.id = Objects.requireNonNull(id, "id must not be null");
+        this.name = Objects.requireNonNull(name, "name must not be null");
         this.role = Objects.requireNonNull(role, "role must not be null");
+        this.line = Objects.requireNonNull(line, "line must not be null");
         if (everyTicks < 1) {
             throw new IllegalArgumentException("everyTicks must be >= 1");
         }
@@ -43,8 +53,28 @@ public abstract class AbstractBot implements TradingBot {
     }
 
     @Override
+    public final String name() {
+        return name;
+    }
+
+    @Override
     public final String role() {
         return role;
+    }
+
+    @Override
+    public final String line() {
+        return line;
+    }
+
+    @Override
+    public final BotTuning tuning() {
+        return tuning;
+    }
+
+    @Override
+    public final void tune(BotTuning newTuning) {
+        this.tuning = Objects.requireNonNull(newTuning, "tuning must not be null");
     }
 
     @Override
@@ -52,9 +82,10 @@ public abstract class AbstractBot implements TradingBot {
         return everyTicks;
     }
 
-    /** Sends a limit order and remembers it if part of it rests in the book. */
+    /** Sends a limit order (size scaled by the size dial) and remembers it if part of it rests. */
     protected final MatchResult limit(BotContext ctx, String symbol, Side side, long price, long qty) {
-        MatchResult result = ctx.orders().submit(new OrderRequest(symbol, id, side, OrderType.LIMIT, Ticks.round(price), qty));
+        MatchResult result = ctx.orders().submit(
+                new OrderRequest(symbol, id, side, OrderType.LIMIT, Ticks.round(price), tuning.scale(qty)));
         if (result.rested()) {
             resting.put(result.incoming().id(), symbol);
         }
@@ -63,7 +94,8 @@ public abstract class AbstractBot implements TradingBot {
 
     /** Sends an immediate-or-cancel order: trades up to {@code price}, never rests. */
     protected final MatchResult ioc(BotContext ctx, String symbol, Side side, long price, long qty) {
-        return ctx.orders().submit(new OrderRequest(symbol, id, side, OrderType.IOC, Ticks.round(price), qty));
+        return ctx.orders().submit(
+                new OrderRequest(symbol, id, side, OrderType.IOC, Ticks.round(price), tuning.scale(qty)));
     }
 
     @Override

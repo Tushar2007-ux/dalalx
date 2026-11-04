@@ -28,7 +28,7 @@ public final class WhaleBot extends AbstractBot {
     private Parent parent;
 
     public WhaleBot() {
-        super(ID, "Block Trader", 4);
+        super(ID, "The Whale", "Block Trader", "Moves size slowly. The book notices anyway.", 4);
     }
 
     @Override

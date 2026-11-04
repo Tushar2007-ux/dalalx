@@ -1,7 +1,9 @@
 package com.dalalx.server.api;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -27,7 +29,9 @@ class BotControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(4))
                 .andExpect(jsonPath("$[0].id").value("MUNIM"))
+                .andExpect(jsonPath("$[0].name").value("The Munim"))
                 .andExpect(jsonPath("$[0].role").value("Market Maker"))
+                .andExpect(jsonPath("$[0].tuning.aggressiveness").value(2))
                 .andExpect(jsonPath("$[0].status").value("ACTIVE"))
                 .andExpect(jsonPath("$[0].running").value(false)) // bots are off in tests
                 .andExpect(jsonPath("$[0].stats.pnl").value(0));
@@ -57,5 +61,34 @@ class BotControllerTest {
         mvc.perform(post("/api/bots/GHOST/pause"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("no bot called GHOST"));
+    }
+
+    @Test
+    void turnsTheDials() throws Exception {
+        mvc.perform(put("/api/bots/WHALE/tuning").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"aggressiveness\":4,\"size\":0}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tuning.aggressiveness").value(4))
+                .andExpect(jsonPath("$.tuning.size").value(0));
+        mvc.perform(put("/api/bots/WHALE/tuning").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"aggressiveness\":9,\"size\":0}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void hiresAndRemovesACorrespondent() throws Exception {
+        mvc.perform(post("/api/bots").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"The Contrarian\",\"style\":\"CONTRARIAN\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value("THECONTRARIAN"))
+                .andExpect(jsonPath("$.role").value("Contrarian"));
+        mvc.perform(post("/api/bots").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"the contrarian\",\"style\":\"NOISE\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("there is already a bot called THECONTRARIAN"));
+
+        mvc.perform(delete("/api/bots/THECONTRARIAN")).andExpect(status().isNoContent());
+        mvc.perform(get("/api/bots")).andExpect(jsonPath("$.length()").value(4));
+        mvc.perform(delete("/api/bots/THECONTRARIAN")).andExpect(status().isNotFound());
     }
 }

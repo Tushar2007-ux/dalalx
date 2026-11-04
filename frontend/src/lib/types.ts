@@ -104,11 +104,15 @@ export const INTERVALS: Interval[] = ['1m', '5m', '15m', '1D']
 /** A simulated trader, from GET /api/bots. P&L and cash are paise; positions are shares. */
 export interface BotInfo {
   id: string
+  name: string
   role: string
+  line: string
+  tuning: { aggressiveness: number; size: number }
   status: 'ACTIVE' | 'PAUSED'
   running: boolean
   stats: {
     traderId: string
+    orders: number
     trades: number
     volume: number
     cash: number
@@ -116,3 +120,32 @@ export interface BotInfo {
     pnl: number
   }
 }
+
+/** One item on The Wire (GET /api/wire, pushed on /topic/wire). */
+export interface WireHeadline {
+  id: number
+  time: string
+  kicker: string
+  symbol: string | null
+  text: string
+  deck: string | null
+  tone: 'UP' | 'DOWN' | 'ALERT' | 'NEUTRAL'
+}
+
+/** A storyline from GET /api/scenarios. */
+export interface Story {
+  id: string
+  kicker: string
+  headline: string
+  deck: string
+  symbol: string
+  tone: 'UP' | 'DOWN' | 'NEUTRAL'
+  durationSeconds: number
+}
+
+export interface Storylines {
+  stories: Story[]
+  running: { id: string | null; startedAt: string | null; durationSeconds: number | null }
+}
+
+export type BotStyle = 'CONTRARIAN' | 'MOMENTUM' | 'MARKET_MAKER' | 'NOISE'

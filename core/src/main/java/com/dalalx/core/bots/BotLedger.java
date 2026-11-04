@@ -2,6 +2,8 @@ package com.dalalx.core.bots;
 
 import com.dalalx.core.events.EngineEvent;
 import com.dalalx.core.events.EngineListener;
+import com.dalalx.core.events.OrderAccepted;
+import com.dalalx.core.events.OrderRejected;
 import com.dalalx.core.events.TradeExecuted;
 import com.dalalx.core.model.Trade;
 import java.util.HashMap;
@@ -12,7 +14,8 @@ import java.util.TreeMap;
 /**
  * Keeps score for every trader: position, cash, trade count and P&amp;L.
  *
- * <p>It is an {@link EngineListener} (Observer): every {@code TradeExecuted}
+ * <p>It is an {@link EngineListener} (Observer): it counts each trader's
+ * orders, and every {@code TradeExecuted}
  * moves shares from seller to buyer and cash the other way. P&amp;L is
  * "mark-to-market": cash plus each position valued at the latest price.
  *
@@ -23,6 +26,7 @@ import java.util.TreeMap;
 public final class BotLedger implements EngineListener {
 
     private static final class Account {
+        long orders;
         long trades;
         long volume;
         long cash;
@@ -39,9 +43,16 @@ public final class BotLedger implements EngineListener {
 
     @Override
     public void onEvent(EngineEvent event) {
-        if (event instanceof TradeExecuted e) {
-            record(e.trade());
+        switch (event) {
+            case TradeExecuted e -> record(e.trade());
+            case OrderAccepted e -> countOrder(e.order().traderId());
+            case OrderRejected e -> countOrder(e.order().traderId());
+            default -> { }
         }
+    }
+
+    private synchronized void countOrder(String trader) {
+        accounts.computeIfAbsent(trader, t -> new Account()).orders++;
     }
 
     /** Books one trade for both sides. */
@@ -63,12 +74,12 @@ public final class BotLedger implements EngineListener {
     public synchronized BotStats stats(String traderId) {
         Account a = accounts.get(traderId);
         if (a == null) {
-            return new BotStats(traderId, 0, 0, 0, Map.of(), 0);
+            return new BotStats(traderId, 0, 0, 0, 0, Map.of(), 0);
         }
         long pnl = a.cash;
         for (Map.Entry<String, Long> p : a.positions.entrySet()) {
             pnl += p.getValue() * market.lastPrice(p.getKey());
         }
-        return new BotStats(traderId, a.trades, a.volume, a.cash, a.positions, pnl);
+        return new BotStats(traderId, a.orders, a.trades, a.volume, a.cash, a.positions, pnl);
     }
 }

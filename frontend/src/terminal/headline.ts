@@ -1,4 +1,5 @@
-import { changePct, formatPaise } from '../lib/format'
+import { changePct, clockTime, formatPaise } from '../lib/format'
+import type { WireHeadline } from '../lib/types'
 import type { Connection } from '../store/market'
 
 /**
@@ -38,4 +39,31 @@ export function priceHeadline(symbol: string, price: number | undefined, referen
     headline: `${symbol} ${up ? 'rises' : 'falls'} ${Math.abs(pct).toFixed(2)}% to ₹${formatPaise(price)}`,
     deck: `Against a reference price of ₹${formatPaise(reference)}.`,
   }
+}
+
+/** A wire story stays in the banner for this long before the price story returns. */
+export const BANNER_FRESH_MS = 90_000
+
+const TONES = { UP: 'up', DOWN: 'down', ALERT: 'down', NEUTRAL: 'neutral' } as const
+
+/**
+ * The banner prefers real news: the newest wire story (about this stock or the
+ * whole market) if it is fresh, otherwise the plain price story.
+ */
+export function bannerHeadline(wire: WireHeadline[], symbol: string, price: number | undefined,
+                               reference: number | undefined, connection: Connection, now: number): Headline & { time?: string } {
+  if (connection !== 'offline') {
+    const news = wire.find((h) => h.symbol === null || h.symbol === symbol)
+    if (news && now - Date.parse(news.time) < BANNER_FRESH_MS) {
+      return {
+        kicker: news.kicker,
+        headline: news.text,
+        deck: news.deck ?? undefined,
+        tone: TONES[news.tone],
+        state: news.tone === 'ALERT' ? 'breaking' : 'live',
+        time: clockTime(news.time).slice(0, 8),
+      }
+    }
+  }
+  return priceHeadline(symbol, price, reference, connection)
 }

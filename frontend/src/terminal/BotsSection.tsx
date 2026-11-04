@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { BotByline, SectionLabel } from '../design'
+import { BotByline, Monogram, SectionLabel } from '../design'
 import { api } from '../lib/api'
 import { formatPaise } from '../lib/format'
 import { botKey } from '../lib/market'
+import { monogramOf } from '../lib/monogram'
 import type { BotInfo } from '../lib/types'
 import { useMarket } from '../store/market'
 
@@ -43,12 +44,30 @@ export function BotsSection() {
   return (
     <div style={{ marginTop: 16 }}>
       <SectionLabel count={bots.length} meta={bots.length ? `${trading} trading · click to pause` : 'No bots'}>On the Floor</SectionLabel>
-      {bots.map((b) => (
-        <BotByline key={b.id} bot={(botKey(b.id) ?? 'munim') as BotKey} layout="compact"
-          status={!b.running || b.status === 'PAUSED' ? 'idle' : 'active'}
-          stats={[pnlStat(b.stats.pnl), { label: 'Trades', value: b.stats.trades.toLocaleString('en-IN') }]}
-          onClick={() => void toggle(b)} />
-      ))}
+      {bots.map((b) => {
+        const key = botKey(b.id)
+        const status = !b.running || b.status === 'PAUSED' ? 'idle' : 'active'
+        const stats = [pnlStat(b.stats.pnl), { label: 'Trades', value: b.stats.trades.toLocaleString('en-IN') }]
+        return key && key !== 'you'
+          ? <BotByline key={b.id} bot={key as BotKey} layout="compact" status={status} stats={stats} onClick={() => void toggle(b)} />
+          : <HiredRow key={b.id} bot={b} active={status === 'active'} onClick={() => void toggle(b)} />
+      })}
     </div>
+  )
+}
+
+/** A correspondent hired on the Correspondents page has no portrait: a stamp monogram instead. */
+function HiredRow({ bot, active, onClick }: { bot: BotInfo; active: boolean; onClick: () => void }) {
+  const pnl = pnlStat(bot.stats.pnl)
+  return (
+    <button type="button" onClick={onClick} className="dx-focus"
+      style={{ all: 'unset', boxSizing: 'border-box', width: '100%', cursor: 'pointer', display: 'grid', gridTemplateColumns: '40px minmax(0,1fr) auto', gap: 10, alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--rule)' }}>
+      <Monogram bot={monogramOf(bot.name)} size={36} />
+      <span style={{ minWidth: 0 }}>
+        <span style={{ display: 'block', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15 }}>{bot.name}</span>
+        <span style={{ fontSize: 11.5, color: active ? 'var(--buy)' : 'var(--ink-muted)' }}>{active ? '●' : '○'} {bot.role} · {active ? 'Trading' : 'Paused'}</span>
+      </span>
+      <span className="dx-num" style={{ fontSize: 13, color: pnl.dir === 'up' ? 'var(--buy)' : pnl.dir === 'down' ? 'var(--sell)' : 'var(--ink)' }}>{pnl.value}</span>
+    </button>
   )
 }

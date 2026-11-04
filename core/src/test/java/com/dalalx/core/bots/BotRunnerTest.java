@@ -15,7 +15,7 @@ class BotRunnerTest {
         private final boolean explode;
 
         CountingBot(String id, int every, boolean explode) {
-            super(id, "test", every);
+            super(id, id, "test", "counts calls", every);
             this.explode = explode;
         }
 
