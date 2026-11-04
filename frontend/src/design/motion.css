@@ -1,0 +1,72 @@
+/* Print metaphors. Quick, smooth, never bouncy: no easing in this file overshoots. */
+:root {
+  --dur-instant: 0ms;
+  --dur-tick: 120ms;          /* hover, press */
+  --dur-quick: 180ms;         /* typeset row, toast slip-in */
+  --dur-depth: 240ms;         /* depth bar grow/shrink */
+  --dur-stamp: 220ms;         /* stamp slam */
+  --dur-ink: 520ms;           /* price ink-in (spread 0–160ms, tint fades to 520ms) */
+  --dur-pencil: 480ms;        /* red-pencil circle draws */
+  --dur-pen: 360ms;           /* chart pen extends one segment */
+  --dur-modal: 200ms;
+
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);       /* default: arrives and settles */
+  --ease-in-out: cubic-bezier(0.45, 0, 0.25, 1);    /* pencil, pen */
+  --ease-slam: cubic-bezier(0.55, 0, 0.9, 0.4);     /* accelerates into the paper, no rebound */
+  --ease-linear: linear;
+}
+
+@keyframes dx-ink-up {
+  0%   { color: var(--buy); background-color: var(--buy-wash); text-shadow: 0 0 1.4px currentColor; }
+  30%  { color: var(--buy); background-color: var(--buy-wash); text-shadow: 0 0 0 currentColor; }
+  100% { background-color: transparent; }
+}
+@keyframes dx-ink-down {
+  0%   { color: var(--sell); background-color: var(--sell-wash); text-shadow: 0 0 1.4px currentColor; }
+  30%  { color: var(--sell); background-color: var(--sell-wash); text-shadow: 0 0 0 currentColor; }
+  100% { background-color: transparent; }
+}
+@keyframes dx-typeset {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+@keyframes dx-stamp {
+  0%   { opacity: 0; transform: rotate(var(--stamp-angle, -6deg)) scale(1.45); }
+  70%  { opacity: 1; transform: rotate(var(--stamp-angle, -6deg)) scale(1); }
+  100% { opacity: 1; transform: rotate(var(--stamp-angle, -6deg)) scale(1); }
+}
+@keyframes dx-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes dx-slip-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes dx-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.dx-anim-ink-up   { animation: dx-ink-up var(--dur-ink) var(--ease-out); }
+.dx-anim-ink-down { animation: dx-ink-down var(--dur-ink) var(--ease-out); }
+.dx-anim-typeset  { animation: dx-typeset var(--dur-quick) steps(14, end); }
+.dx-anim-stamp    { animation: dx-stamp var(--dur-stamp) var(--ease-slam) both; }
+.dx-anim-draw     { animation: dx-draw var(--dur-pencil) var(--ease-in-out) forwards; }
+.dx-anim-pen      { animation: dx-draw var(--dur-pen) var(--ease-in-out) forwards; }
+.dx-anim-slip     { animation: dx-slip-in var(--dur-quick) var(--ease-out); }
+.dx-anim-fade     { animation: dx-fade-in var(--dur-modal) var(--ease-out); }
+.dx-depth         { transition: width var(--dur-depth) var(--ease-out); }
+@keyframes dx-lift { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-24px) scale(1.12); } }
+.dx-anim-lift     { animation: dx-lift 520ms var(--ease-in-out) forwards; }  /* stamp lifts off the page on reopen */
+
+/* Reduced motion: every change is instant. Final states are identical, only the journey is removed. */
+@media (prefers-reduced-motion: reduce) {
+  [class*="dx-anim-"], .dx-depth { animation: none !important; transition: none !important; }
+  .dx-anim-draw, .dx-anim-pen { stroke-dashoffset: 0 !important; }
+  .dx-anim-lift { opacity: 0 !important; }
+}
+[data-motion="reduced"] [class*="dx-anim-"],
+[data-motion="reduced"] .dx-depth { animation: none !important; transition: none !important; }
+[data-motion="reduced"] .dx-anim-draw,
+[data-motion="reduced"] .dx-anim-pen { stroke-dashoffset: 0 !important; }
+[data-motion="reduced"] .dx-anim-lift { opacity: 0 !important; }

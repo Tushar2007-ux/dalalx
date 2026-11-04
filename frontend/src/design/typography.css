@@ -1,0 +1,26 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap");
+
+:root {
+  --font-display: "Fraunces", "Times New Roman", serif;   /* masthead, headlines, bylines */
+  --font-ui: "IBM Plex Sans", system-ui, sans-serif;       /* every control and label */
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;   /* every number and price */
+  --figures: "tnum" 1, "lnum" 1, "zero" 1;                 /* font-feature-settings for numbers */
+
+  --text-masthead: 72px;      /* Fraunces 800, opsz 144, -0.02em */
+  --text-headline: 28px;      /* Fraunces 700, opsz 72, lh 1.1 */
+  --text-title: 20px;         /* Fraunces 600 */
+  --text-deck: 15px;          /* Fraunces italic 400 — standfirsts, quotes */
+  --text-body: 14px;          /* Plex Sans 400, lh 1.45 */
+  --text-ui: 13px;            /* Plex Sans 500 — controls */
+  --text-small: 12px;         /* Plex Sans — meta */
+  --text-label: 11px;         /* Plex Sans 600, uppercase, 0.14em — kickers, field labels */
+  --text-section: 13px;       /* Plex Sans 700, uppercase, 0.12em — section labels */
+  --text-num: 13px;           /* Plex Mono 500 — book, tape */
+  --text-num-lg: 22px;        /* Plex Mono 500 — last traded price */
+  --text-num-xl: 40px;        /* Plex Mono 500 — countdown */
+
+  --tracking-label: 0.14em;
+  --tracking-masthead: -0.02em;
+  --leading-tight: 1.1;
+  --leading-body: 1.45;
+}

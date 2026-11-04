@@ -1,0 +1,49 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+import type { OrderView, Trade } from '../lib/types'
+import { useMarket } from './market'
+
+const mine: OrderView = { id: 5, symbol: 'TCS', traderId: 'YOU', side: 'SELL', type: 'LIMIT', limitPrice: 409000, originalQty: 30, remainingQty: 30, status: 'NEW' }
+const trade = (qty: number, aggressorSide: 'BUY' | 'SELL', id = 1): Trade => ({
+  id, symbol: 'TCS', price: 409000, qty, buyOrderId: 99, sellOrderId: 5, buyerId: 'MUNIM', sellerId: 'YOU',
+  aggressorSide, timestamp: '2026-11-04T09:15:00Z',
+})
+
+describe('market store', () => {
+  beforeEach(() => useMarket.setState({ myOrders: {}, toasts: [], tapes: {}, lastPrice: {}, chart: null, interval: '1m' }))
+
+  it('fills my resting order when someone hits it, and tells me', () => {
+    useMarket.getState().trackOrder(mine)
+    useMarket.getState().applyTrades('TCS', [trade(10, 'BUY')])
+    const s = useMarket.getState()
+    expect(s.myOrders[5]).toMatchObject({ remainingQty: 20, status: 'PARTIALLY_FILLED' })
+    expect(s.toasts[0].title).toBe('Sold 10 TCS at ₹4,090.00')
+    expect(s.lastPrice.TCS).toBe(409000)
+    expect(s.tapes.TCS).toHaveLength(1)
+  })
+
+  it('does not count my own aggressive fills twice (the REST reply already did)', () => {
+    useMarket.getState().trackOrder({ ...mine, remainingQty: 20, status: 'PARTIALLY_FILLED' })
+    useMarket.getState().applyTrades('TCS', [trade(10, 'SELL')])
+    expect(useMarket.getState().myOrders[5].remainingQty).toBe(20)
+    expect(useMarket.getState().toasts).toHaveLength(0)
+  })
+
+  it('keeps the newest trades first and merges them into the visible chart', () => {
+    useMarket.getState().setCandles('TCS', '1m', [])
+    useMarket.getState().applyTrades('TCS', [trade(1, 'BUY', 1), trade(2, 'BUY', 2)])
+    const s = useMarket.getState()
+    expect(s.tapes.TCS.map((t) => t.id)).toEqual([2, 1])
+    expect(s.chart?.candles[0].volume).toBe(3)
+  })
+
+  it('marks my order cancelled when the exchange says so', () => {
+    useMarket.getState().trackOrder(mine)
+    useMarket.getState().applyActivity([{ kind: 'CANCELLED', symbol: 'TCS', orderId: 5, traderId: 'YOU', side: 'SELL', type: 'LIMIT', price: 409000, qty: 30, remainingQty: 30, reason: 'cancelled by trader' }])
+    expect(useMarket.getState().myOrders[5].status).toBe('CANCELLED')
+  })
+
+  it('keeps at most three toasts', () => {
+    for (let i = 0; i < 5; i++) useMarket.getState().toast({ kind: 'info', title: `t${i}` })
+    expect(useMarket.getState().toasts.map((t) => t.title)).toEqual(['t4', 't3', 't2'])
+  })
+})

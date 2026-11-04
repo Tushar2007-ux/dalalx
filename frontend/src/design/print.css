@@ -1,0 +1,22 @@
+/* Paper, grain, hatching, portrait switching. No gradients-as-colour, no glows, no drop shadows. */
+html, body { margin: 0; }
+body { background: var(--paper); color: var(--ink); font-family: var(--font-ui); -webkit-font-smoothing: antialiased; }
+a { color: var(--ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { color: var(--accent); }
+
+.dx-paper { position: relative; isolation: isolate; background-color: var(--paper); color: var(--ink); }
+.dx-paper::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background-image: var(--grain); opacity: var(--grain-opacity);
+}
+
+.dx-num { font-family: var(--font-mono); font-feature-settings: var(--figures); font-variant-numeric: tabular-nums lining-nums slashed-zero; }
+
+/* Hatched fills (pattern, not a colour gradient). Colour comes from `color`. */
+.dx-hatch { background-image: repeating-linear-gradient(-45deg, currentColor 0 1px, transparent 1px 4px); }
+.dx-hatch-dense { background-image: repeating-linear-gradient(-45deg, currentColor 0 1.5px, transparent 1.5px 3px); }
+
+.dx-portrait-day   { display: var(--portrait-day); mix-blend-mode: var(--portrait-blend); }
+.dx-portrait-night { display: var(--portrait-night); mix-blend-mode: var(--portrait-blend); }
+
+.dx-focus:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
