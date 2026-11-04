@@ -100,3 +100,19 @@ export interface OrderActivity {
 
 export type Interval = '1m' | '5m' | '15m' | '1D'
 export const INTERVALS: Interval[] = ['1m', '5m', '15m', '1D']
+
+/** A simulated trader, from GET /api/bots. P&L and cash are paise; positions are shares. */
+export interface BotInfo {
+  id: string
+  role: string
+  status: 'ACTIVE' | 'PAUSED'
+  running: boolean
+  stats: {
+    traderId: string
+    trades: number
+    volume: number
+    cash: number
+    positions: Record<string, number>
+    pnl: number
+  }
+}

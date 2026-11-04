@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Button, Modal, OrderTypeToggle, PriceInput, RubberStamp, RuledPanel, SectionLabel, SideToggle,
 } from '../design'
@@ -7,6 +7,7 @@ import { clockTime, formatPaise, formatQty } from '../lib/format'
 import { isWorking } from '../lib/market'
 import type { OrderType, PlaceOrder } from '../lib/types'
 import { useMarket } from '../store/market'
+import { BotsSection } from './BotsSection'
 import { bandOf, checkTicket, outcomeToast } from './ticket'
 
 const italic = { margin: 0, fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14, color: 'var(--ink-muted)' } as const
@@ -20,6 +21,7 @@ export function TicketPanel() {
       style={{ minWidth: 0, padding: '0 0 0 12px', flex: '1 1 300px' }}>
       {connection === 'offline' ? <ClosedTicket /> : <Ticket key={selected} symbol={selected} />}
       <YourOrders />
+      <BotsSection />
     </RuledPanel>
   )
 }
@@ -56,6 +58,13 @@ function Ticket({ symbol }: { symbol: string }) {
     return () => clearTimeout(timer)
   }, [stamp])
 
+  // If the ticket opened before prices arrived, fill in the price once they do (unless the trader already typed).
+  const typed = useRef(false)
+  const marketPrice = last ?? reference
+  useEffect(() => {
+    if (!typed.current && marketPrice !== undefined) setPriceText((t) => t || formatPaise(marketPrice))
+  }, [marketPrice])
+
   // A click on a book level copies its price here.
   useEffect(() => {
     if (prefill) setPriceText(formatPaise(prefill.price))
@@ -90,7 +99,7 @@ function Ticket({ symbol }: { symbol: string }) {
       <SideToggle value={side} onChange={setSide} />
       <OrderTypeToggle value={type.toLowerCase()} onChange={(v) => setType(v.toUpperCase() as OrderType)} />
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
-        <PriceInput label="Limit price" prefix="₹" value={type === 'MARKET' ? 'Market' : priceText} onChange={setPriceText}
+        <PriceInput label="Limit price" prefix="₹" value={type === 'MARKET' ? 'Market' : priceText} onChange={(v) => { typed.current = true; setPriceText(v) }}
           disabled={type === 'MARKET'} inputMode="decimal"
           error={type !== 'MARKET' && check.error && !check.error.startsWith('Quantity') ? check.error : undefined}
           hint={type === 'MARKET' ? 'Best available' : band ? `Band ₹${formatPaise(band[0])}–${formatPaise(band[1])}` : undefined} />

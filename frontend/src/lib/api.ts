@@ -1,5 +1,5 @@
 import type {
-  BookSnapshot, Candle, CancelResponse, Interval, OrderResult, PlaceOrder, SymbolInfo, Trade,
+  BookSnapshot, BotInfo, Candle, CancelResponse, Interval, OrderResult, PlaceOrder, SymbolInfo, Trade,
 } from './types'
 
 /**
@@ -45,4 +45,7 @@ export const api = {
   candles: (symbol: string, interval: Interval) => request<Candle[]>(`/api/candles/${symbol}?interval=${interval}`),
   placeOrder: (order: PlaceOrder) => request<OrderResult>('/api/orders', json(order)),
   cancelOrder: (orderId: number) => request<CancelResponse>(`/api/orders/${orderId}`, { method: 'DELETE' }),
+  bots: () => request<BotInfo[]>('/api/bots'),
+  setBotActive: (id: string, active: boolean) =>
+    request<BotInfo>(`/api/bots/${id}/${active ? 'resume' : 'pause'}`, { method: 'POST' }),
 }
