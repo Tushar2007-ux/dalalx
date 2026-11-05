@@ -106,4 +106,16 @@ class OrderRequestTest {
         // Records get value-based equals/hashCode for free.
         assertThat(limit(100, 1)).isEqualTo(limit(100, 1)).hasSameHashCodeAs(limit(100, 1));
     }
+
+    @Test
+    void refusesFatFingerSizesAndPrices() {
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> limit(100, OrderRequest.MAX_QTY + 1)).withMessageContaining("qty must be at most");
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> limit(OrderRequest.MAX_PRICE + 1, 1)).withMessageContaining("price must be at most");
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> new OrderRequest("TCS", "X".repeat(33), Side.BUY, OrderType.LIMIT, 100, 1))
+                .withMessageContaining("traderId");
+        assertThat(limit(OrderRequest.MAX_PRICE, OrderRequest.MAX_QTY).qty()).isEqualTo(OrderRequest.MAX_QTY);
+    }
 }

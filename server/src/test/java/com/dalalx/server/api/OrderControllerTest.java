@@ -69,6 +69,13 @@ class OrderControllerTest {
     }
 
     @Test
+    void aFatFingerOrderIsABadRequest() throws Exception {
+        place(order("TCS", "BUY", "LIMIT", 409000, 10_00_001))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("qty must be at most 1000000 but was 1000001"));
+    }
+
+    @Test
     void invalidQuantityIsABadRequest() throws Exception {
         place(order("TCS", "BUY", "LIMIT", 400000, 0))
                 .andExpect(status().isBadRequest())

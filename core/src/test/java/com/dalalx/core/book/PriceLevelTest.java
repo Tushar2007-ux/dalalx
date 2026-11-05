@@ -94,4 +94,18 @@ class PriceLevelTest {
     void rejectsOrderAtDifferentPrice() {
         assertThatIllegalArgumentException().isThrownBy(() -> level.add(orders.limit(Side.BUY, 10001, 1)));
     }
+
+    @Test
+    void mainTraderFollowsFillsAndRemovals() {
+        var whale = orders.limit("WHALE", com.dalalx.core.model.Side.BUY, 10000, 300);
+        level.add(orders.limit("MUNIM", com.dalalx.core.model.Side.BUY, 10000, 200));
+        level.add(whale);
+        assertThat(level.toSnapshot().mainTrader()).isEqualTo("WHALE");
+
+        level.remove(whale);                       // the whale leaves: the munim is all that is left
+        assertThat(level.toSnapshot().mainTrader()).isEqualTo("MUNIM");
+
+        level.fillOldest(200);                     // and is filled: nobody is left
+        assertThat(level.toSnapshot().mainTrader()).isNull();
+    }
 }

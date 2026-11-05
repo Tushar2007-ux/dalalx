@@ -41,8 +41,11 @@ final class SymbolWorker {
     private static final Logger LOG = System.getLogger(SymbolWorker.class.getName());
     static final int QUEUE_CAPACITY = 100_000;
 
+    /** How long a producer waits for room in a full queue before the command is refused. */
+    static final long OFFER_TIMEOUT_MS = 1_000;
+
     private final SymbolEngine engine;
-    private final BlockingQueue<Command<?>> queue = new LinkedBlockingQueue<>(QUEUE_CAPACITY);
+    private final BlockingQueue<Command<?>> queue;
     private final Command<Void> poisonPill = Command.of("stop", engine -> null);
     private final Thread thread;
     private volatile boolean accepting = true;
@@ -56,7 +59,13 @@ final class SymbolWorker {
     }
 
     SymbolWorker(SymbolEngine engine) {
+        this(engine, QUEUE_CAPACITY);
+    }
+
+    /** A worker with a custom queue size (tests use a tiny one to fill it). */
+    SymbolWorker(SymbolEngine engine, int capacity) {
         this.engine = Objects.requireNonNull(engine, "engine must not be null");
+        this.queue = new LinkedBlockingQueue<>(capacity);
         this.thread = new Thread(this::runLoop, "worker-" + engine.symbol());
     }
 
@@ -77,7 +86,12 @@ final class SymbolWorker {
             return command.result();
         }
         try {
-            queue.put(command); // blocks if 100,000 commands are already waiting (back-pressure)
+            // Back-pressure: if 100,000 commands are already waiting, wait up to a second for room,
+            // then refuse rather than block the caller (a web thread, the bots) for ever.
+            if (!queue.offer(command, OFFER_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                command.result().completeExceptionally(
+                        new RejectedExecutionException(engine.symbol() + " is too busy; try again"));
+            }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             command.result().completeExceptionally(e);

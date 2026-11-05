@@ -3,7 +3,7 @@ package com.dalalx.core.book;
 import com.dalalx.core.model.Order;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -29,6 +29,13 @@ final class PriceLevel {
     private final long price;
     private final Deque<Order> queue = new ArrayDeque<>();
     private long totalQty;
+    /**
+     * Shares per trader at this price, kept up to date on every add, fill and
+     * remove, so finding the main trader never has to walk the whole queue
+     * (which can hold thousands of orders). The X-Ray "main trader" is then a
+     * scan over a handful of traders, not over every order.
+     */
+    private final Map<String, Long> qtyByTrader = new HashMap<>();
 
     PriceLevel(long price) {
         this.price = price;
@@ -42,6 +49,7 @@ final class PriceLevel {
         }
         queue.addLast(order);
         totalQty += order.remainingQty();
+        adjust(order.traderId(), order.remainingQty());
     }
 
     /** @return the order at the front of the queue (next to trade), or {@code null} if empty */
@@ -59,6 +67,7 @@ final class PriceLevel {
         Order oldest = queue.getFirst(); // throws NoSuchElementException if empty
         oldest.fill(qty);                // validates qty; throws before we touch totalQty
         totalQty -= qty;
+        adjust(oldest.traderId(), -qty);
         if (!oldest.isActive()) {
             queue.removeFirst();
         }
@@ -76,6 +85,7 @@ final class PriceLevel {
         boolean removed = queue.remove(order);
         if (removed) {
             totalQty -= order.remainingQty();
+            adjust(order.traderId(), -order.remainingQty());
         }
         return removed;
     }
@@ -100,15 +110,19 @@ final class PriceLevel {
         return new LevelSnapshot(price, totalQty, queue.size(), mainTrader());
     }
 
-    /** The trader with the most shares here (ties go to whoever queued first). */
+    private void adjust(String trader, long delta) {
+        qtyByTrader.merge(trader, delta, (a, b) -> a + b == 0 ? null : a + b); // null removes the entry
+    }
+
+    /** The trader with the most shares here (ties broken by name, so the answer is stable). */
     private String mainTrader() {
-        Map<String, Long> byTrader = new LinkedHashMap<>();
-        for (Order order : queue) {
-            byTrader.merge(order.traderId(), order.remainingQty(), Long::sum);
-        }
         String best = null;
         long most = -1;
-        for (Map.Entry<String, Long> e : byTrader.entrySet()) {
+        for (Map.Entry<String, Long> e : qtyByTrader.entrySet()) {
+            if (e.getValue() == most && best != null && e.getKey().compareTo(best) < 0) {
+                best = e.getKey();
+                continue;
+            }
             if (e.getValue() > most) {
                 best = e.getKey();
                 most = e.getValue();

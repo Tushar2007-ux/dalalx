@@ -27,13 +27,29 @@ public record OrderRequest(String symbol, String traderId, Side side, OrderType 
                            long price, long qty) {
 
     /** Validates every field and normalises the MARKET price. */
+    /** Largest order accepted: 10 lakh shares (a "fat finger" guard). */
+    public static final long MAX_QTY = 10_00_000;
+    /** Highest limit price accepted: ₹10,00,000 a share. */
+    public static final long MAX_PRICE = 10_00_000_00L;
+    /** Longest trader id accepted. */
+    public static final int MAX_TRADER_ID = 32;
+
     public OrderRequest {
         requireNotBlank(symbol, "symbol");
         requireNotBlank(traderId, "traderId");
+        if (traderId.length() > MAX_TRADER_ID) {
+            throw new IllegalArgumentException("traderId must be at most " + MAX_TRADER_ID + " characters");
+        }
         Objects.requireNonNull(side, "side must not be null");
         Objects.requireNonNull(type, "type must not be null");
         if (qty <= 0) {
             throw new IllegalArgumentException("qty must be > 0 but was " + qty);
+        }
+        if (qty > MAX_QTY) {
+            throw new IllegalArgumentException("qty must be at most " + MAX_QTY + " but was " + qty);
+        }
+        if (price > MAX_PRICE) {
+            throw new IllegalArgumentException("price must be at most " + MAX_PRICE + " paise but was " + price);
         }
         if (type.requiresLimitPrice() && price <= 0) {
             throw new IllegalArgumentException(type + " order needs price > 0 but was " + price);
