@@ -1,0 +1,51 @@
+classDiagram
+    direction LR
+    class EngineEvent {
+        <<sealed interface>>
+        +symbol() String
+        +timestamp() Instant
+        +sequence() long
+    }
+    class OrderAccepted { <<record>> }
+    class OrderRejected { <<record>> }
+    class OrderCancelled { <<record>> }
+    class TradeExecuted { <<record>> }
+    class BookChanged { <<record>> }
+    class MarketStatusChanged { <<record>> }
+    class AuctionUpdate { <<record>> }
+    class EventBus {
+        -CopyOnWriteArrayList~EngineListener~ listeners
+        +register(EngineListener)
+        +publish(EngineEvent)
+        +nextSequence() long
+    }
+    class EngineListener {
+        <<interface>>
+        +onEvent(EngineEvent)
+    }
+    class SymbolEngine
+    class MarketDataBridge { server: WebSocket push }
+    class TradeHistory
+    class CandleAggregator
+    class LiveMarketView
+    class BotLedger
+    class StatusBoard
+    class HeadlineWriter
+    class SurveillanceDesk
+    EngineEvent <|.. OrderAccepted
+    EngineEvent <|.. OrderRejected
+    EngineEvent <|.. OrderCancelled
+    EngineEvent <|.. TradeExecuted
+    EngineEvent <|.. BookChanged
+    EngineEvent <|.. MarketStatusChanged
+    EngineEvent <|.. AuctionUpdate
+    SymbolEngine --> EventBus : publishes (subject)
+    EventBus o-- EngineListener : observers
+    EngineListener <|.. MarketDataBridge
+    EngineListener <|.. TradeHistory
+    EngineListener <|.. CandleAggregator
+    EngineListener <|.. LiveMarketView
+    EngineListener <|.. BotLedger
+    EngineListener <|.. StatusBoard
+    EngineListener <|.. HeadlineWriter
+    EngineListener <|.. SurveillanceDesk

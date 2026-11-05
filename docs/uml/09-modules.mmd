@@ -1,0 +1,24 @@
+flowchart LR
+    subgraph Browser["frontend (React + Vite)"]
+      UI["pages: Trading Floor · X-Ray · Correspondents · Investigations"]
+      Store["zustand store"]
+    end
+    subgraph Server["server (Spring Boot): adapters only"]
+      REST["REST controllers"]
+      WS["STOMP bridges (/topic/...)"]
+      Cfg["config: wiring beans"]
+    end
+    subgraph Core["core (pure Java 21, no framework)"]
+      Exchange["exchange · matching · book · model"]
+      Events["events (Observer)"]
+      Features["bots · scenarios · breaker · auction · xray · surveillance · headlines · marketdata"]
+    end
+    UI <-->|"HTTP /api"| REST
+    WS -->|"WebSocket"| Store
+    Store --> UI
+    REST --> Exchange
+    REST --> Features
+    Exchange --> Events
+    Events --> Features
+    Events --> WS
+    Cfg -.-> Core

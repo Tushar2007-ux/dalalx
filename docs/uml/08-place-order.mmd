@@ -1,0 +1,25 @@
+sequenceDiagram
+    autonumber
+    participant UI as Browser (React)
+    participant C as OrderController (web thread)
+    participant X as Exchange
+    participant W as SymbolWorker (worker-TCS)
+    participant E as SymbolEngine
+    participant M as MatchingStrategy
+    participant B as EventBus
+    participant BR as MarketDataBridge
+    UI->>C: POST /api/orders {TCS, BUY, LIMIT, ₹4,090, 10}
+    C->>X: submit(OrderRequest)
+    X->>W: enqueue(command) — BlockingQueue.offer
+    X-->>C: CompletableFuture (not done yet)
+    Note over C: waits on the future (≤ 5 s)
+    W->>E: command.execute(engine) — on the worker thread
+    E->>E: gate + session: may this order trade now?
+    E->>M: strategies.forType(LIMIT).match(order, book)
+    M-->>E: MatchResult (trades, rested?)
+    E->>B: OrderAccepted, TradeExecuted × n, BookChanged
+    B->>BR: onEvent(...) — queue it (fast)
+    W-->>C: future.complete(result)
+    C-->>UI: 200 {order, trades, rested}
+    Note over BR: every 100 ms
+    BR-->>UI: STOMP /topic/book.TCS, /topic/trades.TCS

@@ -1,0 +1,59 @@
+classDiagram
+    direction LR
+    class TradingBot {
+        <<interface>>
+        +id() String
+        +act(BotContext)
+        +withdraw(OrderGateway)
+        +tune(BotTuning)
+    }
+    class AbstractBot {
+        <<abstract>>
+        -Map~Long,String~ resting
+        -volatile BotTuning tuning
+        #limit(...) MatchResult
+        #ioc(...) MatchResult
+    }
+    class MarketMakerBot { The Munim }
+    class MomentumBot { Momentum Chaser }
+    class PanicSellerBot { Panic Seller }
+    class WhaleBot { The Whale }
+    class SpooferBot { The Spoofer }
+    class ContrarianBot
+    class NoiseBot
+    class BotRunner {
+        -CopyOnWriteArrayList~TradingBot~ bots
+        -ScheduledExecutorService "bots" thread
+        +tick()
+        +hire(TradingBot)
+        +setStatus(String, BotStatus)
+        +addHook(TickHook)
+    }
+    class BotContext {
+        <<record>>
+        MarketView market
+        OrderGateway orders
+        RandomGenerator random
+    }
+    class MarketView { <<interface>> }
+    class OrderGateway { <<interface>> }
+    class LiveMarketView
+    class ExchangeGateway
+    class ScenarioDirector
+    class BotStyle { <<enum>> CONTRARIAN, NOISE, MARKET_MAKER, MOMENTUM }
+    TradingBot <|.. AbstractBot
+    AbstractBot <|-- MarketMakerBot
+    AbstractBot <|-- MomentumBot
+    AbstractBot <|-- PanicSellerBot
+    AbstractBot <|-- WhaleBot
+    AbstractBot <|-- SpooferBot
+    AbstractBot <|-- ContrarianBot
+    AbstractBot <|-- NoiseBot
+    BotRunner o-- TradingBot : Strategy
+    BotRunner --> BotContext
+    BotContext --> MarketView
+    BotContext --> OrderGateway
+    MarketView <|.. LiveMarketView
+    OrderGateway <|.. ExchangeGateway : Adapter
+    BotRunner o-- ScenarioDirector : TickHook
+    BotStyle ..> TradingBot : hires (factory per constant)

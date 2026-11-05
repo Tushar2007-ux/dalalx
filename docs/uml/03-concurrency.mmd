@@ -1,0 +1,32 @@
+classDiagram
+    direction LR
+    class Exchange {
+        -Map~String,SymbolWorker~ workers
+        -AtomicLong ids
+        -ScheduledExecutorService ticker
+        +start()
+        +submit(OrderRequest) CompletableFuture~MatchResult~
+        +cancel(long) CompletableFuture~CancelResult~
+        +cancelAllFor(String) CompletableFuture~Integer~
+        +shutdown(long, TimeUnit) boolean
+    }
+    class SymbolWorker {
+        -LinkedBlockingQueue~Command~ queue
+        -Thread thread
+        -SymbolEngine engine
+        +enqueue(name, action) CompletableFuture
+        -runLoop()
+        +shutdown()
+    }
+    class Command~T~ {
+        <<record>>
+        String name
+        Function~SymbolEngine,T~ action
+        CompletableFuture~T~ result
+        +execute(SymbolEngine)
+    }
+    class SymbolEngine { not thread-safe: confined to one worker }
+    Exchange *-- "5" SymbolWorker : one per stock
+    SymbolWorker *-- "1" SymbolEngine : owns (thread confinement)
+    SymbolWorker o-- Command : producer–consumer queue
+    Command ..> SymbolEngine : runs on the worker thread

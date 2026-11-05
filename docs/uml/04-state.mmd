@@ -1,0 +1,9 @@
+stateDiagram-v2
+    direction LR
+    [*] --> OPEN
+    OPEN --> HALTED : a trade moves the price ≥ 10%\nfrom the 60 s high/low (CircuitBreaker)
+    HALTED --> AUCTION : 30 s later (exchange clock tick)
+    AUCTION --> OPEN : 30 s later — uncross at one price (CallAuction)
+    OPEN : OpenState\norders match as they arrive
+    HALTED : HaltedState\nnew orders refused, cancels allowed
+    AUCTION : AuctionState\nlimit orders collected, indicative price published

@@ -1,0 +1,52 @@
+classDiagram
+    direction LR
+    class MarketState {
+        <<interface>>
+        +phase() MarketPhase
+        +refusal() Optional~String~
+        +refusal(OrderType) Optional~String~
+        +matchesContinuously() boolean
+        +until() Optional~Instant~
+        +onClock(Instant) MarketState
+    }
+    class OpenState { <<singleton>> }
+    class HaltedState {
+        <<record>>
+        Instant endsAt
+        String why
+        Function~Instant,MarketState~ reopen
+    }
+    class AuctionState {
+        <<record>>
+        Instant endsAt
+    }
+    class TradingSession {
+        -MarketState state
+        -CircuitBreaker breaker
+        +onTrade(Trade) Optional~MarketState~
+        +onClock(Instant) Optional~MarketState~
+        +refusal(OrderType) Optional~String~
+    }
+    class CircuitBreaker {
+        -BreakerRule rule
+        -PriceWindow window
+        +record(Instant, long) Trip
+    }
+    class PriceWindow {
+        -ArrayDeque max
+        -ArrayDeque min
+        +add(Instant, long)
+    }
+    class CallAuction {
+        <<utility>>
+        +indicative(OrderBook, long) Optional~IndicativePrice~
+        +uncross(OrderBook, long, ...) List~Trade~
+    }
+    MarketState <|.. OpenState
+    MarketState <|.. HaltedState
+    MarketState <|.. AuctionState
+    TradingSession o-- MarketState : current state (context)
+    TradingSession *-- CircuitBreaker
+    CircuitBreaker *-- PriceWindow : monotonic deques
+    SymbolEngine --> TradingSession : asks before matching
+    SymbolEngine ..> CallAuction : when the auction ends

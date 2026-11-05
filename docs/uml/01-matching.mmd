@@ -1,0 +1,93 @@
+classDiagram
+    direction LR
+    class MatchingEngine {
+        <<interface>>
+        +submit(OrderRequest) MatchResult
+        +cancel(long orderId) CancelResult
+        +snapshot(int depth) BookSnapshot
+    }
+    class SymbolEngine {
+        -OrderBook book
+        -OrderFactory factory
+        -MatchingStrategies strategies
+        -TradingSession session
+        -EventBus events
+        +submit(OrderRequest) MatchResult
+        +cancel(long) CancelResult
+        +tick()
+    }
+    class OrderFactory {
+        +create(OrderRequest) Order
+    }
+    class MatchingStrategies {
+        -EnumMap~OrderType,MatchingStrategy~ byType
+        +forType(OrderType) MatchingStrategy
+    }
+    class MatchingStrategy {
+        <<interface>>
+        +match(Order, OrderBook) MatchResult
+    }
+    class AbstractOrderMatcher {
+        <<abstract>>
+        +match(Order, OrderBook) MatchResult
+        #handledType()* OrderType
+        #acceptsPrice(Order, long)* boolean
+        #finish(Order, OrderBook, List~Trade~)* MatchResult
+    }
+    class LimitOrderMatcher
+    class MarketOrderMatcher
+    class IocOrderMatcher
+    class OrderBook {
+        -TreeMap~Long,PriceLevel~ bids
+        -TreeMap~Long,PriceLevel~ asks
+        -HashMap~Long,Order~ ordersById
+        +add(Order)
+        +remove(long) Optional~Order~
+        +peekBest(Side) Optional~Order~
+        +fillBest(Side, long) Order
+        +snapshot(int) BookSnapshot
+    }
+    class PriceLevel {
+        -long price
+        -ArrayDeque~Order~ queue
+        -long totalQty
+    }
+    class Order {
+        -long id
+        -long sequence
+        -Side side
+        -OrderType type
+        -long limitPrice
+        -long remainingQty
+        -OrderStatus status
+        +fill(long)
+        +cancel()
+        +reject()
+    }
+    class MatchResult {
+        <<record>>
+        Order incoming
+        List~Trade~ trades
+        boolean rested
+        String reason
+    }
+    class Trade {
+        <<record>>
+        long price
+        long qty
+        String buyerId
+        String sellerId
+    }
+    MatchingEngine <|.. SymbolEngine
+    SymbolEngine --> OrderFactory : creates orders (Factory)
+    SymbolEngine --> MatchingStrategies
+    SymbolEngine *-- OrderBook
+    MatchingStrategies o-- MatchingStrategy : one per OrderType
+    MatchingStrategy <|.. AbstractOrderMatcher
+    AbstractOrderMatcher <|-- LimitOrderMatcher
+    AbstractOrderMatcher <|-- MarketOrderMatcher
+    AbstractOrderMatcher <|-- IocOrderMatcher
+    OrderBook *-- PriceLevel
+    PriceLevel o-- Order : time priority
+    AbstractOrderMatcher ..> MatchResult : returns
+    MatchResult o-- Trade

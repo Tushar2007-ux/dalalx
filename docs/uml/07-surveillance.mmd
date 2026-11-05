@@ -1,0 +1,38 @@
+classDiagram
+    direction LR
+    class SurveillanceDesk {
+        -Map~String,SurveillanceRule~ rules
+        -ActivityLog log
+        -Deque~Case~ cases
+        +onEvent(EngineEvent)
+        +dismiss(String) Optional~Case~
+        +suspend(String) Optional~Case~
+    }
+    class SurveillanceRule {
+        <<interface>>
+        +id() String
+        +inspect(EngineEvent, ActivityView) List~Finding~
+    }
+    class SpoofingRule
+    class LayeringRule
+    class WashTradeRule
+    class PumpRule
+    class ActivityLog { last 50,000 order lives }
+    class Case {
+        <<record>>
+        String id
+        String traderId
+        List~OrderLife~ evidence
+        Status status
+    }
+    class Suspensions { concurrent set of barred traders }
+    class OrderGate { <<interface>> +refusal(OrderRequest) }
+    SurveillanceDesk o-- SurveillanceRule : Strategy, Open/Closed
+    SurveillanceRule <|.. SpoofingRule
+    SurveillanceRule <|.. LayeringRule
+    SurveillanceRule <|.. WashTradeRule
+    SurveillanceRule <|.. PumpRule
+    SurveillanceDesk *-- ActivityLog
+    SurveillanceDesk o-- Case
+    SurveillanceDesk --> Suspensions
+    Suspensions ..> OrderGate : checked by every SymbolEngine
