@@ -19,13 +19,16 @@ const navLink = (active: boolean) => ({
  * page links, connection light and edition switch, the headline banner, the
  * folio at the foot and the toasts. Pages only supply their own columns.
  */
-export function Shell({ route, headline, page, section, status, band, children }: {
-  route: Route
+export function Shell({ route, headline, page, section, status, band, full = false, children }: {
+  route: Exclude<Route, 'demo'>
   /** Overrides the masthead's market status (e.g. 'halted' for the selected stock). */
   status?: 'live' | 'halted' | 'auction' | 'closed'
   /** Optional band printed between the headline and the page (halt, auction). */
   band?: ReactNode
-  headline: Headline & { time?: string }
+  /** The banner headline; the front page has none. */
+  headline?: Headline & { time?: string }
+  /** The full nameplate (front page) instead of the slim strip. */
+  full?: boolean
   page: number
   section: string
   children: ReactNode
@@ -56,13 +59,19 @@ export function Shell({ route, headline, page, section, status, band, children }
 
   return (
     <Edition edition={edition} style={{ minHeight: '100vh', padding: '0 24px 18px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
-      <Masthead strip date={today()} editionName={EDITION_NAMES[edition]}
-        status={connection === 'offline' ? 'closed' : status ?? 'live'} right={right} />
-      <HeadlineBanner {...headline} time={headline.time ?? clockTime(Date.now()).slice(0, 8)} />
+      {full
+        ? <>
+            <Masthead date={today()} editionName={EDITION_NAMES[edition]} leftMeta="Vol. I · A simulated stock exchange"
+              rightMeta="Free · paper money only" status={connection === 'offline' ? 'closed' : status ?? 'live'} style={{ marginBottom: 0 }} />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 0', borderBottom: '1px solid var(--rule)' }}>{right}</div>
+          </>
+        : <Masthead strip date={today()} editionName={EDITION_NAMES[edition]}
+            status={connection === 'offline' ? 'closed' : status ?? 'live'} right={right} />}
+      {headline && <HeadlineBanner {...headline} time={headline.time ?? clockTime(Date.now()).slice(0, 8)} />}
       {band}
       {children}
       <Folio page={page} section={section} right={<span>Prices in ₹ · simulated exchange · paper money only</span>} style={{ marginTop: 18 }} />
-      <div aria-live="polite" style={{ position: 'fixed', top: 72, right: 16, display: 'grid', gap: 8, zIndex: 40 }}>
+      <div aria-live="polite" style={{ position: 'fixed', top: full ? 200 : 72, right: 16, display: 'grid', gap: 8, zIndex: 40 }}>
         {toasts.map((t) => <AutoToast key={t.id} toast={t} onClose={() => dismiss(t.id)} />)}
       </div>
     </Edition>

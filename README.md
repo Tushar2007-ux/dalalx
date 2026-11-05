@@ -13,13 +13,13 @@ Requirements: Java 21+, Maven 3.9+, Node 20+.
 ./run.sh                       # backend :8080 + frontend :5173 — Ctrl+C stops both
 ```
 
-Open http://localhost:5173.
+Open http://localhost:5173 (the front page). For the guided tour, run `./demo.sh`, or open http://localhost:5173/#/demo once it's running.
 
 ## Test and benchmark
 
 ```bash
 mvn -q verify                                  # ~310 Java tests (core + server)
-(cd frontend && npm test && npm run build)     # 44 frontend tests + type check
+(cd frontend && npm test && npm run build)     # 49 frontend tests + type check
 ./bench.sh                                     # matching benchmark (docs/BENCHMARK.md)
 ```
 
@@ -29,7 +29,7 @@ mvn -q verify                                  # ~310 Java tests (core + server)
 |---|---|
 | `core/` | Pure Java 21, no framework: model, order book, matching, exchange, events, market data, bots, storylines, circuit breaker, call auction, X-Ray, surveillance, headlines |
 | `server/` | Spring Boot 3, *adapters only*: REST (`/api/...`) and STOMP WebSocket (`/ws`, `/topic/...`) |
-| `frontend/` | React + Vite + TypeScript: Trading Floor, X-Ray, Correspondents, Investigations |
+| `frontend/` | React + Vite + TypeScript: Front Page, Trading Floor, X-Ray, Correspondents, Investigations, demo autopilot |
 | `design/` | The UI design export (read-only) |
 | `docs/` | Notes, UML, guides |
 
@@ -45,6 +45,7 @@ mvn -q verify                                  # ~310 Java tests (core + server)
 - **X-Ray:** a step-by-step replay of how your order was matched.
 - **Market surveillance:** spoofing, layering, wash-trade and pump detection, with evidence timelines and suspensions.
 - **The Wire:** live newspaper headlines.
+- **Demo autopilot:** a 13-step guided tour of about 3 minutes (`./demo.sh` or `#/demo`).
 
 ### Design patterns
 

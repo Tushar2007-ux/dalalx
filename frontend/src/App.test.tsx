@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
 import App from './App'
 import { useMarket } from './store/market'
@@ -30,6 +30,8 @@ afterEach(() => {
 })
 
 describe('trading terminal', () => {
+  beforeEach(() => { location.hash = '#/floor' })
+
   it('prints the market from the server', async () => {
     serve({
       '/api/symbols': SYMBOLS,
@@ -48,5 +50,16 @@ describe('trading terminal', () => {
     render(<App />)
     expect(await screen.findByText(/The presses have stopped/)).toBeTruthy()
     expect(screen.getByText('Market closed · exchange offline')).toBeTruthy()
+  })
+})
+
+describe('front page', () => {
+  it('is the default page, with live prices and the way into the demo', async () => {
+    location.hash = ''
+    serve({ '/api/symbols': SYMBOLS })
+    render(<App />)
+    expect(await screen.findByText('WATCH A STOCK MARKET THINK')).toBeTruthy()
+    expect(screen.getByText(/Demo autopilot/)).toBeTruthy()
+    expect((await screen.findAllByText('RELIANCE')).length).toBeGreaterThan(0)
   })
 })

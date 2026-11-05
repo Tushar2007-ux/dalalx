@@ -54,6 +54,8 @@ export interface MarketState {
   auctions: Record<string, AuctionUpdate>
   /** Surveillance cases, newest first. */
   cases: Case[]
+  /** A case the Investigations page should open (set by links and the demo); null = newest. */
+  focusCase: string | null
   /** The Wire, newest first. */
   wire: WireHeadline[]
   /** Price (paise) the ticket should show after a click on a book level; bumped `nonce` re-applies the same price. */
@@ -80,6 +82,7 @@ export interface MarketState {
   setCases: (cases: Case[]) => void
   applyCase: (c: Case) => void
   applyAuction: (a: AuctionUpdate) => void
+  setFocusCase: (id: string | null) => void
 }
 
 let nextToastId = 1
@@ -127,6 +130,7 @@ export const useMarket = create<MarketState>()((set, get) => ({
   wire: [],
   status: {},
   cases: [],
+  focusCase: null,
   auctions: {},
 
   setConnection: (connection) => set({ connection }),
@@ -207,12 +211,14 @@ export const useMarket = create<MarketState>()((set, get) => ({
   prefillTicket: (price) => set((s) => ({ ticketPrefill: { price, nonce: (s.ticketPrefill?.nonce ?? 0) + 1 } })),
   // Merge rather than replace: a pushed headline may arrive before the REST snapshot does.
   setCases: (cases) => set({ cases }),
+  setFocusCase: (focusCase) => set({ focusCase }),
   applyAuction: (a) => set((s) => ({ auctions: { ...s.auctions, [a.symbol]: a } })),
   applyCase: (c) => {
     const known = get().cases.some((x) => x.id === c.id)
     set((s) => ({ cases: known ? s.cases.map((x) => (x.id === c.id ? c : x)) : [c, ...s.cases] }))
-    if (!known && c.status === 'OPEN') {
-      get().toast({ kind: 'rejected', title: `${c.ruleName} · ${c.symbol}: case ${c.id} opened`, detail: c.summary })
+    // Only the serious cases interrupt with a toast; every case is listed under Surveillance and on The Wire.
+    if (!known && c.status === 'OPEN' && c.severity === 'CRITICAL') {
+      get().toast({ kind: 'info', title: `${c.ruleName} · ${c.symbol}: case ${c.id} opened`, detail: c.summary })
     }
   },
   applyStatus: (st) => {

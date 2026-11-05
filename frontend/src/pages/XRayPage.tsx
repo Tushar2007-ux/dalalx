@@ -58,7 +58,7 @@ export function XRayPage() {
     : { kicker: 'X-Ray', state: 'live', tone: 'neutral', headline: 'X-Ray: see exactly how an order is matched', deck: 'Place an order on the Trading Floor, then come back here to watch it meet the book.' }
 
   return (
-    <Shell route="xray" headline={headline} page={2} section="X-Ray">
+    <Shell route="xray" headline={headline} page={3} section="X-Ray">
       {!xray
         ? <EmptyXRay error={error} />
         : <>
@@ -78,7 +78,7 @@ export function XRayPage() {
                   {recent.map((x) => <option key={x.orderId} value={x.orderId}>#{x.orderId} · {x.side} {x.qty} {x.symbol} · {x.type}</option>)}
                 </select>
               </label>}
-              <a href="#/" style={{ ...italic, fontSize: 15, paddingBottom: 8 }}>Exit X-Ray ←</a>
+              <a href="#/floor" style={{ ...italic, fontSize: 15, paddingBottom: 8 }}>Exit X-Ray ←</a>
             </div>
           </div>
           <XRayBody xray={xray} step={step} onStep={(s) => { setPlaying(false); setStep(s) }} />
@@ -94,7 +94,7 @@ function EmptyXRay({ error }: { error: string | null }) {
       <p style={{ ...italic, fontSize: 18, margin: 0 }}>
         {error && error !== 'none' ? `The exchange is not answering (${error}).` : 'You haven’t placed an order this session.'} Send one from the order ticket and its match will be replayed here, step by step.
       </p>
-      <a href="#/" style={{ ...italic, fontSize: 15 }}>Go to the Trading Floor →</a>
+      <a href="#/floor" style={{ ...italic, fontSize: 15 }}>Go to the Trading Floor →</a>
     </div>
   )
 }

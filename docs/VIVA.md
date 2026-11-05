@@ -124,7 +124,7 @@ In one place, `ApiExceptionHandler`: unknown stock → 404, invalid input → 40
 ## F. Testing and quality
 
 **⭐ 33. How did you test it?**
-JUnit 5 + AssertJ, written with the code: about 280 core tests (model, book, every matcher, events, concurrency stress, bots, storylines, breaker, auction, X-Ray, surveillance, soak), 32 server tests (MockMvc against the real exchange, plus a real WebSocket client), and 44 frontend tests (vitest).
+JUnit 5 + AssertJ, written with the code: about 280 core tests (model, book, every matcher, events, concurrency stress, bots, storylines, breaker, auction, X-Ray, surveillance, soak), 32 server tests (MockMvc against the real exchange, plus a real WebSocket client), and 49 frontend tests (vitest).
 
 **34. How fast is it?**
 On a 2-CPU container: 169,000 orders/s for one engine (median 4.6 µs per order), and 72,000 orders/s through the whole exchange (median 43 µs round trip). The benchmark also found a real bug, an O(queue) scan in X-Ray; fixing it made the engine 48× faster. See `docs/BENCHMARK.md`.

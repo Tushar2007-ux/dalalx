@@ -39,7 +39,8 @@ export function Investigations() {
     api.cases().then(useMarket.getState().setCases).catch(() => {})
   }, [])
 
-  const selected = cases.find((c) => c.id === selectedId) ?? cases[0]
+  const focusCase = useMarket((s) => s.focusCase)
+  const selected = cases.find((c) => c.id === (selectedId ?? focusCase)) ?? cases[0]
   const open = cases.filter((c) => c.status === 'OPEN').length
   const fail = (what: string) => (e: unknown) =>
     toast({ kind: 'rejected', title: what, detail: e instanceof ApiError ? e.message : 'The exchange did not answer' })
@@ -62,7 +63,7 @@ export function Investigations() {
       : { kicker: 'Investigations', state: 'live', tone: 'neutral', headline: 'The Surveillance Inspector is watching every order', deck: 'Spoofing, layering, wash trades and pumps are flagged here the moment they happen.' }
 
   return (
-    <Shell route="surveillance" headline={headline} page={3} section="Investigations">
+    <Shell route="surveillance" headline={headline} page={5} section="Investigations">
       <header style={{ display: 'flex', alignItems: 'center', gap: 16, margin: '16px 0 12px' }}>
         <Portrait bot="inspector" size={76} />
         <div>

@@ -35,7 +35,7 @@ export function Terminal() {
   }))
 
   return (
-    <Shell route="floor" headline={headline} page={1} section="Markets" status={halted ? 'halted' : inAuction ? 'auction' : undefined}
+    <Shell route="floor" headline={headline} page={2} section="Markets" status={halted ? 'halted' : inAuction ? 'auction' : undefined}
       band={halted && selectedStatus ? <HaltBand symbol={selected} status={selectedStatus} />
         : inAuction && selectedStatus ? <AuctionBand status={selectedStatus} auction={auction} /> : undefined}>
       <div style={{ marginTop: 12 }}>

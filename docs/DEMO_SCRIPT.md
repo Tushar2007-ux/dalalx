@@ -1,7 +1,9 @@
 # Demo script (about 8 minutes)
 
+> **Short of time, or nervous?** Run `./demo.sh` (or open http://localhost:5173/#/demo): the **autopilot** plays a 13-step, roughly 3-minute version of this script by itself, with captions at the bottom. Use *Pause* to talk over any step and *Skip* to move on. The manual script below gives you more to say.
+
 **Before the examiners arrive:**
-- Start everything with `./run.sh` and open http://localhost:5173.
+- Start everything with `./run.sh` and open http://localhost:5173. That's the **front page**; "Open the terminal" goes to the Trading Floor.
 - Let the bots trade for a minute so the chart and tape fill up.
 - Pick an edition: Day edition looks best on a projector, Night edition on a laptop screen.
 - Have IntelliJ open on `SymbolEngine.java` and `docs/UML.md`.
@@ -73,7 +75,7 @@ Show the matching class diagram:
 
 ### 8. Close (30 s)
 
-> "277 core, 32 server and 44 frontend tests, a stress test and a soak test. 169,000 orders a second on one core, and the benchmark found a real bug that made the engine 48× faster once fixed. Questions?"
+> "277 core, 32 server and 49 frontend tests, a stress test and a soak test. 169,000 orders a second on one core, and the benchmark found a real bug that made the engine 48× faster once fixed. Questions?"
 
 ---
 
