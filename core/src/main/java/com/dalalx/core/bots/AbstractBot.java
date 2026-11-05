@@ -1,5 +1,6 @@
 package com.dalalx.core.bots;
 
+import com.dalalx.core.breaker.AuctionState;
 import com.dalalx.core.matching.MatchResult;
 import com.dalalx.core.model.OrderRequest;
 import com.dalalx.core.model.OrderType;
@@ -92,10 +93,19 @@ public abstract class AbstractBot implements TradingBot {
         return result;
     }
 
-    /** Sends an immediate-or-cancel order: trades up to {@code price}, never rests. */
+    /**
+     * Sends an immediate-or-cancel order: trades up to {@code price}, never rests.
+     * During a call auction (which only takes limit orders) the bot sends the
+     * same order as a limit order instead, so it joins the auction like a
+     * real trader would, and remembers it so it can be withdrawn later.
+     */
     protected final MatchResult ioc(BotContext ctx, String symbol, Side side, long price, long qty) {
-        return ctx.orders().submit(
+        MatchResult result = ctx.orders().submit(
                 new OrderRequest(symbol, id, side, OrderType.IOC, Ticks.round(price), tuning.scale(qty)));
+        if (AuctionState.LIMIT_ONLY.equals(result.reason())) {
+            return limit(ctx, symbol, side, price, qty);
+        }
+        return result;
     }
 
     @Override

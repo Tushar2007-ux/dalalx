@@ -1,5 +1,6 @@
 package com.dalalx.core.headlines;
 
+import com.dalalx.core.events.AuctionUpdate;
 import com.dalalx.core.events.EngineEvent;
 import com.dalalx.core.events.EngineListener;
 import com.dalalx.core.events.MarketStatusChanged;
@@ -68,6 +69,7 @@ public final class HeadlineWriter implements EngineListener, ScenarioDirector.Sc
     private final Map<String, Integer> peakUp = new HashMap<>();
     private final Map<String, Integer> peakDown = new HashMap<>();
     private final Map<String, Instant> lastBlock = new HashMap<>();
+    private final Map<String, AuctionUpdate> lastAuction = new HashMap<>();
     private final List<Consumer<Headline>> subscribers = new CopyOnWriteArrayList<>();
     private long nextId;
 
@@ -86,6 +88,8 @@ public final class HeadlineWriter implements EngineListener, ScenarioDirector.Sc
             onTrade(e.trade());
         } else if (event instanceof MarketStatusChanged e) {
             onStatus(e);
+        } else if (event instanceof AuctionUpdate e) {
+            rememberAuction(e);
         }
     }
 
@@ -162,7 +166,11 @@ public final class HeadlineWriter implements EngineListener, ScenarioDirector.Sc
         }
     }
 
-    /** Halts are front-page news; so is the reopening. */
+    private synchronized void rememberAuction(AuctionUpdate e) {
+        lastAuction.put(e.symbol(), e);
+    }
+
+    /** Halts are front-page news; so are the auction and the reopening. */
     synchronized void onStatus(MarketStatusChanged e) {
         String s = e.symbol();
         if (e.phase() == MarketPhase.HALTED) {
@@ -170,8 +178,20 @@ public final class HeadlineWriter implements EngineListener, ScenarioDirector.Sc
             file(e.timestamp(), "Stop Press", s, "Circuit breaker halts trading in " + s,
                     e.reason() + ". Resting orders stay in the book; trading resumes in " + seconds + " seconds.",
                     Tone.ALERT);
+        } else if (e.phase() == MarketPhase.AUCTION) {
+            long seconds = e.until() == null ? 0 : Duration.between(e.timestamp(), e.until()).toSeconds();
+            file(e.timestamp(), "Call Auction", s, s + " call auction under way",
+                    "Limit orders only for " + seconds + " seconds; then everything that crosses trades at one price.",
+                    Tone.NEUTRAL);
         } else if (e.phase() == MarketPhase.OPEN) {
-            file(e.timestamp(), "Latest", s, "Trading resumes in " + s, null, Tone.NEUTRAL);
+            AuctionUpdate auction = lastAuction.remove(s);
+            if (auction != null && auction.price() != null) {
+                file(e.timestamp(), "Latest", s, "Trading resumes in " + s + " at " + Money.format(auction.price()),
+                        "The call auction crossed " + Money.groupIndian(auction.volume()) + " shares at one price.",
+                        Tone.NEUTRAL);
+            } else {
+                file(e.timestamp(), "Latest", s, "Trading resumes in " + s, null, Tone.NEUTRAL);
+            }
         }
         if (e.phase() != MarketPhase.OPEN) {
             peakUp.remove(s);   // after a halt, moves are news again from the new level

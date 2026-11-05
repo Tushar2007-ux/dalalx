@@ -64,6 +64,15 @@ class SurveillanceRulesTest {
     }
 
     @Test
+    void aMarketMakerReplacingOneQuoteAtATimeIsNotLayering() {
+        for (int i = 0; i < 5; i++) {   // place, pull, place the next a tick lower...
+            feed(ev.placed(i * 400, 40 + i, "MUNIM", Side.BUY, 245_000 - i * 5, 200));
+            feed(ev.pulled(i * 400 + 300, 40 + i, "MUNIM", Side.BUY, 245_000 - i * 5, 200));
+        }
+        assertThat(rulesHit()).isEmpty();
+    }
+
+    @Test
     void layeringNeedsThePricesToBeClose() {
         for (int i = 0; i < 3; i++) {
             feed(ev.placed(0, 30 + i, "X", Side.SELL, 246_000 + i * 100, 100)); // ₹1 apart: 20 ticks
@@ -93,8 +102,8 @@ class SurveillanceRulesTest {
 
     @Test
     void oneTraderDrivingThePriceUpIsAPump() {
-        for (int i = 0; i < 6; i++) {
-            feed(ev.trade(i * 1_000, "MOMENTUM", "MUNIM", Side.BUY, 154_200 + i * 200, 400, 100 + i, 200 + i));
+        for (int i = 0; i < 8; i++) {
+            feed(ev.trade(i * 1_000, "MOMENTUM", "MUNIM", Side.BUY, 154_200 + i * 120, 400, 100 + i, 200 + i));
         }
         assertThat(rulesHit()).containsExactly("pump");
         assertThat(desk.cases().get(0).traderId()).isEqualTo("MOMENTUM");
@@ -103,8 +112,8 @@ class SurveillanceRulesTest {
 
     @Test
     void aRiseSpreadAcrossManyBuyersIsNotAPump() {
-        String[] buyers = {"A", "B", "C", "D", "E", "F"};
-        for (int i = 0; i < 6; i++) {
+        String[] buyers = {"A", "B", "C", "D", "E", "F", "G", "H"};
+        for (int i = 0; i < 8; i++) {
             feed(ev.trade(i * 1_000, buyers[i], "MUNIM", Side.BUY, 154_200 + i * 200, 400, 100 + i, 200 + i));
         }
         assertThat(rulesHit()).isEmpty();

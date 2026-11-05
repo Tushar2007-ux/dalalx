@@ -24,6 +24,9 @@ import org.junit.jupiter.api.Test;
 /** The circuit breaker inside a real engine: halt, refuse, reopen. */
 class SymbolEngineBreakerTest {
 
+    /** The standard 10%/60 s/30 s rule, reopening straight into trading (the auction has its own test). */
+    static final BreakerRule NO_AUCTION = new BreakerRule(1_000, Duration.ofSeconds(60), Duration.ofSeconds(30));
+
     private final MutableClock clock = new MutableClock(Instant.parse("2026-11-04T09:15:00Z"));
     private final AtomicLong ids = new AtomicLong();
     private final EventBus bus = new EventBus();
@@ -31,7 +34,7 @@ class SymbolEngineBreakerTest {
     private final SymbolEngine engine = new SymbolEngine("TCS",
             new OrderFactory(ids::incrementAndGet, ids::incrementAndGet, clock),
             MatchingStrategies.standard(ids::incrementAndGet, clock), bus, clock,
-            TradingSession.withBreaker("TCS", BreakerRule.STANDARD));
+            TradingSession.withBreaker("TCS", NO_AUCTION));
 
     SymbolEngineBreakerTest() {
         bus.register(events);

@@ -48,6 +48,14 @@ public final class OrderFactory {
      * @param request a request that has already passed validation
      * @return a new order with a fresh id and sequence number
      */
+    /**
+     * @return a fresh id from the same sequence as order ids, for things the
+     *         factory doesn't build itself (auction trades), so ids never clash
+     */
+    public long nextId() {
+        return orderIds.getAsLong();
+    }
+
     public Order create(OrderRequest request) {
         return new Order(orderIds.getAsLong(), sequences.getAsLong(), clock.instant(), request);
     }

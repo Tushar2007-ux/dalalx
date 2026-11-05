@@ -1,6 +1,7 @@
 package com.dalalx.core.breaker;
 
 import com.dalalx.core.model.Money;
+import com.dalalx.core.model.OrderType;
 import com.dalalx.core.model.Trade;
 import java.time.Instant;
 import java.util.Objects;
@@ -38,9 +39,15 @@ public final class TradingSession {
         return new TradingSession(symbol, null, now -> OpenState.INSTANCE);
     }
 
-    /** A session with the standard rule, reopening straight into continuous trading. */
+    /**
+     * A session with a breaker. After a halt it reopens through a call auction
+     * if the rule has one, otherwise straight into continuous trading.
+     */
     public static TradingSession withBreaker(String symbol, BreakerRule rule) {
-        return new TradingSession(symbol, new CircuitBreaker(rule), now -> OpenState.INSTANCE);
+        Function<Instant, MarketState> reopen = rule.auctionFor().isZero()
+                ? now -> OpenState.INSTANCE
+                : now -> new AuctionState(now.plus(rule.auctionFor()));
+        return new TradingSession(symbol, new CircuitBreaker(rule), reopen);
     }
 
     /** A session with a breaker and a custom reopening (Step 13: a call auction). */
@@ -61,6 +68,11 @@ public final class TradingSession {
         return state.refusal();
     }
 
+    /** @return why an order of this type is refused right now, if it is */
+    public Optional<String> refusal(OrderType type) {
+        return state.refusal(type);
+    }
+
     /**
      * Lets time pass: a halt that has run out ends.
      *
@@ -71,7 +83,7 @@ public final class TradingSession {
         if (next == state) {
             return Optional.empty();
         }
-        if (state.phase() == MarketPhase.HALTED && breaker != null) {
+        if (state.phase() != MarketPhase.OPEN && breaker != null) {
             breaker.reset(); // a fresh minute after reopening; the old fall can't trip it again
         }
         state = next;

@@ -68,7 +68,31 @@ public final class OrderBook {
         ordersById.put(order.id(), order);
     }
 
+    /**
+     * Rests an order <em>without</em> the "would cross" check. Only for a call
+     * auction, where buy and sell orders are collected first and matched all
+     * together at one price when the auction ends; until then the book may be
+     * crossed on purpose.
+     */
+    public void addForAuction(Order order) {
+        validate(order);
+        levelsFor(order.side()).computeIfAbsent(order.limitPrice(), PriceLevel::new).add(order);
+        ordersById.put(order.id(), order);
+    }
+
+    /** @return true if the best bid is at or above the best ask (only possible during an auction) */
+    public boolean isCrossed() {
+        return bestBid().isPresent() && bestAsk().isPresent() && bestBid().getAsLong() >= bestAsk().getAsLong();
+    }
+
     private void validateForResting(Order order) {
+        validate(order);
+        if (wouldCross(order)) {
+            throw new IllegalArgumentException("order would cross the book; match it first: " + order);
+        }
+    }
+
+    private void validate(Order order) {
         if (!order.symbol().equals(symbol)) {
             throw new IllegalArgumentException("order is for " + order.symbol() + ", book is " + symbol);
         }
@@ -80,9 +104,6 @@ public final class OrderBook {
         }
         if (ordersById.containsKey(order.id())) {
             throw new IllegalArgumentException("order " + order.id() + " is already in the book");
-        }
-        if (wouldCross(order)) {
-            throw new IllegalArgumentException("order would cross the book; match it first: " + order);
         }
     }
 

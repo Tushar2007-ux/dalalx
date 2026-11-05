@@ -38,6 +38,7 @@ export function useMarketData(): void {
           onHeadline: (h) => useMarket.getState().applyHeadline(h),
           onStatus: (st) => useMarket.getState().applyStatus(st),
           onCase: (c) => useMarket.getState().applyCase(c),
+          onAuction: (a) => useMarket.getState().applyAuction(a),
           onConnection: (up) => useMarket.getState().setConnection(up ? 'live' : 'offline'),
         })
         symbols.forEach((s) => stream?.watch(s.symbol))

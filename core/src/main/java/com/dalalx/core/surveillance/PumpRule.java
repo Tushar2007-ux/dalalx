@@ -28,7 +28,7 @@ public final class PumpRule implements SurveillanceRule {
 
     static final long MIN_RISE_BP = 50;
     static final long MIN_SHARE_PERCENT = 60;
-    static final int MIN_TRADES = 5;
+    static final int MIN_TRADES = 8;
     static final Duration WINDOW = Duration.ofSeconds(30);
 
     private record Print(Instant time, long price, long qty, String aggressiveBuyer, long buyOrderId)
@@ -87,13 +87,14 @@ public final class PumpRule implements SurveillanceRule {
         }
         Map.Entry<String, Long> top = bought.entrySet().stream().max(Map.Entry.comparingByValue()).orElseThrow();
         long share = top.getValue() * 100 / total;
-        if (share <= MIN_SHARE_PERCENT || !cooldown.tryReport(t.symbol() + "/" + top.getKey(), t.timestamp())) {
+        if (share <= MIN_SHARE_PERCENT || !cooldown.tryReport(t.symbol(), t.timestamp())) {
             return List.of();
         }
         Set<Long> flagged = window.stream().filter(p -> top.getKey().equals(p.aggressiveBuyer()))
                 .map(Print::buyOrderId).collect(Collectors.toSet());
         Map<String, String> figures = new LinkedHashMap<>();
         figures.put("Share of buying", share + "%");
+        figures.put("Trades", String.valueOf(window.size()));
         figures.put("Price move", "+" + rise / 100 + "." + String.format("%02d", rise % 100) + "%");
         figures.put("From", Money.format(low));
         figures.put("To", Money.format(t.price()));

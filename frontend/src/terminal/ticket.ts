@@ -7,7 +7,7 @@ import type { ToastItem } from '../store/market'
  * on their own: what the trader typed → either a valid order or one clear error.
  */
 
-/** Today's band: limit prices further than this from the reference are refused (matches the 10% circuit breaker). */
+/** Price band: limit prices further than this from the last traded price are refused (matches the 10% circuit breaker). */
 export const BAND = 0.10
 
 export interface TicketInput {

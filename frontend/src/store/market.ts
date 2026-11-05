@@ -4,7 +4,7 @@ import {
 } from '../lib/market'
 import { formatPaise, formatQty } from '../lib/format'
 import type {
-  BookSnapshot, Candle, Case, Interval, MarketStatus, MarketStatusChanged, OrderActivity, OrderView, SymbolInfo, Trade,
+  AuctionUpdate, BookSnapshot, Candle, Case, Interval, MarketStatus, MarketStatusChanged, OrderActivity, OrderView, SymbolInfo, Trade,
   WireHeadline,
 } from '../lib/types'
 
@@ -50,6 +50,8 @@ export interface MarketState {
   toasts: ToastItem[]
   /** Each stock's trading phase (open, halted by the circuit breaker, auction). */
   status: Record<string, MarketStatus>
+  /** The latest indicative state of each stock's call auction (only while one runs). */
+  auctions: Record<string, AuctionUpdate>
   /** Surveillance cases, newest first. */
   cases: Case[]
   /** The Wire, newest first. */
@@ -77,6 +79,7 @@ export interface MarketState {
   applyStatus: (status: MarketStatusChanged) => void
   setCases: (cases: Case[]) => void
   applyCase: (c: Case) => void
+  applyAuction: (a: AuctionUpdate) => void
 }
 
 let nextToastId = 1
@@ -124,10 +127,12 @@ export const useMarket = create<MarketState>()((set, get) => ({
   wire: [],
   status: {},
   cases: [],
+  auctions: {},
 
   setConnection: (connection) => set({ connection }),
   setSymbols: (symbols) => set((s) => ({
     symbols,
+    auctions: Object.fromEntries(symbols.filter((x) => x.auction).map((x) => [x.symbol, x.auction!])),
     status: Object.fromEntries(symbols.map((x) => [x.symbol, { phase: x.phase ?? 'OPEN', reason: x.reason ?? null, until: x.until ?? null, since: x.since ?? null }])),
     lastPrice: Object.fromEntries(symbols.map((x) => [x.symbol, s.lastPrice[x.symbol] ?? x.lastPrice])),
     selected: symbols.some((x) => x.symbol === s.selected) ? s.selected : symbols[0]?.symbol ?? s.selected,
@@ -202,6 +207,7 @@ export const useMarket = create<MarketState>()((set, get) => ({
   prefillTicket: (price) => set((s) => ({ ticketPrefill: { price, nonce: (s.ticketPrefill?.nonce ?? 0) + 1 } })),
   // Merge rather than replace: a pushed headline may arrive before the REST snapshot does.
   setCases: (cases) => set({ cases }),
+  applyAuction: (a) => set((s) => ({ auctions: { ...s.auctions, [a.symbol]: a } })),
   applyCase: (c) => {
     const known = get().cases.some((x) => x.id === c.id)
     set((s) => ({ cases: known ? s.cases.map((x) => (x.id === c.id ? c : x)) : [c, ...s.cases] }))
@@ -214,8 +220,16 @@ export const useMarket = create<MarketState>()((set, get) => ({
     set((s) => ({ status: { ...s.status, [st.symbol]: { phase: st.phase, reason: st.reason, until: st.until, since: st.timestamp } } }))
     if (st.phase === 'HALTED') {
       get().toast({ kind: 'rejected', title: `Trading halted in ${st.symbol}`, detail: st.reason ?? 'Circuit breaker' })
+    } else if (st.phase === 'AUCTION') {
+      get().toast({ kind: 'info', title: `${st.symbol} call auction under way`, detail: 'Limit orders only; everything that crosses trades at one price.' })
     } else if (st.phase === 'OPEN' && before && before !== 'OPEN') {
-      get().toast({ kind: 'info', title: `Trading resumes in ${st.symbol}` })
+      const auction = get().auctions[st.symbol]
+      get().toast({ kind: 'info', title: `Trading resumes in ${st.symbol}${auction?.price ? ` at ₹${formatPaise(auction.price)}` : ''}`,
+        detail: auction?.price ? `Call auction crossed ${formatQty(auction.volume)} shares at one price` : undefined })
+      set((s) => {
+        const { [st.symbol]: _done, ...rest } = s.auctions
+        return { auctions: rest }
+      })
     }
   },
   setWire: (wire) => set((s) => {

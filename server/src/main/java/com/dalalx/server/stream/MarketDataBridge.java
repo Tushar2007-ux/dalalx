@@ -1,6 +1,7 @@
 package com.dalalx.server.stream;
 
 import com.dalalx.core.book.BookSnapshot;
+import com.dalalx.core.events.AuctionUpdate;
 import com.dalalx.core.events.BookChanged;
 import com.dalalx.core.events.EngineEvent;
 import com.dalalx.core.events.EngineListener;
@@ -57,6 +58,7 @@ public class MarketDataBridge implements EngineListener {
     private final Map<String, Queue<Trade>> pendingTrades = new ConcurrentHashMap<>();
     private final Queue<OrderActivity> pendingActivity = new ConcurrentLinkedQueue<>();
     private final Queue<MarketStatusChanged> pendingStatus = new ConcurrentLinkedQueue<>();
+    private final Map<String, AuctionUpdate> latestAuctions = new ConcurrentHashMap<>();
 
     public MarketDataBridge(SimpMessagingTemplate broker, EventBus bus) {
         this.broker = broker;
@@ -73,6 +75,7 @@ public class MarketDataBridge implements EngineListener {
             case OrderRejected e -> pendingActivity.add(activity("REJECTED", e.order(), e.reason()));
             case OrderCancelled e -> pendingActivity.add(activity("CANCELLED", e.order(), e.reason()));
             case MarketStatusChanged e -> pendingStatus.add(e); // halts and reopens: rare, all of them matter
+            case AuctionUpdate e -> latestAuctions.put(e.symbol(), e); // like the book: only the newest matters
         }
     }
 
@@ -96,6 +99,12 @@ public class MarketDataBridge implements EngineListener {
                 broker.convertAndSend("/topic/trades." + symbol, batch);
             }
         });
+        for (String symbol : List.copyOf(latestAuctions.keySet())) {
+            AuctionUpdate auction = latestAuctions.remove(symbol);
+            if (auction != null) {
+                broker.convertAndSend("/topic/auction", auction);
+            }
+        }
         drain(pendingStatus).forEach(status -> broker.convertAndSend("/topic/status", status));
         List<OrderActivity> activity = drain(pendingActivity);
         if (!activity.isEmpty()) {

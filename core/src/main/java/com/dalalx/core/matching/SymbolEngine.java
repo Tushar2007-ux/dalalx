@@ -1,10 +1,15 @@
 package com.dalalx.core.matching;
 
+import com.dalalx.core.auction.CallAuction;
+import com.dalalx.core.auction.IndicativePrice;
 import com.dalalx.core.book.BookSnapshot;
 import com.dalalx.core.book.LevelDetail;
+import com.dalalx.core.book.LevelSnapshot;
+import com.dalalx.core.breaker.MarketPhase;
 import com.dalalx.core.breaker.MarketState;
 import com.dalalx.core.breaker.TradingSession;
 import com.dalalx.core.book.OrderBook;
+import com.dalalx.core.events.AuctionUpdate;
 import com.dalalx.core.events.BookChanged;
 import com.dalalx.core.events.EventBus;
 import com.dalalx.core.events.MarketStatusChanged;
@@ -51,6 +56,11 @@ import java.util.Optional;
  * (cancels still work). After matching, every trade is shown to the breaker;
  * if one trips it, a {@link MarketStatusChanged} event follows the usual ones.
  *
+ * <p><b>Call auction:</b> while the session is in an auction, orders only
+ * join the book (it may be crossed on purpose) and an {@link AuctionUpdate}
+ * with the indicative price follows every change. When the auction ends,
+ * {@link CallAuction} matches everything that crosses at one price.
+ *
  * <p><b>Thread confinement:</b> not thread-safe. In the multi-stock exchange,
  * exactly one worker thread owns each {@code SymbolEngine}; all other threads
  * reach it through that worker's queue.
@@ -78,6 +88,8 @@ public final class SymbolEngine implements MatchingEngine {
     private final Clock clock;
     private final TradingSession session;
     private XRayRecorder xrays = XRayRecorder.NONE;
+    /** Last traded price: the auction's tie-breaker. 0 until the first trade. */
+    private long lastPrice;
     private OrderGate gate = OrderGate.OPEN;
 
     /**
@@ -149,7 +161,7 @@ public final class SymbolEngine implements MatchingEngine {
         tick();
         Order order = factory.create(request);
         recentOrders.put(order.id(), order);
-        Optional<String> refusal = gate.refusal(request).or(session::refusal);
+        Optional<String> refusal = gate.refusal(request).or(() -> session.refusal(request.type()));
         if (refusal.isPresent()) {
             MatchResult refused = refuse(order, refusal.get());
             if (xrays.wants(request)) {
@@ -158,6 +170,9 @@ public final class SymbolEngine implements MatchingEngine {
             return refused;
         }
         OrderView arrived = OrderView.of(order); // frozen before matching changes it
+        if (!session.state().matchesContinuously()) {
+            return collectForAuction(order, arrived);
+        }
         boolean xray = xrays.wants(request);
         List<LevelDetail> before = xray ? book.detail(order.side().opposite(), XRAY_DEPTH) : List.of();
         MatchResult result = strategies.forType(order.type()).match(order, book);
@@ -166,9 +181,48 @@ public final class SymbolEngine implements MatchingEngine {
             xrays.record(arrived, before, result, clock.instant());
         }
         watchForBreaker(result.trades());
+        rememberLastPrice(result.trades());
         return result;
     }
 
+    /** During a call auction an order only joins the book; nothing matches until the auction ends. */
+    private MatchResult collectForAuction(Order order, OrderView arrived) {
+        book.addForAuction(order);
+        events.publish(new OrderAccepted(symbol, clock.instant(), events.nextSequence(), arrived));
+        publishBook();
+        publishAuction();
+        return new MatchResult(order, List.of(), true, null);
+    }
+
+    /** Announces where the auction would trade if it closed now. */
+    private void publishAuction() {
+        Optional<IndicativePrice> price = CallAuction.indicative(book, lastPrice);
+        BookSnapshot all = book.snapshot(Integer.MAX_VALUE);
+        long bids = all.bids().stream().mapToLong(LevelSnapshot::totalQty).sum();
+        long asks = all.asks().stream().mapToLong(LevelSnapshot::totalQty).sum();
+        events.publish(new AuctionUpdate(symbol, clock.instant(), events.nextSequence(),
+                price.map(IndicativePrice::price).orElse(null), price.map(IndicativePrice::volume).orElse(0L),
+                price.map(IndicativePrice::buyQty).orElse(bids), price.map(IndicativePrice::sellQty).orElse(asks),
+                session.state().until().orElse(null)));
+    }
+
+    /** Ends the auction: everything that crosses trades at the one equilibrium price. */
+    private void uncross() {
+        Optional<IndicativePrice> price = CallAuction.indicative(book, lastPrice);
+        if (price.isEmpty()) {
+            return;
+        }
+        List<Trade> trades = CallAuction.uncross(book, price.get().price(), factory::nextId, clock.instant());
+        trades.forEach(t -> events.publish(new TradeExecuted(symbol, t.timestamp(), events.nextSequence(), t)));
+        rememberLastPrice(trades);
+        publishBook();
+    }
+
+    private void rememberLastPrice(List<Trade> trades) {
+        if (!trades.isEmpty()) {
+            lastPrice = trades.get(trades.size() - 1).price();
+        }
+    }
     /**
      * Adds a check every order must pass (e.g. surveillance suspensions). Like
      * {@link #recordXRays}, call it before the worker thread starts.
@@ -222,7 +276,16 @@ public final class SymbolEngine implements MatchingEngine {
      * every order and, by the exchange, a few times a second.
      */
     public void tick() {
-        session.onClock(clock.instant()).ifPresent(this::publishStatus);
+        MarketPhase before = session.phase();
+        session.onClock(clock.instant()).ifPresent(next -> {
+            if (before == MarketPhase.AUCTION) {
+                uncross(); // the auction's trades come first, then "trading resumes"
+            }
+            publishStatus(next);
+            if (next.phase() == MarketPhase.AUCTION) {
+                publishAuction();
+            }
+        });
     }
 
     private void publishStatus(MarketState state) {
@@ -272,6 +335,9 @@ public final class SymbolEngine implements MatchingEngine {
             order.cancel();
             publishCancelled(order, CANCELLED_BY_TRADER);
             publishBook();
+            if (session.phase() == MarketPhase.AUCTION) {
+                publishAuction();
+            }
             return CancelResult.success(order);
         }
         Order known = recentOrders.get(orderId);

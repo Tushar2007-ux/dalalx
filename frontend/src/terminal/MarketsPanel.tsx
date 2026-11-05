@@ -12,7 +12,7 @@ export function MarketsPanel() {
   const wire = useMarket((s) => s.wire)
   const status = useMarket((s) => s.status)
 
-  const trading = symbols.filter((x) => status[x.symbol]?.phase !== 'HALTED')
+  const trading = symbols.filter((x) => (status[x.symbol]?.phase ?? 'OPEN') === 'OPEN')
   const moves = trading.map((x) => (lastPrice[x.symbol] ?? x.referencePrice) - x.referencePrice)
   const advancing = moves.filter((m) => m > 0).length
   const declining = moves.filter((m) => m < 0).length
@@ -22,7 +22,8 @@ export function MarketsPanel() {
       style={{ minWidth: 0, padding: '0 12px 0 0', flex: '0.8 1 230px' }}>
       {symbols.map((x) => {
         const price = lastPrice[x.symbol] ?? x.referencePrice
-        const halted = status[x.symbol]?.phase === 'HALTED'
+        const phase = status[x.symbol]?.phase
+        const halted = phase === 'HALTED' || phase === 'AUCTION'
         return (
           <button key={x.symbol} type="button" className="dx-focus" onClick={() => select(x.symbol)}
             aria-pressed={x.symbol === selected}
@@ -34,7 +35,7 @@ export function MarketsPanel() {
             }}>
             <span style={{ fontWeight: 600, fontSize: 12.5, letterSpacing: '0.04em' }}>{x.symbol}</span>
             <PriceCell value={toRupees(price)} halted={halted} />
-            <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>{halted ? '■ Halted · circuit breaker' : x.name}</span>
+            <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>{phase === 'HALTED' ? '■ Halted · circuit breaker' : phase === 'AUCTION' ? '■ Call auction' : x.name}</span>
             <PriceCell value={toRupees(price)} change={toRupees(price - x.referencePrice)}
               changePct={changePct(price, x.referencePrice)} changeOnly size="sm" />
           </button>

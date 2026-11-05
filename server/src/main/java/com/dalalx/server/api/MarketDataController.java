@@ -56,7 +56,8 @@ public class MarketDataController {
         long last = trades.lastPrice(stock.symbol()).orElse(stock.referencePrice());
         StatusBoard.Status status = statuses.status(stock.symbol());
         return new SymbolInfo(stock.symbol(), stock.name(), stock.referencePrice(), last,
-                status.phase(), status.reason(), status.until(), status.since());
+                status.phase(), status.reason(), status.until(), status.since(),
+                statuses.auction(stock.symbol()).orElse(null));
     }
 
     /** {@code GET /api/books/{symbol}?depth=10}: the top of the order book. */

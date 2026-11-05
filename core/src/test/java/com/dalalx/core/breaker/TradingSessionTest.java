@@ -10,7 +10,8 @@ import org.junit.jupiter.api.Test;
 class TradingSessionTest {
 
     private static final Instant T0 = Instant.parse("2026-11-04T09:15:00Z");
-    private final TradingSession session = TradingSession.withBreaker("TCS", BreakerRule.STANDARD);
+    private final TradingSession session = TradingSession.withBreaker("TCS",
+            new BreakerRule(1_000, java.time.Duration.ofSeconds(60), java.time.Duration.ofSeconds(30)));
 
     private static Trade trade(int second, long price) {
         return new Trade(1, "TCS", price, 10, 1, 2, "A", "B", Side.SELL, T0.plusSeconds(second));
@@ -52,5 +53,19 @@ class TradingSessionTest {
         TradingSession open = TradingSession.alwaysOpen("TCS");
         open.onTrade(trade(0, 100_000));
         assertThat(open.onTrade(trade(1, 10_000))).isEmpty();
+    }
+
+    @Test
+    void theStandardRuleReopensThroughACallAuction() {
+        TradingSession standard = TradingSession.withBreaker("TCS", BreakerRule.STANDARD);
+        standard.onTrade(trade(0, 100_000));
+        standard.onTrade(trade(10, 89_000));
+
+        MarketState auction = standard.onClock(T0.plusSeconds(40)).orElseThrow();
+        assertThat(auction.phase()).isEqualTo(MarketPhase.AUCTION);
+        assertThat(auction.matchesContinuously()).isFalse();
+        assertThat(standard.refusal(com.dalalx.core.model.OrderType.MARKET)).hasValue(AuctionState.LIMIT_ONLY);
+        assertThat(standard.refusal(com.dalalx.core.model.OrderType.LIMIT)).isEmpty();
+        assertThat(standard.onClock(T0.plusSeconds(70))).get().extracting(MarketState::phase).isEqualTo(MarketPhase.OPEN);
     }
 }

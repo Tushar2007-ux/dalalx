@@ -1,5 +1,6 @@
 package com.dalalx.core.breaker;
 
+import com.dalalx.core.model.OrderType;
 import java.time.Instant;
 import java.util.Optional;
 
@@ -10,7 +11,7 @@ import java.util.Optional;
  * the engine, each phase is its own class that answers the same questions
  * differently. The engine asks its current state and the state decides; a
  * transition simply swaps which object is current. Adding a phase (Step 13's
- * call auction) means adding a class, not editing every {@code if}.
+ * call auction, {@code AuctionState}) meant adding a class, not editing every {@code if}.
  *
  * <p>States are immutable; a transition returns a new state.
  */
@@ -21,6 +22,19 @@ public interface MarketState {
 
     /** @return why a new order must be refused now, or empty if it may trade */
     Optional<String> refusal();
+
+    /** @return why an order of this type must be refused now (by default, the same as {@link #refusal()}) */
+    default Optional<String> refusal(OrderType type) {
+        return refusal();
+    }
+
+    /**
+     * @return true if orders match as they arrive (continuous trading), false
+     *         if they are only collected (a call auction)
+     */
+    default boolean matchesContinuously() {
+        return true;
+    }
 
     /** @return why the market is in this phase (e.g. the breaker's trip), if there is a reason */
     default Optional<String> reason() {

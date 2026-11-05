@@ -3,6 +3,7 @@ package com.dalalx.core.headlines;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.dalalx.core.breaker.MarketPhase;
+import com.dalalx.core.events.AuctionUpdate;
 import com.dalalx.core.events.MarketStatusChanged;
 import com.dalalx.core.headlines.Headline.Tone;
 import com.dalalx.core.model.Side;
@@ -94,5 +95,15 @@ class HeadlineWriterTest {
         assertThat(news.get(0).deck()).isEqualTo(
                 "TCS fell 10.4% in 60 seconds (₹1,000.00 → ₹896.00). Resting orders stay in the book; trading resumes in 30 seconds.");
         assertThat(news.get(1).text()).isEqualTo("Trading resumes in TCS");
+    }
+
+    @Test
+    void theAuctionAndTheReopeningPriceMakeTheNews() {
+        writer.onEvent(new MarketStatusChanged("TCS", T0, 1, MarketPhase.AUCTION, "call auction", T0.plusSeconds(30)));
+        writer.onEvent(new AuctionUpdate("TCS", T0.plusSeconds(10), 2, 91_000L, 130, 150, 130, T0.plusSeconds(30)));
+        writer.onEvent(new MarketStatusChanged("TCS", T0.plusSeconds(30), 3, MarketPhase.OPEN, null, null));
+
+        assertThat(texts()).containsExactly("TCS call auction under way", "Trading resumes in TCS at ₹910.00");
+        assertThat(writer.latest(1).get(0).deck()).isEqualTo("The call auction crossed 130 shares at one price.");
     }
 }

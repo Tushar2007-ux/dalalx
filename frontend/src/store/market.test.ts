@@ -97,3 +97,15 @@ describe('surveillance cases', () => {
     expect(useMarket.getState().toasts).toHaveLength(1)
   })
 })
+
+describe('call auction', () => {
+  it('keeps the indicative price and reports the reopening price', () => {
+    useMarket.setState({ status: { TCS: { phase: 'AUCTION', reason: null, until: null } }, auctions: {}, toasts: [] })
+    useMarket.getState().applyAuction({ symbol: 'TCS', timestamp: '2026-11-04T09:15:10Z', price: 91000, volume: 130, buyQty: 150, sellQty: 130, endsAt: '2026-11-04T09:15:30Z' })
+    expect(useMarket.getState().auctions.TCS.price).toBe(91000)
+
+    useMarket.getState().applyStatus({ symbol: 'TCS', timestamp: '2026-11-04T09:15:30Z', phase: 'OPEN', reason: null, until: null })
+    expect(useMarket.getState().toasts[0].title).toBe('Trading resumes in TCS at ₹910.00')
+    expect(useMarket.getState().auctions.TCS).toBeUndefined()
+  })
+})

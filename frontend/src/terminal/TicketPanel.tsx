@@ -17,12 +17,13 @@ export function TicketPanel() {
   const selected = useMarket((s) => s.selected)
   const connection = useMarket((s) => s.connection)
   const halted = useMarket((s) => s.status[s.selected]?.phase === 'HALTED')
+  const auction = useMarket((s) => s.status[s.selected]?.phase === 'AUCTION')
   return (
     <RuledPanel label="Order Ticket" meta={selected} columnRule="left"
       style={{ minWidth: 0, padding: '0 0 0 12px', flex: '1 1 300px' }}>
       {connection === 'offline'
         ? <ClosedTicket />
-        : halted ? <HaltedTicket symbol={selected} /> : <Ticket key={selected} symbol={selected} />}
+        : halted ? <HaltedTicket symbol={selected} /> : <Ticket key={selected} symbol={selected} auction={auction} />}
       <XRaySwitch />
       <YourOrders />
       <SurveillanceSection />
@@ -53,7 +54,9 @@ function HaltedTicket({ symbol }: { symbol: string }) {
   )
 }
 
-function Ticket({ symbol }: { symbol: string }) {
+const AUCTION_ONLY = [{ value: 'limit', label: 'Limit only', hint: 'During the call auction only limit orders are accepted. Everything that crosses trades at one price when it closes.' }]
+
+function Ticket({ symbol, auction = false }: { symbol: string; auction?: boolean }) {
   const reference = useMarket((s) => s.symbols.find((x) => x.symbol === symbol)?.referencePrice)
   const last = useMarket((s) => s.lastPrice[symbol])
   const prefill = useMarket((s) => s.ticketPrefill)
@@ -86,9 +89,15 @@ function Ticket({ symbol }: { symbol: string }) {
     if (prefill) setPriceText(formatPaise(prefill.price))
   }, [prefill])
 
-  const check = checkTicket({ symbol, side: side === 'buy' ? 'BUY' : 'SELL', type, priceText, qtyText, reference })
+  // Keep the trader's chosen type for later, but an auction only takes limit orders.
+  useEffect(() => {
+    if (auction) setType('LIMIT')
+  }, [auction])
+  // The ±10% band is measured from the last traded price, so it follows the market after a big move.
+  const bandCentre = last ?? reference
+  const check = checkTicket({ symbol, side: side === 'buy' ? 'BUY' : 'SELL', type, priceText, qtyText, reference: bandCentre })
   const estimate = check.order ? (type === 'MARKET' ? (last ?? reference ?? 0) : check.order.price) * check.order.qty : 0
-  const band = reference ? bandOf(reference) : undefined
+  const band = bandCentre ? bandOf(bandCentre) : undefined
 
   const send = async () => {
     if (!confirm) return
@@ -113,7 +122,8 @@ function Ticket({ symbol }: { symbol: string }) {
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 12, position: 'relative' }}
       onKeyDown={(e) => { if (e.key === 'Enter' && check.order && !confirm) setConfirm(check.order) }}>
       <SideToggle value={side} onChange={setSide} />
-      <OrderTypeToggle value={type.toLowerCase()} onChange={(v) => setType(v.toUpperCase() as OrderType)} />
+      <OrderTypeToggle value={auction ? 'limit' : type.toLowerCase()} onChange={(v) => setType(v.toUpperCase() as OrderType)}
+        options={auction ? AUCTION_ONLY : undefined} />
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
         <PriceInput label="Limit price" prefix="₹" value={type === 'MARKET' ? 'Market' : priceText} onChange={(v) => { typed.current = true; setPriceText(v) }}
           disabled={type === 'MARKET'} inputMode="decimal"

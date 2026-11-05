@@ -1,10 +1,12 @@
 package com.dalalx.core.breaker;
 
+import com.dalalx.core.events.AuctionUpdate;
 import com.dalalx.core.events.EngineEvent;
 import com.dalalx.core.events.EngineListener;
 import com.dalalx.core.events.MarketStatusChanged;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -20,12 +22,23 @@ public final class StatusBoard implements EngineListener {
     }
 
     private final Map<String, Status> statuses = new ConcurrentHashMap<>();
+    private final Map<String, AuctionUpdate> auctions = new ConcurrentHashMap<>();
 
     @Override
     public void onEvent(EngineEvent event) {
         if (event instanceof MarketStatusChanged e) {
             statuses.put(e.symbol(), new Status(e.phase(), e.reason(), e.until(), e.timestamp()));
+            if (e.phase() != MarketPhase.AUCTION) {
+                auctions.remove(e.symbol());
+            }
+        } else if (event instanceof AuctionUpdate e) {
+            auctions.put(e.symbol(), e);
         }
+    }
+
+    /** @return the latest indicative auction state, while the stock is in a call auction */
+    public Optional<AuctionUpdate> auction(String symbol) {
+        return Optional.ofNullable(auctions.get(symbol));
     }
 
     /** @return the stock's phase (OPEN if it has never changed) */

@@ -24,6 +24,20 @@ export interface SymbolInfo extends MarketStatus {
   name: string
   referencePrice: number
   lastPrice: number
+  /** The latest indicative auction state, while the stock is in a call auction. */
+  auction?: AuctionUpdate | null
+}
+
+/** Pushed on /topic/auction during a call auction: where it would trade if it closed now. */
+export interface AuctionUpdate {
+  symbol: string
+  timestamp: string
+  /** Indicative price in paise, or null if no bid and ask overlap yet. */
+  price: number | null
+  volume: number
+  buyQty: number
+  sellQty: number
+  endsAt: string | null
 }
 
 /** Pushed on /topic/status when a stock is halted or reopens. */
