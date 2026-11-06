@@ -1,9 +1,11 @@
 import { StockTabs } from '../design'
+import './floor.css'
 import { changePct } from '../lib/format'
 import { Shell } from '../shell/Shell'
 import { useMarket } from '../store/market'
 import { BookPanel } from './BookPanel'
 import { ChartPanel } from './ChartPanel'
+import { FloorNow } from './FloorNow'
 import { AuctionBand, AuctionStamp, HaltBand, HaltStamp } from './HaltBand'
 import { bannerHeadline } from './headline'
 import { MarketsPanel } from './MarketsPanel'
@@ -38,18 +40,19 @@ export function Terminal() {
     <Shell route="floor" headline={headline} page={2} section="Markets" status={halted ? 'halted' : inAuction ? 'auction' : undefined}
       band={halted && selectedStatus ? <HaltBand symbol={selected} status={selectedStatus} />
         : inAuction && selectedStatus ? <AuctionBand status={selectedStatus} auction={auction} /> : undefined}>
-      <div style={{ marginTop: 12 }}>
+      <div className="dx-tabsrow">
         <StockTabs tabs={tabs} value={selected} onChange={select} />
+        <FloorNow />
       </div>
       <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', flex: 1 }}>
         {halted && <HaltStamp symbol={selected} />}
         {inAuction && <AuctionStamp symbol={selected} />}
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', rowGap: 24, marginTop: 14, flex: 1,
+        <div className="dx-floor" style={{
           filter: connection === 'offline' || halted ? 'grayscale(0.85) sepia(0.25) contrast(0.95)' : inAuction ? 'grayscale(0.6) sepia(0.15)' : 'none', transition: 'filter 900ms var(--ease-out)' }}>
-          <MarketsPanel />
-          <ChartPanel />
-          <BookPanel />
-          <TicketPanel />
+          <div className="dx-floor-markets"><MarketsPanel /></div>
+          <div className="dx-floor-chart"><ChartPanel /></div>
+          <div className="dx-floor-book"><BookPanel /></div>
+          <div className="dx-floor-ticket"><TicketPanel /></div>
         </div>
       </div>
     </Shell>

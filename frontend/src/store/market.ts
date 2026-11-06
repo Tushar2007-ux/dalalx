@@ -17,6 +17,25 @@ import type {
  */
 
 export type Connection = 'connecting' | 'live' | 'offline'
+
+/** A full-screen "big moment": a halt, the reopening bell, or a trader caught. */
+export interface Moment {
+  id: number
+  kind: 'extra' | 'bell' | 'caught'
+  kicker: string
+  headline: string
+  deck?: string
+  /** Whose portrait to show for 'caught' (a trader id). */
+  traderId?: string
+}
+
+/** A trader's most recent trade, for the "on the floor now" strip. */
+export interface LastTrade {
+  at: number
+  symbol: string
+  side: 'BUY' | 'SELL'
+  qty: number
+}
 export type Edition = 'day' | 'night'
 
 export interface ToastItem {
@@ -48,6 +67,12 @@ export interface MarketState {
   chart: { key: string; candles: Candle[] } | null
   myOrders: Record<number, OrderView>
   toasts: ToastItem[]
+  /** The big moment on screen, if any. */
+  moment: Moment | null
+  /** Each trader's latest trade (both sides of every trade count). */
+  lastTradeBy: Record<string, LastTrade>
+  /** The price before the last change, per stock (the ticker flashes up or down from it). */
+  tickerPrev: Record<string, number>
   /** Each stock's trading phase (open, halted by the circuit breaker, auction). */
   status: Record<string, MarketStatus>
   /** The latest indicative state of each stock's call auction (only while one runs). */
@@ -83,6 +108,8 @@ export interface MarketState {
   applyCase: (c: Case) => void
   applyAuction: (a: AuctionUpdate) => void
   setFocusCase: (id: string | null) => void
+  showMoment: (m: Omit<Moment, 'id'>) => void
+  clearMoment: () => void
 }
 
 let nextToastId = 1
@@ -117,7 +144,7 @@ export const useMarket = create<MarketState>()((set, get) => ({
   connection: 'connecting',
   symbols: [],
   selected: 'RELIANCE',
-  interval: '1m',
+  interval: '10s',
   edition: savedEdition(),
   xray: false,
   lastPrice: {},
@@ -128,6 +155,9 @@ export const useMarket = create<MarketState>()((set, get) => ({
   toasts: [],
   ticketPrefill: null,
   wire: [],
+  moment: null,
+  lastTradeBy: {},
+  tickerPrev: {},
   status: {},
   cases: [],
   focusCase: null,
@@ -179,8 +209,18 @@ export const useMarket = create<MarketState>()((set, get) => ({
       for (const trade of trades) candles = addTradeToCandles(candles, trade, s.interval)
       chart = { key: chart.key, candles }
     }
+    const newPrice = trades[trades.length - 1].price
+    const oldPrice = s.lastPrice[symbol]
+    const lastTradeBy = { ...s.lastTradeBy }
+    const now = Date.now()
+    for (const t of trades) {
+      lastTradeBy[t.buyerId] = { at: now, symbol, side: 'BUY', qty: t.qty }
+      lastTradeBy[t.sellerId] = { at: now, symbol, side: 'SELL', qty: t.qty }
+    }
     set({
-      lastPrice: { ...s.lastPrice, [symbol]: trades[trades.length - 1].price },
+      lastTradeBy,
+      tickerPrev: oldPrice !== undefined && oldPrice !== newPrice ? { ...s.tickerPrev, [symbol]: oldPrice } : s.tickerPrev,
+      lastPrice: { ...s.lastPrice, [symbol]: newPrice },
       tapes: { ...s.tapes, [symbol]: [...newestFirst, ...(s.tapes[symbol] ?? [])].slice(0, TAPE_SIZE) },
       chart,
       myOrders,
@@ -212,9 +252,16 @@ export const useMarket = create<MarketState>()((set, get) => ({
   // Merge rather than replace: a pushed headline may arrive before the REST snapshot does.
   setCases: (cases) => set({ cases }),
   setFocusCase: (focusCase) => set({ focusCase }),
+  showMoment: (m) => set({ moment: { ...m, id: nextToastId++ } }),
+  clearMoment: () => set({ moment: null }),
   applyAuction: (a) => set((s) => ({ auctions: { ...s.auctions, [a.symbol]: a } })),
   applyCase: (c) => {
-    const known = get().cases.some((x) => x.id === c.id)
+    const was = get().cases.find((x) => x.id === c.id)
+    const known = was !== undefined
+    if (c.status === 'SUSPENDED' && was && was.status !== 'SUSPENDED' && !get().cases.some((x) => x.traderId === c.traderId && x.status === 'SUSPENDED')) {
+      get().showMoment({ kind: 'caught', kicker: 'Caught', headline: `${c.traderId === 'SPOOFER' ? 'The Spoofer' : c.traderId} suspended`,
+        deck: `${c.ruleName} in ${c.symbol} · case ${c.id}. All resting orders cancelled.`, traderId: c.traderId })
+    }
     set((s) => ({ cases: known ? s.cases.map((x) => (x.id === c.id ? c : x)) : [c, ...s.cases] }))
     // Only the serious cases interrupt with a toast; every case is listed under Surveillance and on The Wire.
     if (!known && c.status === 'OPEN' && c.severity === 'CRITICAL') {
@@ -226,10 +273,17 @@ export const useMarket = create<MarketState>()((set, get) => ({
     set((s) => ({ status: { ...s.status, [st.symbol]: { phase: st.phase, reason: st.reason, until: st.until, since: st.timestamp } } }))
     if (st.phase === 'HALTED') {
       get().toast({ kind: 'rejected', title: `Trading halted in ${st.symbol}`, detail: st.reason ?? 'Circuit breaker' })
+      get().showMoment({ kind: 'extra', kicker: 'Extra · Extra', headline: `Circuit breaker halts ${st.symbol}`,
+        deck: st.reason ?? undefined })
     } else if (st.phase === 'AUCTION') {
       get().toast({ kind: 'info', title: `${st.symbol} call auction under way`, detail: 'Limit orders only; everything that crosses trades at one price.' })
     } else if (st.phase === 'OPEN' && before && before !== 'OPEN') {
       const auction = get().auctions[st.symbol]
+      if (before === 'AUCTION') {
+        get().showMoment({ kind: 'bell', kicker: 'The Bell Rings',
+          headline: `${st.symbol} reopens${auction?.price ? ` at ₹${formatPaise(auction.price)}` : ''}`,
+          deck: auction?.price ? `${formatQty(auction.volume)} shares crossed at one price` : 'Continuous trading resumes' })
+      }
       get().toast({ kind: 'info', title: `Trading resumes in ${st.symbol}${auction?.price ? ` at ₹${formatPaise(auction.price)}` : ''}`,
         detail: auction?.price ? `Call auction crossed ${formatQty(auction.volume)} shares at one price` : undefined })
       set((s) => {

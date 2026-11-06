@@ -17,11 +17,11 @@ public final class MomentumBot extends AbstractBot {
     public static final String ID = "MOMENTUM";
 
     static final int LOOKBACK = 10;
-    /** A move bigger than this (0.08%) counts as a trend. */
-    static final long TREND_BP = 8;
+    /** A move bigger than this (0.20%) counts as a trend. */
+    static final long TREND_BP = 20;
     /** How far past the last price it is willing to pay. */
-    static final long REACH_BP = 20;
-    static final int NOISE_CHANCE = 35;
+    static final long REACH_BP = 12;
+    static final int NOISE_CHANCE = 25;
 
     public MomentumBot() {
         this(ID, "Momentum Chaser", "Buys what is rising. Sells what is falling.");

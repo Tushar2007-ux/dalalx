@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { DemoBar } from './demo/DemoBar'
+import { MomentOverlay } from './shell/MomentOverlay'
 import { useAutopilot, useDemo } from './demo/autopilot'
 import { Correspondents } from './pages/Correspondents'
 import { FrontPage } from './pages/FrontPage'
@@ -25,6 +26,7 @@ export default function App() {
   return (
     <>
       <Page route={route} />
+      <MomentOverlay />
       <DemoBar />
     </>
   )

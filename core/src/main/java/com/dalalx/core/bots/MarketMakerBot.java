@@ -35,6 +35,9 @@ public final class MarketMakerBot extends AbstractBot {
      * the price (and trip the circuit breaker), strong enough to stop drift.
      */
     static final long REVERSION = 100;
+    /** Quote sizes: deep enough that one trader's burst doesn't empty a level at once. */
+    static final long MIN_QTY = 150;
+    static final long MAX_QTY = 600;
 
     private int next;
 
@@ -55,8 +58,8 @@ public final class MarketMakerBot extends AbstractBot {
         long fair = fairPrice(ctx.market(), symbol);
         for (int level = 0; level < LEVELS; level++) {
             long offset = HALF_SPREAD_BP + level * STEP_BP;
-            limit(ctx, symbol, Side.BUY, Ticks.moveBy(fair, -offset), ctx.qty(50, 300, 10));
-            limit(ctx, symbol, Side.SELL, Ticks.moveBy(fair, offset), ctx.qty(50, 300, 10));
+            limit(ctx, symbol, Side.BUY, Ticks.moveBy(fair, -offset), ctx.qty(MIN_QTY, MAX_QTY, 10));
+            limit(ctx, symbol, Side.SELL, Ticks.moveBy(fair, offset), ctx.qty(MIN_QTY, MAX_QTY, 10));
         }
     }
 

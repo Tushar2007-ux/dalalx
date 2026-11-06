@@ -4,15 +4,12 @@ import { clockTime } from '../lib/format'
 import { useMarket, type ToastItem } from '../store/market'
 import type { Headline } from '../terminal/headline'
 import { ROUTES, type Route } from './route'
+import { TickerStrip } from './TickerStrip'
+import './shell.css'
 
 const EDITION_NAMES = { day: 'Day Edition', night: 'Night Edition' } as const
 
 const today = () => new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-
-const navLink = (active: boolean) => ({
-  fontFamily: 'var(--font-ui)', fontSize: 12, fontWeight: active ? 700 : 500, color: 'var(--ink)',
-  textDecoration: active ? 'none' : 'underline', textUnderlineOffset: 3,
-})
 
 /**
  * The newspaper around every page: edition (Day/Night), strip masthead with
@@ -39,14 +36,14 @@ export function Shell({ route, headline, page, section, status, band, full = fal
   const toasts = useMarket((s) => s.toasts)
   const dismiss = useMarket((s) => s.dismissToast)
 
-  const right = (
-    <span style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
-      <nav aria-label="Pages" style={{ display: 'flex', gap: 12 }}>
+  const sections = (
+    <div className="dx-sections">
+      <nav aria-label="Pages" style={{ display: 'flex', gap: '4px 18px', flexWrap: 'wrap' }}>
         {ROUTES.map((r) => (
-          <a key={r.route} href={r.hash} className="dx-focus" aria-current={r.route === route ? 'page' : undefined}
-            style={navLink(r.route === route)}>{r.label}</a>
+          <a key={r.route} href={r.hash} className="dx-focus" aria-current={r.route === route ? 'page' : undefined}>{r.label}</a>
         ))}
       </nav>
+      <span className="dx-sections-right">
       <span data-testid="connection" style={{ fontSize: 12, color: connection === 'live' ? 'var(--buy)' : 'var(--ink-muted)' }}>
         {connection === 'live' ? '● Live wire' : connection === 'connecting' ? '○ Connecting…' : '○ Offline'}
       </span>
@@ -54,7 +51,8 @@ export function Shell({ route, headline, page, section, status, band, full = fal
         style={{ appearance: 'none', background: 'none', border: '1px solid var(--rule-strong)', color: 'var(--ink)', fontFamily: 'var(--font-ui)', fontSize: 12, fontWeight: 600, padding: '3px 9px', cursor: 'pointer' }}>
         {edition === 'day' ? 'Night edition →' : 'Day edition →'}
       </button>
-    </span>
+      </span>
+    </div>
   )
 
   return (
@@ -63,15 +61,19 @@ export function Shell({ route, headline, page, section, status, band, full = fal
         ? <>
             <Masthead date={today()} editionName={EDITION_NAMES[edition]} leftMeta="Vol. I · A simulated stock exchange"
               rightMeta="Free · paper money only" status={connection === 'offline' ? 'closed' : status ?? 'live'} style={{ marginBottom: 0 }} />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 0', borderBottom: '1px solid var(--rule)' }}>{right}</div>
+            {sections}
           </>
-        : <Masthead strip date={today()} editionName={EDITION_NAMES[edition]}
-            status={connection === 'offline' ? 'closed' : status ?? 'live'} right={right} />}
+        : <>
+            <Masthead strip date={today()} editionName={EDITION_NAMES[edition]}
+              status={connection === 'offline' ? 'closed' : status ?? 'live'} />
+            {sections}
+          </>}
+      <TickerStrip />
       {headline && <HeadlineBanner {...headline} time={headline.time ?? clockTime(Date.now()).slice(0, 8)} />}
       {band}
       {children}
       <Folio page={page} section={section} right={<span>Prices in ₹ · simulated exchange · paper money only</span>} style={{ marginTop: 18 }} />
-      <div aria-live="polite" style={{ position: 'fixed', top: full ? 200 : 72, right: 16, display: 'grid', gap: 8, zIndex: 40 }}>
+      <div aria-live="polite" style={{ position: 'fixed', top: full ? 230 : 116, right: 16, display: 'grid', gap: 8, zIndex: 40 }}>
         {toasts.map((t) => <AutoToast key={t.id} toast={t} onClose={() => dismiss(t.id)} />)}
       </div>
     </Edition>

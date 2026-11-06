@@ -19,7 +19,7 @@ export function MarketsPanel() {
 
   return (
     <RuledPanel label="Markets" meta={`${symbols.length} stocks`} state={symbols.length ? 'ready' : 'loading'}
-      style={{ minWidth: 0, padding: '0 12px 0 0', flex: '0.8 1 230px' }}>
+      style={{ minWidth: 0 }}>
       {symbols.map((x) => {
         const price = lastPrice[x.symbol] ?? x.referencePrice
         const phase = status[x.symbol]?.phase

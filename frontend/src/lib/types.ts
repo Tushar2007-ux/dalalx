@@ -131,8 +131,8 @@ export interface OrderActivity {
   reason: string | null
 }
 
-export type Interval = '1m' | '5m' | '15m' | '1D'
-export const INTERVALS: Interval[] = ['1m', '5m', '15m', '1D']
+export type Interval = '10s' | '1m' | '5m' | '15m' | '1D'
+export const INTERVALS: Interval[] = ['10s', '1m', '5m', '15m', '1D']
 
 /** A simulated trader, from GET /api/bots. P&L and cash are paise; positions are shares. */
 export interface BotInfo {

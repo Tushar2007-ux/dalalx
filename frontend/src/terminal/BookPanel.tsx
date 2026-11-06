@@ -39,7 +39,7 @@ export function BookPanel() {
     <RuledPanel label="Order Book" meta={`${selected} · 10 levels`} columnRule="left"
       state={!book ? 'loading' : bids.length + asks.length ? 'ready' : 'empty'}
       emptyText="The book is empty. Your limit order would be the first line."
-      style={{ minWidth: 0, padding: '0 12px', flex: '1 1 300px' }}>
+      style={{ minWidth: 0 }}>
       <div style={{ ...header, display: 'grid', gridTemplateColumns: '14px minmax(0,1fr) minmax(0,1fr) 36px 96px', columnGap: 10, padding: '2px 6px 2px 4px' }}>
         <span /><span style={{ textAlign: 'right' }}>▼ Ask</span><span style={{ textAlign: 'right' }}>Qty</span><span style={{ textAlign: 'right' }}>{xray ? 'Bot' : 'Ord'}</span><span>Depth</span>
       </div>

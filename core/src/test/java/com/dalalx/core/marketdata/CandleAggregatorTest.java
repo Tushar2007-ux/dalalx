@@ -70,6 +70,7 @@ class CandleAggregatorTest {
     void intervalCodesRoundTripAndUnknownCodesAreRejected() {
         assertThat(CandleInterval.fromCode("15m")).isEqualTo(CandleInterval.FIFTEEN_MINUTES);
         assertThat(CandleInterval.fromCode("1D").code()).isEqualTo("1D");
+        assertThat(CandleInterval.fromCode("10s").bucketStart(25_000)).isEqualTo(20_000); // ten-second candles
         assertThatIllegalArgumentException().isThrownBy(() -> CandleInterval.fromCode("2h"));
     }
 }

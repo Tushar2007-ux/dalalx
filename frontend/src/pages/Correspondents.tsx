@@ -8,6 +8,7 @@ import { botKey } from '../lib/market'
 import { monogramOf } from '../lib/monogram'
 import type { BotInfo, BotStyle, Story, Storylines } from '../lib/types'
 import { Shell } from '../shell/Shell'
+import { pushReading, Sparkline } from './Sparkline'
 import { useMarket } from '../store/market'
 import type { Headline } from '../terminal/headline'
 
@@ -40,10 +41,14 @@ export function Correspondents() {
   const [bots, setBots] = useState<BotInfo[]>([])
   const [stories, setStories] = useState<Storylines | null>(null)
   const [hiring, setHiring] = useState(false)
+  const [pnlHistory, setPnlHistory] = useState<Record<string, number[]>>({})
   const [asking, setAsking] = useState<Story | null>(null)
 
   const load = useCallback(() => {
-    api.bots().then(setBots).catch(() => {})
+    api.bots().then((list) => {
+      setBots(list)
+      setPnlHistory((h) => Object.fromEntries(list.map((b) => [b.id, pushReading(h[b.id] ?? [], b.stats.pnl)])))
+    }).catch(() => {})
     api.scenarios().then(setStories).catch(() => {})
   }, [])
   useEffect(() => {
@@ -85,7 +90,7 @@ export function Correspondents() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(380px, 100%), 1fr))', gap: '26px 28px', marginTop: 14 }}>
-        {bots.map((b) => <BotCard key={b.id} bot={b} onChange={replace} onFail={fail} onRemoved={load} />)}
+        {bots.map((b) => <BotCard key={b.id} bot={b} history={pnlHistory[b.id] ?? []} onChange={replace} onFail={fail} onRemoved={load} />)}
         <button type="button" onClick={() => setHiring(true)} className="dx-focus"
           style={{ appearance: 'none', borderRadius: 0, cursor: 'pointer', border: '1px dashed var(--rule-strong)', borderTop: '2px solid var(--rule-strong)', background: 'transparent', color: 'var(--ink)', minHeight: 260, display: 'grid', placeItems: 'center', textAlign: 'center', padding: 20 }}>
           <span style={{ display: 'grid', gap: 6 }}>
@@ -128,8 +133,9 @@ export function storyMeta(s: Story): string {
   return `${minutes < 1 ? `${s.durationSeconds} s` : `${Math.round(minutes * 10) / 10} min`} · ${s.symbol === 'ALL' ? 'All stocks' : s.symbol}`
 }
 
-function BotCard({ bot, onChange, onFail, onRemoved }: {
+function BotCard({ bot, history, onChange, onFail, onRemoved }: {
   bot: BotInfo
+  history: number[]
   onChange: (b: BotInfo) => void
   onFail: (what: string) => (e: unknown) => void
   onRemoved: () => void
@@ -161,6 +167,10 @@ function BotCard({ bot, onChange, onFail, onRemoved }: {
         <Stat k="Orders today" v={bot.stats.orders.toLocaleString('en-IN')} />
         <Stat k="P&L today" v={<span style={{ color: pnl >= 0 ? 'var(--buy)' : 'var(--sell)' }}>{pnl >= 0 ? '▲ ' : '▼ '}₹{formatPaise(Math.abs(pnl))}</span>} />
       </dl>
+      <div style={{ borderTop: '1px solid var(--rule)', paddingTop: 4 }}>
+        <div style={{ ...label, fontSize: 10, fontWeight: 600, color: 'var(--ink-muted)', marginBottom: 2 }}>P&amp;L, last two minutes</div>
+        <Sparkline values={history} />
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 16 }}>
         <Dial label="Aggressiveness" value={bot.tuning.aggressiveness} words={AGGRESSION_WORDS} disabled={!on}
           onChange={(v) => void tune(v, bot.tuning.size)} />

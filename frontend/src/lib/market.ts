@@ -9,7 +9,7 @@ export const ME = 'YOU'
 
 const MINUTE = 60_000
 export const INTERVAL_MS: Record<Interval, number> = {
-  '1m': MINUTE, '5m': 5 * MINUTE, '15m': 15 * MINUTE, '1D': 24 * 60 * MINUTE,
+  '10s': 10_000, '1m': MINUTE, '5m': 5 * MINUTE, '15m': 15 * MINUTE, '1D': 24 * 60 * MINUTE,
 }
 
 /** Start of the bucket a moment falls into (UTC, like the server's CandleInterval). */

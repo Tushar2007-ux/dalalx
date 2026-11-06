@@ -1,0 +1,142 @@
+/* Section navigation under the masthead, like a newspaper's section bar. */
+.dx-sections {
+  display: flex;
+  align-items: center;
+  gap: 4px 18px;
+  flex-wrap: wrap;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.dx-sections a {
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 2px 0;
+  border-bottom: 2px solid transparent;
+}
+.dx-sections a:hover { border-bottom-color: var(--rule-strong); }
+.dx-sections a[aria-current="page"] { font-weight: 700; border-bottom-color: var(--ink); }
+.dx-sections .dx-sections-right { margin-left: auto; display: flex; gap: 14px; align-items: center; }
+
+
+/* The scrolling price ticker. */
+.dx-ticker {
+  overflow: hidden;
+  border-bottom: 1px solid var(--rule-strong);
+  padding: 5px 0;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+}
+.dx-ticker-track {
+  display: flex;
+  width: max-content;
+  animation: dx-ticker-scroll 38s linear infinite;
+}
+.dx-ticker:hover .dx-ticker-track { animation-play-state: paused; }
+.dx-ticker-run { display: flex; }
+.dx-ticker-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 26px;
+  font-size: 12.5px;
+  white-space: nowrap;
+  border-right: 1px solid var(--rule);
+}
+.dx-ticker-item a {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  text-decoration: none;
+}
+.dx-ticker-item a:hover { text-decoration: underline; }
+.dx-ticker-badge {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--stamp);
+  border: 1px solid var(--stamp);
+  padding: 0 4px;
+}
+@keyframes dx-ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dx-ticker-track { animation: none; }
+}
+
+/* Big moments: a special-edition page printed over everything. */
+.dx-moment {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: color-mix(in srgb, var(--paper) 55%, transparent);
+  backdrop-filter: blur(2px) sepia(0.3);
+  cursor: pointer;
+  animation: dx-moment-fade 3.6s ease forwards;
+}
+.dx-moment-sheet {
+  width: min(640px, 100%);
+  background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  border-top: 6px double var(--ink);
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.45);
+  padding: 22px 30px 18px;
+  text-align: center;
+  display: grid;
+  gap: 10px;
+  animation: dx-moment-drop 650ms cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+}
+.dx-moment-kicker {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 30px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 8px;
+}
+.dx-moment-headline {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(30px, 5vw, 48px);
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+}
+.dx-moment-deck { margin: 0; font-family: var(--font-display); font-style: italic; font-size: 17px; line-height: 1.35; }
+.dx-moment-hint { font-family: var(--font-ui); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-muted); margin-top: 6px; }
+.dx-moment-art { display: grid; place-items: center; min-height: 110px; position: relative; }
+.dx-moment-caught-art { grid-auto-flow: column; gap: 18px; align-items: center; }
+.dx-moment-vs { font-family: var(--font-display); font-size: 40px; color: var(--pencil-text); }
+.dx-moment-caught-stamp { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.dx-moment-bell { transform-origin: 50% 8%; animation: dx-bell 1.1s ease-in-out 2; }
+.dx-moment-extra .dx-moment-sheet, .dx-moment-extra { border-top-color: var(--accent); }
+
+@keyframes dx-moment-drop {
+  from { opacity: 0; transform: translateY(-60px) rotate(-3deg) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes dx-moment-fade {
+  0%, 85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes dx-bell {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(16deg); }
+  45% { transform: rotate(-13deg); }
+  70% { transform: rotate(8deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dx-moment, .dx-moment-sheet, .dx-moment-bell { animation: none; }
+}

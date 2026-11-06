@@ -109,3 +109,29 @@ describe('call auction', () => {
     expect(useMarket.getState().auctions.TCS).toBeUndefined()
   })
 })
+
+describe('big moments', () => {
+  it('prints an extra edition on a halt, the bell on reopening, and CAUGHT on a suspension', () => {
+    useMarket.setState({ status: { TCS: { phase: 'OPEN', reason: null, until: null } }, auctions: {}, moment: null, cases: [], toasts: [] })
+    useMarket.getState().applyStatus({ symbol: 'TCS', timestamp: 't', phase: 'HALTED', reason: 'TCS fell 10.2% in 60 seconds', until: null })
+    expect(useMarket.getState().moment).toMatchObject({ kind: 'extra', headline: 'Circuit breaker halts TCS' })
+
+    useMarket.getState().applyStatus({ symbol: 'TCS', timestamp: 't', phase: 'AUCTION', reason: null, until: null })
+    useMarket.getState().applyAuction({ symbol: 'TCS', timestamp: 't', price: 91000, volume: 130, buyQty: 1, sellQty: 1, endsAt: null })
+    useMarket.getState().applyStatus({ symbol: 'TCS', timestamp: 't', phase: 'OPEN', reason: null, until: null })
+    expect(useMarket.getState().moment).toMatchObject({ kind: 'bell', headline: 'TCS reopens at ₹910.00' })
+
+    const open = { id: 'SV-0001', ruleId: 'spoofing', ruleName: 'Spoofing', severity: 'CRITICAL' as const, traderId: 'SPOOFER',
+      symbol: 'TCS', openedAt: 't', summary: '', figures: {}, notes: [], evidence: [], flagged: [], status: 'OPEN' as const }
+    useMarket.getState().applyCase(open)
+    useMarket.getState().applyCase({ ...open, status: 'SUSPENDED' })
+    expect(useMarket.getState().moment).toMatchObject({ kind: 'caught', headline: 'The Spoofer suspended', traderId: 'SPOOFER' })
+  })
+
+  it('remembers who traded last on each side', () => {
+    useMarket.setState({ lastTradeBy: {}, tapes: {}, lastPrice: {} })
+    useMarket.getState().applyTrades('TCS', [{ id: 99, symbol: 'TCS', price: 1, qty: 40, buyOrderId: 1, sellOrderId: 2, buyerId: 'WHALE', sellerId: 'MUNIM', aggressorSide: 'BUY', timestamp: '2026-11-04T09:15:00Z' }])
+    expect(useMarket.getState().lastTradeBy.WHALE).toMatchObject({ side: 'BUY', qty: 40, symbol: 'TCS' })
+    expect(useMarket.getState().lastTradeBy.MUNIM.side).toBe('SELL')
+  })
+})

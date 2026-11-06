@@ -31,7 +31,7 @@ export function ChartPanel() {
 
   return (
     <RuledPanel label={selected} meta={info?.name ?? ''} columnRule="left"
-      style={{ minWidth: 0, padding: '0 12px', flex: '1.65 1 440px', display: 'flex', flexDirection: 'column' }}>
+      style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, margin: '4px 0 6px', flexWrap: 'wrap' }}>
         {shown !== undefined && <PriceCell value={toRupees(shown)} size="xl" prefix="₹" align="left" />}
         {shown !== undefined && reference !== undefined && (

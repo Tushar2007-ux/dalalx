@@ -28,7 +28,7 @@ class BotStrategiesTest {
         BookSnapshot book = gateway.engine("TCS").snapshot(10);
         assertThat(book.bids()).extracting(LevelSnapshot::price).containsExactly(399800L, 399640L, 399480L, 399320L, 399160L);
         assertThat(book.asks()).extracting(LevelSnapshot::price).containsExactly(400200L, 400360L, 400520L, 400680L, 400840L);
-        assertThat(book.bids()).allSatisfy(l -> assertThat(l.totalQty()).isEqualTo(50));
+        assertThat(book.bids()).allSatisfy(l -> assertThat(l.totalQty()).isEqualTo(MarketMakerBot.MIN_QTY));
     }
 
     @Test
@@ -55,12 +55,12 @@ class BotStrategiesTest {
         new MomentumBot().act(context(new FakeMarket().with("INFY", 150000, 150400, 150300, 150200, 150100, 150000)));
 
         assertThat(gateway.sent).extracting(OrderRequest::side, OrderRequest::type, OrderRequest::price)
-                .containsExactly(tuple(Side.BUY, OrderType.IOC, 150700L), tuple(Side.SELL, OrderType.IOC, 149700L));
+                .containsExactly(tuple(Side.BUY, OrderType.IOC, 150580L), tuple(Side.SELL, OrderType.IOC, 149820L));
     }
 
     @Test
     void panicSellerDumpsAFallingStockFarBelowTheLastPrice() {
-        new PanicSellerBot().act(context(new FakeMarket().with("TCS", 400000, 400000, 399000, 398000, 397000)));
+        new PanicSellerBot().act(context(new FakeMarket().with("TCS", 400000, 400000, 399800, 399500, 399000, 398500, 398000, 397500, 397000)));
 
         OrderRequest dump = gateway.sent.get(0);
         assertThat(dump.side()).isEqualTo(Side.SELL);

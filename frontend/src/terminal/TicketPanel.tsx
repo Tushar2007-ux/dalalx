@@ -20,7 +20,7 @@ export function TicketPanel() {
   const auction = useMarket((s) => s.status[s.selected]?.phase === 'AUCTION')
   return (
     <RuledPanel label="Order Ticket" meta={selected} columnRule="left"
-      style={{ minWidth: 0, padding: '0 0 0 12px', flex: '1 1 300px' }}>
+      style={{ minWidth: 0 }}>
       {connection === 'offline'
         ? <ClosedTicket />
         : halted ? <HaltedTicket symbol={selected} /> : <Ticket key={selected} symbol={selected} auction={auction} />}

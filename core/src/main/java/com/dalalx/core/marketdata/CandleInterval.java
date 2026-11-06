@@ -11,6 +11,8 @@ import java.util.Arrays;
  * place instead of being scattered through the code as string comparisons.
  */
 public enum CandleInterval {
+    /** Ten-second candles: a lively chart in the first minutes of a session. */
+    TEN_SECONDS("10s", Duration.ofSeconds(10)),
     ONE_MINUTE("1m", Duration.ofMinutes(1)),
     FIVE_MINUTES("5m", Duration.ofMinutes(5)),
     FIFTEEN_MINUTES("15m", Duration.ofMinutes(15)),
