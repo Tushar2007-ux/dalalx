@@ -35,6 +35,11 @@ export function Shell({ route, headline, page, section, status, band, full = fal
   const connection = useMarket((s) => s.connection)
   const toasts = useMarket((s) => s.toasts)
   const dismiss = useMarket((s) => s.dismissToast)
+  const viva = useMarket((s) => s.viva)
+  const setViva = useMarket((s) => s.setViva)
+  const presenter = useMarket((s) => s.presenter)
+  const setPresenter = useMarket((s) => s.setPresenter)
+  const setHelpOpen = useMarket((s) => s.setHelpOpen)
 
   const sections = (
     <div className="dx-sections">
@@ -44,7 +49,12 @@ export function Shell({ route, headline, page, section, status, band, full = fal
         ))}
       </nav>
       <span className="dx-sections-right">
-      <a href="#/wall" className="dx-focus dx-sections-board" title="Full-screen wall display for the projector">Big Board ⤢</a>
+      <button type="button" className={`dx-focus dx-mode${viva ? ' is-on' : ''}`} aria-pressed={viva} onClick={() => setViva(!viva)}
+        title="Label every panel with the Java class and pattern behind it (V)">✎ Viva mode</button>
+      <button type="button" className={`dx-focus dx-mode${presenter ? ' is-on' : ''}`} aria-pressed={presenter} onClick={() => setPresenter(!presenter)}
+        title="Bigger type for a projector (P)">Presenter</button>
+      <button type="button" className="dx-focus dx-mode dx-mode-key" onClick={() => setHelpOpen(true)} title="Keyboard shortcuts (?)">?</button>
+      <a href="#/wall" className="dx-focus dx-sections-board" title="Full-screen wall display for the projector (W)">Big Board ⤢</a>
       <span data-testid="connection" style={{ fontSize: 12, color: connection === 'live' ? 'var(--buy)' : 'var(--ink-muted)' }}>
         {connection === 'live' ? '● Live wire' : connection === 'connecting' ? '○ Connecting…' : '○ Offline'}
       </span>

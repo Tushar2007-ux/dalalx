@@ -102,6 +102,14 @@ export function CandleChart({ candles = [], prevClose, interval = '1m', interval
                 <text x={plotW + 8} y={content.Y(v) + 3.5} fontFamily="var(--font-mono)" fontSize="10.5" fill="var(--ink-muted)" style={{ fontFeatureSettings: 'var(--figures)' }}>{fmt(v)}</text>
               </g>
             ))}
+            {/* Faint vertical grid at the time labels, and a soft wash under the closing prices. */}
+            {candles.map((c, i) => (i % content.every === 0 ? <line key={'g' + i} x1={content.X(i)} x2={content.X(i)} y1={pad.t} y2={pad.t + priceH} stroke="var(--rule)" strokeWidth="1" strokeDasharray="1 4" opacity="0.8" /> : null))}
+            <linearGradient id={uid + 'a'} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={last.c >= (prevClose ?? candles[0].o) ? 'var(--buy)' : 'var(--sell)'} stopOpacity="0.16" />
+              <stop offset="100%" stopColor={last.c >= (prevClose ?? candles[0].o) ? 'var(--buy)' : 'var(--sell)'} stopOpacity="0" />
+            </linearGradient>
+            {n > 1 && <path d={'M' + candles.map((c, i) => content.X(i).toFixed(1) + ' ' + content.Y(c.c).toFixed(1)).join(' L') + ' L' + content.X(n - 1).toFixed(1) + ' ' + (pad.t + priceH) + ' L' + content.X(0).toFixed(1) + ' ' + (pad.t + priceH) + ' Z'} fill={'url(#' + uid + 'a)'} stroke="none" />}
+            {n > 1 && <path d={'M' + candles.map((c, i) => content.X(i).toFixed(1) + ' ' + content.Y(c.c).toFixed(1)).join(' L')} fill="none" stroke={last.c >= (prevClose ?? candles[0].o) ? 'var(--buy)' : 'var(--sell)'} strokeWidth="1" opacity="0.35" />}
             <line x1={plotW} x2={plotW} y1={pad.t} y2={content.vBase} stroke="var(--rule-strong)" strokeWidth="1" />
             <line x1={0} x2={plotW} y1={content.vBase} y2={content.vBase} stroke="var(--rule-strong)" strokeWidth="1" />
             <line x1={0} x2={plotW} y1={pad.t + priceH + 4} y2={pad.t + priceH + 4} stroke="var(--rule)" strokeWidth="1" />

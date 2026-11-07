@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
-import { CandleChart, PriceCell, RuledPanel, SectionLabel, TradeTapeRow } from '../design'
-import { changePct, clockTime, hhmm, toRupees } from '../lib/format'
-import { botKey, ME } from '../lib/market'
+import { useEffect, useMemo, useRef } from 'react'
+import { CandleChart, RuledPanel, SectionLabel, TradeTapeRow } from '../design'
+import { clockTime, hhmm, toRupees } from '../lib/format'
+import { addTradeToCandles, botKey, ME } from '../lib/market'
+import { isBlockTrade } from './tape'
 import { INTERVALS, type Candle, type Interval } from '../lib/types'
 import { chartKey, useMarket } from '../store/market'
 
@@ -25,23 +26,27 @@ export function ChartPanel() {
   const chart = useMarket((s) => s.chart)
   const tape = useMarket((s) => s.tapes[s.selected])
 
-  const candles = useMemo(
-    () => (chart?.key === chartKey(selected, interval) ? chart.candles.map((c) => toChartCandle(c, interval)) : []),
-    [chart, selected, interval],
-  )
+  const candles = useMemo(() => {
+    const fromServer = chart?.key === chartKey(selected, interval) ? chart.candles : []
+    // Before the server's candles arrive, draw from the trades already on the tape, so the chart is never blank.
+    const source = fromServer.length ? fromServer
+      : [...(tape ?? [])].reverse().reduce<Candle[]>((acc, t) => addTradeToCandles(acc, t, interval), [])
+    return source.map((c) => toChartCandle(c, interval))
+  }, [chart, selected, interval, tape])
   const reference = info?.referencePrice
-  const shown = price ?? reference
+  void price
+
+  // Only rows that weren't on the tape last time slide in (none on first paint or after switching stock).
+  const shownBefore = useRef<{ symbol: string; ids: Set<number> } | null>(null)
+  const before = shownBefore.current?.symbol === selected ? shownBefore.current.ids : null
+  const fresh = new Set(before ? (tape ?? []).filter((t) => !before.has(t.id)).map((t) => t.id) : [])
+  useEffect(() => {
+    shownBefore.current = { symbol: selected, ids: new Set((tape ?? []).map((t) => t.id)) }
+  }, [tape, selected])
 
   return (
     <RuledPanel label={selected} meta={info?.name ?? ''} columnRule="left"
       style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, margin: '4px 0 6px', flexWrap: 'wrap' }}>
-        {shown !== undefined && <PriceCell value={toRupees(shown)} size="xl" prefix="₹" align="left" />}
-        {shown !== undefined && reference !== undefined && (
-          <PriceCell value={toRupees(shown)} change={toRupees(shown - reference)}
-            changePct={changePct(shown, reference)} changeOnly size={20} align="left" />
-        )}
-      </div>
       <div style={{ flex: 1, minHeight: 320, display: 'flex' }}>
         {candles.length
           ? <CandleChart candles={candles} prevClose={interval === '1D' || reference === undefined ? undefined : toRupees(reference)}
@@ -51,10 +56,12 @@ export function ChartPanel() {
       <div style={{ marginTop: 12 }}>
         <SectionLabel count={tape?.length ?? 0} meta="Newest first">Trade Tape</SectionLabel>
         {(tape ?? []).slice(0, 8).map((t, i) => (
-          <TradeTapeRow key={t.id} time={clockTime(t.timestamp)} symbol={t.symbol}
+          <div key={t.id} className={`dx-tape-row${fresh.has(t.id) ? ' is-new' : ''}${isBlockTrade(t) ? ' is-block' : ''}`}>
+          <TradeTapeRow time={clockTime(t.timestamp)} symbol={t.symbol}
             side={t.aggressorSide === 'BUY' ? 'buy' : 'sell'} price={toRupees(t.price)} qty={t.qty}
             buyer={nameOf(t.buyerId)} seller={nameOf(t.sellerId)} buyerBot={botKey(t.buyerId)} sellerBot={botKey(t.sellerId)}
             mine={t.buyerId === ME || t.sellerId === ME} fresh={i === 0} />
+          </div>
         ))}
         {!tape?.length && <p style={{ margin: '8px 0', fontFamily: 'var(--font-display)', fontStyle: 'italic', color: 'var(--ink-muted)' }}>
           No trades printed yet. Place a crossing order to make the first one.

@@ -11,6 +11,7 @@ import { Shell } from '../shell/Shell'
 import { useMarket } from '../store/market'
 import type { Headline } from '../terminal/headline'
 import { timelineOf } from './timeline'
+import { VivaTag } from '../viva/VivaTag'
 
 const label = { fontFamily: 'var(--font-ui)', fontSize: 'var(--text-label)', fontWeight: 700, letterSpacing: 'var(--tracking-label)', textTransform: 'uppercase' } as const
 const SEVERITY = { CRITICAL: 'critical', WARNING: 'warning', NOTICE: 'notice' } as const
@@ -64,6 +65,7 @@ export function Investigations() {
 
   return (
     <Shell route="surveillance" headline={headline} page={5} section="Investigations">
+      <div className="dx-viva-row is-left" style={{ marginTop: 12 }}><VivaTag note="surveillance" align="left" /></div>
       <header style={{ display: 'flex', alignItems: 'center', gap: 16, margin: '16px 0 12px' }}>
         <Portrait bot="inspector" size={76} />
         <div>

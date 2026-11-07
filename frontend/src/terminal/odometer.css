@@ -1,0 +1,13 @@
+.dx-odo { display: inline-flex; align-items: baseline; font-variant-numeric: tabular-nums lining-nums; line-height: 1; }
+.dx-odo-col { display: inline-block; height: 1em; overflow: hidden; position: relative; }
+.dx-odo-strip { display: flex; flex-direction: column; transition: transform 650ms cubic-bezier(0.2, 0.8, 0.25, 1); }
+.dx-odo-strip > span { height: 1em; line-height: 1; text-align: center; }
+.dx-odo-sym { display: inline-block; }
+.dx-odo.is-up { animation: dx-odo-flash-up 900ms var(--ease-out); }
+.dx-odo.is-down { animation: dx-odo-flash-down 900ms var(--ease-out); }
+@keyframes dx-odo-flash-up { 0% { color: var(--buy); text-shadow: 0 0 12px var(--buy-wash); } 100% { color: inherit; } }
+@keyframes dx-odo-flash-down { 0% { color: var(--sell); text-shadow: 0 0 12px var(--sell-wash); } 100% { color: inherit; } }
+@media (prefers-reduced-motion: reduce) {
+  .dx-odo-strip { transition: none; }
+  .dx-odo.is-up, .dx-odo.is-down { animation: none; }
+}

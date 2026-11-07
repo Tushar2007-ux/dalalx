@@ -1,0 +1,30 @@
+/* X-Ray replay: your order visibly takes each level in turn. */
+.dx-xr-level { position: relative; }
+.dx-xr-level.is-hit { animation: dx-xr-flash 900ms var(--ease-out); }
+@keyframes dx-xr-flash { 0% { background: color-mix(in srgb, var(--pencil) 22%, var(--surface)); } 100% { background: var(--surface); } }
+.dx-xr-chip {
+  position: absolute;
+  left: 40px;
+  top: 50%;
+  z-index: 4;
+  padding: 3px 9px;
+  color: var(--on-buy);
+  font: 700 13px var(--font-mono);
+  box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  animation: dx-xr-chip 1100ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+@keyframes dx-xr-chip {
+  0% { opacity: 0; transform: translate(-140px, -260%) rotate(-8deg) scale(1.15); }
+  45% { opacity: 1; transform: translate(0, -50%) rotate(-2deg) scale(1); }
+  70% { opacity: 1; transform: translate(6px, -50%) rotate(0deg); }
+  100% { opacity: 0; transform: translate(40px, -50%) scale(0.9); }
+}
+.dx-xr-num { display: inline-block; animation: dx-stamp var(--dur-stamp) var(--ease-slam) both; animation-delay: 380ms; --stamp-angle: -4deg; }
+.dx-xr-progress { display: block; height: 6px; margin-top: 8px; background: var(--surface-sunk); border: 1px solid var(--rule); }
+.dx-xr-progress span { display: block; height: 100%; transition: width 600ms var(--ease-out); }
+.dx-xr-left { animation: dx-slip-in 300ms var(--ease-out); }
+@media (prefers-reduced-motion: reduce) {
+  .dx-xr-level.is-hit, .dx-xr-chip, .dx-xr-num, .dx-xr-left { animation: none; }
+  .dx-xr-chip { display: none; }
+}

@@ -1,0 +1,38 @@
+/* Viva mode: red-pencil margin notes over the panels. */
+.dx-viva { position: relative; display: inline-block; z-index: 6; }
+.dx-viva-tag {
+  appearance: none;
+  border: 1px solid var(--pencil);
+  background: color-mix(in srgb, var(--paper) 88%, var(--pencil));
+  color: var(--pencil-text);
+  font: 500 11px var(--font-ui);
+  padding: 2px 7px;
+  cursor: pointer;
+  transform: rotate(-1deg);
+  box-shadow: 1px 1px 0 color-mix(in srgb, var(--pencil) 35%, transparent);
+  text-align: left;
+  max-width: 100%;
+  animation: dx-slip-in var(--dur-quick) var(--ease-out);
+}
+.dx-viva-tag code { font: 600 11px var(--font-mono); color: var(--ink); }
+.dx-viva-tag em { font-family: var(--font-display); font-size: 12px; }
+.dx-viva-card {
+  position: absolute;
+  top: calc(100% + 6px);
+  width: min(320px, 80vw);
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--pencil);
+  border-left: 4px solid var(--pencil);
+  box-shadow: 0 12px 30px -12px rgba(0, 0, 0, 0.4);
+  font: 400 13.5px/1.45 var(--font-display);
+  color: var(--ink);
+  animation: dx-slip-in var(--dur-quick) var(--ease-out);
+}
+.dx-viva-right .dx-viva-card { right: 0; }
+.dx-viva-left .dx-viva-card { left: 0; }
+.dx-viva-card b { font: 700 11px var(--font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--pencil-text); }
+.dx-viva-row { display: flex; justify-content: flex-end; margin: 2px 0 6px; }
+.dx-viva-row.is-left { justify-content: flex-start; }

@@ -10,6 +10,7 @@ import { Shell } from '../shell/Shell'
 import { useMarket } from '../store/market'
 import { joinUrl, rankMoves, signedRupees } from './guest'
 import './audience.css'
+import { VivaTag } from '../viva/VivaTag'
 
 type BotKey = 'munim' | 'momentum' | 'panic' | 'whale' | 'spoofer' | 'inspector'
 
@@ -63,6 +64,7 @@ export function AudiencePage() {
       <div className="dx-aud">
         <section className="dx-aud-qr">
           <div className="dx-aud-kicker">Join the floor</div>
+          <VivaTag note="audience" align="left" />
           {svg
             ? <div className="dx-aud-code" role="img" aria-label={`QR code for ${url}`} dangerouslySetInnerHTML={{ __html: svg }} />
             : <div className="dx-aud-code dx-aud-code-missing">
@@ -86,6 +88,7 @@ export function AudiencePage() {
         </section>
 
         <section className="dx-aud-board" aria-label="Leaderboard">
+          <div className="dx-viva-row"><VivaTag note="leaderboard" /></div>
           <SectionLabel rule="double" meta={leader ? <>Leader: <b>{leader.name}</b> {signedRupees(leader.pnl)}</> : 'Updated every second'}>Leaderboard</SectionLabel>
           <ol className="dx-aud-rows">
             {standings.slice(0, 12).map((s) => (

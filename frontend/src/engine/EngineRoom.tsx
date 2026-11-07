@@ -6,6 +6,7 @@ import { Shell } from '../shell/Shell'
 import { useMarket } from '../store/market'
 import { SOURCE_STYLE, arrivalRate, compact, queueFill, threadMood, ticketScale, ticketsFor } from './factory'
 import './engine.css'
+import { VivaTag } from '../viva/VivaTag'
 
 /** How long a ticket takes to ride the belt to the press. */
 const BELT_MS = 1700
@@ -91,6 +92,7 @@ export function EngineRoom() {
         ))}
       </div>
 
+      <div className="dx-viva-row is-left" style={{ marginTop: 8 }}><VivaTag note="engine" align="left" /></div>
       <section className="dx-factory" aria-label="Worker threads">
         {workers.length === 0 && <p className="dx-engine-empty">Waiting for the first reading from the presses…</p>}
         {workers.map((w) => <Lane key={w.symbol} worker={w} peak={peak[w.symbol] ?? w.pending} />)}

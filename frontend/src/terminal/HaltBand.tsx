@@ -1,6 +1,8 @@
 import { AlertNotice, Countdown, PriceCell, RubberStamp, SectionLabel } from '../design'
 import { clockTime, formatQty, toRupees } from '../lib/format'
-import type { AuctionUpdate, MarketStatus } from '../lib/types'
+import type { AuctionUpdate, BookSnapshot, MarketStatus } from '../lib/types'
+import { AuctionCurves } from './AuctionCurves'
+import { CountdownRing } from './CountdownRing'
 
 const small = { fontSize: 12, color: 'var(--ink-muted)' } as const
 
@@ -16,7 +18,10 @@ export function HaltBand({ symbol, status }: { symbol: string; status: MarketSta
         time={status.since ? clockTime(status.since).slice(0, 8) : undefined}>
         {status.reason ?? 'The price moved too far, too fast.'} Your resting orders stay in the book and you can still cancel them.
       </AlertNotice>
-      <Countdown endsAt={until} label="Trading resumes in" note={`Reopens at ${clockTime(until).slice(0, 8)}`} size="lg" warnAt={10} finalAt={5} />
+      <div style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
+        <CountdownRing endsAt={until} label="halted" />
+        <Countdown endsAt={until} label="Trading resumes in" note={`Reopens at ${clockTime(until).slice(0, 8)}`} size="lg" warnAt={10} finalAt={5} />
+      </div>
       <div>
         <SectionLabel under="hair">What happens next</SectionLabel>
         <ol style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 5, fontSize: 13.5, lineHeight: 1.4 }}>
@@ -44,7 +49,7 @@ const kicker = { fontFamily: 'var(--font-ui)', fontSize: 'var(--text-label)', fo
  * The band while the selected stock is in its call auction: the indicative
  * price and volume, the buy/sell interest, and a countdown to the uncross.
  */
-export function AuctionBand({ status, auction }: { status: MarketStatus; auction?: AuctionUpdate }) {
+export function AuctionBand({ status, auction, book }: { status: MarketStatus; auction?: AuctionUpdate; book?: BookSnapshot }) {
   const ends = status.until ? Date.parse(status.until) : Date.now()
   const buy = auction?.buyQty ?? 0
   const sell = auction?.sellQty ?? 0
@@ -67,9 +72,7 @@ export function AuctionBand({ status, auction }: { status: MarketStatus; auction
         <div className="dx-num" style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 11.5 }}>
           <span style={{ color: 'var(--buy)' }}>▲ Buy {formatQty(buy)}</span><span style={{ color: 'var(--sell)' }}>▼ Sell {formatQty(sell)}</span>
         </div>
-        <p style={{ margin: '6px 0 0', fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14, lineHeight: 1.4 }}>
-          The indicative price is where the most shares would trade if the auction closed now. It moves as orders arrive; nothing trades until the bell.
-        </p>
+        <AuctionCurves book={book} auction={auction} />
       </div>
       <Countdown endsAt={ends} label="Auction closes in" note={`Single-price match at ${clockTime(ends).slice(0, 8)}`} size="lg" warnAt={10} finalAt={5} />
     </div>

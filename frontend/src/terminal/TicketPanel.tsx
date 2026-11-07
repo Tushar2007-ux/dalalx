@@ -84,6 +84,12 @@ function Ticket({ symbol, auction = false }: { symbol: string; auction?: boolean
     if (!typed.current && marketPrice !== undefined) setPriceText((t) => t || formatPaise(marketPrice))
   }, [marketPrice])
 
+  // B / S on the keyboard choose the side.
+  const keyedSide = useMarket((s) => s.ticketSide)
+  useEffect(() => {
+    if (keyedSide) setSide(keyedSide.side)
+  }, [keyedSide])
+
   // A click on a book level copies its price here.
   useEffect(() => {
     if (prefill) setPriceText(formatPaise(prefill.price))

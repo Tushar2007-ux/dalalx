@@ -4,6 +4,7 @@ import { changePct, clockTime, formatPaise, formatQty } from '../lib/format'
 import type { SymbolInfo, Trade } from '../lib/types'
 import { useMarket } from '../store/market'
 import { boardTone, sparkPath } from './bigBoard'
+import { Teleprinter } from '../terminal/Teleprinter'
 import './bigboard.css'
 
 /**
@@ -59,7 +60,7 @@ export function BigBoard() {
         </main>
 
         <footer className="dx-wall-foot">
-          {wire[0] && <div className="dx-wall-news"><b>{wire[0].kicker}</b> {wire[0].text}</div>}
+          {wire[0] && <div className="dx-wall-news"><b>{wire[0].kicker}</b> <Teleprinter text={wire[0].text} /></div>}
           <div className="dx-wall-tape" aria-label="Latest trades">
             <div className="dx-wall-tape-track">
               {[0, 1].map((copy) => (

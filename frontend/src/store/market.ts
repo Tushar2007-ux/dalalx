@@ -90,6 +90,14 @@ export interface MarketState {
   board: Board | null
   /** Display names for trader ids that aren't bots (audience guests), from the leaderboard. */
   names: Record<string, string>
+  /** Viva mode: every panel shows the Java class and pattern behind it. */
+  viva: boolean
+  /** Presenter mode: larger type for a projector, fewer panels. */
+  presenter: boolean
+  /** A side chosen by keyboard (B / S) for the ticket to pick up; `nonce` re-applies the same side. */
+  ticketSide: { side: 'buy' | 'sell'; nonce: number } | null
+  /** Whether the keyboard-shortcut card is open. */
+  helpOpen: boolean
   /** Price (paise) the ticket should show after a click on a book level; bumped `nonce` re-applies the same price. */
   ticketPrefill: { price: number; nonce: number } | null
 
@@ -115,6 +123,10 @@ export interface MarketState {
   applyCase: (c: Case) => void
   applyAuction: (a: AuctionUpdate) => void
   setFocusCase: (id: string | null) => void
+  setViva: (on: boolean) => void
+  setPresenter: (on: boolean) => void
+  chooseSide: (side: 'buy' | 'sell') => void
+  setHelpOpen: (open: boolean) => void
   applyEngine: (e: EngineSnapshot) => void
   applyBoard: (b: Board) => void
   showMoment: (m: Omit<Moment, 'id'>) => void
@@ -124,6 +136,19 @@ export interface MarketState {
 let nextToastId = 1
 
 export const chartKey = (symbol: string, interval: Interval) => `${symbol}:${interval}`
+
+/** Reads a remembered on/off setting (false in private mode). */
+function savedFlag(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === '1'
+  } catch {
+    return false
+  }
+}
+
+function saveFlag(key: string, on: boolean): void {
+  try { localStorage.setItem(key, on ? '1' : '0') } catch { /* not remembered */ }
+}
 
 function savedEdition(): Edition {
   try {
@@ -174,6 +199,15 @@ export const useMarket = create<MarketState>()((set, get) => ({
   engine: null,
   board: null,
   names: {},
+  viva: savedFlag('dalalx-viva'),
+  presenter: savedFlag('dalalx-presenter'),
+  ticketSide: null,
+  helpOpen: false,
+
+  setViva: (viva) => { saveFlag('dalalx-viva', viva); set({ viva }) },
+  setPresenter: (presenter) => { saveFlag('dalalx-presenter', presenter); set({ presenter }) },
+  chooseSide: (side) => set((s) => ({ ticketSide: { side, nonce: (s.ticketSide?.nonce ?? 0) + 1 } })),
+  setHelpOpen: (helpOpen) => set({ helpOpen }),
 
   applyEngine: (engine) => set({ engine }),
   applyBoard: (board) => set((s) => {

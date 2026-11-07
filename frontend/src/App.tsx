@@ -2,6 +2,9 @@ import { useEffect } from 'react'
 import { DemoBar } from './demo/DemoBar'
 import { MomentOverlay } from './shell/MomentOverlay'
 import { PressIntro } from './shell/PressIntro'
+import { HelpCard } from './shell/HelpCard'
+import { useShortcuts } from './shell/shortcuts'
+import { useMarket } from './store/market'
 import { AudiencePage } from './audience/AudiencePage'
 import { JoinPage } from './audience/JoinPage'
 import { EngineRoom } from './engine/EngineRoom'
@@ -24,6 +27,8 @@ export default function App() {
   useMarketData()
   useAutopilot()
   const route = useRoute()
+  const presenter = useMarket((s) => s.presenter)
+  useShortcuts(route !== 'join')
 
   useEffect(() => {
     if (route === 'demo') useDemo.getState().start()
@@ -31,8 +36,12 @@ export default function App() {
 
   return (
     <>
-      <Page route={route} />
+      {/* Each page turns in like a newspaper page; keyed by route so the animation replays on every visit. */}
+      <div key={route} className={`dx-page-turn${presenter && route !== 'join' ? ' dx-presenter' : ''}`}>
+        <Page route={route} />
+      </div>
       <MomentOverlay />
+      <HelpCard />
       <DemoBar />
       <PressIntro />
     </>

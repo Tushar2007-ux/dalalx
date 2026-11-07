@@ -50,8 +50,43 @@
   .dx-depth { transition: none; }
 }
 
-/* "On the floor now": bot heads beside the stock tabs. */
+/* Each column is a card: a lighter sheet with a hairline border, so the eye knows where to look. */
+.dx-card {
+  position: relative;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  border: 1px solid var(--rule);
+  box-shadow: 0 1px 0 var(--rule), 0 10px 24px -18px rgba(26, 22, 20, 0.35);
+  padding: 10px 14px 12px;
+}
+.dx-card > section { border-left: none !important; padding-left: 0 !important; border-right: none !important; padding-right: 0 !important; }
+.dx-viva-corner { margin: -2px 0 6px; }
+.dx-viva-corner .dx-viva-tag { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.dx-viva-corner .dx-viva { max-width: 100%; }
+.dx-floor { gap: 18px 16px; }
+
+/* Steady figures: every number uses equal-width digits, so prices don't shuffle sideways as they change. */
+.dx-floor, .dx-hero, .dx-wall, .dx-phone, .dx-ticker { font-variant-numeric: tabular-nums lining-nums; }
+
+/* Empty and loading columns: readable ink, and a shimmer instead of static hatching. */
+.dx-floor section[aria-busy="true"] .dx-hatch,
+.dx-shimmer {
+  display: block;
+  background: linear-gradient(90deg, var(--surface-sunk) 0%, color-mix(in srgb, var(--surface-sunk) 40%, var(--paper)) 40%, var(--surface-sunk) 80%) !important;
+  background-size: 300% 100% !important;
+  animation: dx-shimmer 1.4s linear infinite;
+  border-radius: 2px;
+}
+.dx-floor section[aria-busy="true"] .dx-hatch::before, .dx-floor section[aria-busy="true"] .dx-hatch::after { display: none; }
+.dx-floor section[aria-busy="true"] > div > div:last-child,
+.dx-floor section > p { color: var(--ink) !important; opacity: 0.82; }
+@keyframes dx-shimmer { from { background-position: 100% 0; } to { background-position: -50% 0; } }
+@media (prefers-reduced-motion: reduce) { .dx-shimmer, .dx-floor section[aria-busy="true"] .dx-hatch { animation: none; } }
+
+/* "On the floor now": bot heads beside the headline price. */
 .dx-tabsrow { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 24px; margin-top: 12px; }
+.dx-herorow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px 28px; }
+.dx-herorow .dx-floornow { padding-bottom: 8px; border-bottom: 1px solid var(--rule-strong); align-self: stretch; align-items: flex-end; }
+@media (max-width: 1199px) { .dx-herorow { grid-template-columns: 1fr; } .dx-herorow .dx-floornow { border-bottom: none; } }
 .dx-floornow { display: flex; align-items: flex-end; gap: 14px; }
 .dx-floornow-label {
   font-family: var(--font-ui); font-size: var(--text-label); font-weight: 700; letter-spacing: var(--tracking-label);
@@ -70,3 +105,166 @@
 .dx-floornow-bot.is-suspended .dx-floornow-what { color: var(--stamp); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
 @media (prefers-reduced-motion: reduce) { .dx-floornow-bot { transition: none; } .dx-floornow-bot.is-active { transform: none; } }
 @media (max-width: 999px) { .dx-floornow-label { display: none; } .dx-floornow { gap: 6px; } .dx-floornow-bot { width: 58px; } }
+
+/* Bot speech bubbles over the "on the floor now" heads. */
+.dx-floornow-bot { position: relative; }
+.dx-bubble {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  width: max-content;
+  max-width: 190px;
+  padding: 6px 9px;
+  background: var(--surface);
+  border: 1.5px solid var(--ink);
+  border-radius: 12px;
+  font: italic 500 12.5px/1.25 var(--font-display);
+  color: var(--ink);
+  box-shadow: 2px 3px 0 color-mix(in srgb, var(--ink) 18%, transparent);
+  pointer-events: none;
+  animation: dx-bubble-pop 1800ms var(--ease-out) forwards;
+}
+.dx-bubble::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -6px;
+  border: 6px solid transparent;
+  border-top-color: var(--ink);
+}
+.dx-bubble.is-buy { border-color: var(--buy); }
+.dx-bubble.is-buy::after { border-top-color: var(--buy); }
+.dx-bubble.is-sell { border-color: var(--sell); }
+.dx-bubble.is-sell::after { border-top-color: var(--sell); }
+.dx-floornow-bot:last-child .dx-bubble { left: auto; right: -4px; transform: none; }
+.dx-floornow-bot:last-child .dx-bubble::after { left: auto; right: 22px; }
+@keyframes dx-bubble-pop {
+  0% { opacity: 0; transform: translateX(-50%) translateY(6px) scale(0.85); }
+  12% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.03); }
+  20% { transform: translateX(-50%) scale(1); }
+  82% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+}
+.dx-floornow-bot:last-child .dx-bubble { animation-name: dx-bubble-pop-right; }
+@keyframes dx-bubble-pop-right {
+  0% { opacity: 0; transform: translateY(6px) scale(0.85); }
+  12% { opacity: 1; transform: none; }
+  82% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-4px); }
+}
+@media (prefers-reduced-motion: reduce) { .dx-bubble { animation: none; } }
+
+/* The headline price over the floor. */
+.dx-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px 26px;
+  padding: 10px 0 8px;
+  border-bottom: 1px solid var(--rule-strong);
+}
+.dx-hero-wait { min-height: 64px; }
+.dx-hero-name { display: grid; gap: 2px; padding-bottom: 6px; }
+.dx-hero-name strong { font: 700 15px var(--font-ui); letter-spacing: 0.12em; }
+.dx-hero-name span { font: italic 14px var(--font-display); color: var(--ink-muted); }
+.dx-hero-price { font-family: var(--font-display); font-weight: 800; font-size: clamp(40px, 4.6vw, 60px); letter-spacing: -0.01em; }
+.dx-hero-move { display: grid; gap: 2px; padding-bottom: 6px; }
+.dx-hero-move span { font-size: 22px; font-weight: 700; }
+.dx-hero-move small { font-size: 12.5px; opacity: 0.9; }
+.dx-hero-facts { display: flex; gap: 18px; margin: 0 0 0 auto; padding-bottom: 8px; flex-wrap: nowrap; white-space: nowrap; }
+.dx-hero-facts div { display: grid; gap: 1px; }
+.dx-hero-facts dt { font: 700 10px var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-muted); }
+.dx-hero-facts dd { margin: 0; font-size: 14px; font-weight: 600; }
+.dx-hero .is-up { color: var(--buy); }
+.dx-hero .is-down { color: var(--sell); }
+.dx-hero .is-halt { color: var(--stamp); }
+@media (max-width: 999px) { .dx-hero-facts { margin-left: 0; } }
+
+/* The trade tape: new rows slide in; block trades pulse. */
+.dx-tape-row { position: relative; }
+.dx-tape-row.is-new { animation: dx-tape-in 420ms var(--ease-out); }
+.dx-tape-row.is-block::before {
+  content: "BLOCK";
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translate(-100%, -50%);
+  font: 700 8.5px var(--font-ui);
+  letter-spacing: 0.1em;
+  color: var(--accent);
+}
+.dx-tape-row.is-block > * { font-weight: 600; }
+.dx-tape-row.is-block.is-new { animation: dx-tape-in 420ms var(--ease-out), dx-tape-block 1.6s 2 var(--ease-out); }
+@keyframes dx-tape-in { from { opacity: 0; transform: translateY(-10px); max-height: 0; } to { opacity: 1; transform: none; max-height: 40px; } }
+@keyframes dx-tape-block { 0%, 100% { background: transparent; } 30% { background: color-mix(in srgb, var(--accent) 16%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .dx-tape-row.is-new, .dx-tape-row.is-block.is-new { animation: none; } }
+
+/* The book being eaten: a bite flashes over a level as trades take from it; a level eaten through is crossed out and folds away. */
+.dx-book-line { position: relative; }
+.dx-book-bite {
+  /* Sits over the 96px depth track only, never over the figures. */
+  position: absolute;
+  top: calc(50% - 8px);
+  height: 16px;
+  right: 6px;
+  width: calc(96px * var(--bite-share, 0.3));
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  animation: dx-book-bite 600ms var(--ease-out) forwards;
+}
+.dx-book-line.is-bid .dx-book-bite { background: color-mix(in srgb, var(--sell) 26%, transparent); box-shadow: inset 2px 0 0 var(--sell); }
+.dx-book-line.is-ask .dx-book-bite { background: color-mix(in srgb, var(--buy) 26%, transparent); box-shadow: inset 2px 0 0 var(--buy); }
+@keyframes dx-book-bite { 0% { opacity: 0.9; transform: scaleX(1); transform-origin: right; } 100% { opacity: 0; transform: scaleX(0.15); transform-origin: right; } }
+.dx-book-line.is-bid .dx-book-bite { right: auto; left: calc(100% - 102px); }
+.dx-book-line.is-gone { overflow: hidden; animation: dx-book-gone 650ms var(--ease-in-out) forwards; pointer-events: none; }
+.dx-book-line.is-gone::after {
+  content: "";
+  position: absolute;
+  left: 18px;
+  right: 104px;
+  top: 50%;
+  border-top: 2px solid var(--ink);
+  transform-origin: left;
+  animation: dx-book-strike 240ms var(--ease-out) forwards;
+  z-index: 3;
+}
+@keyframes dx-book-strike { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes dx-book-gone {
+  0% { max-height: 40px; opacity: 1; background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  55% { max-height: 40px; opacity: 0.85; }
+  100% { max-height: 0; opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .dx-book-bite, .dx-book-line.is-gone { display: none; animation: none; } }
+
+/* Live auction curves. */
+.dx-curves { margin: 8px 0 0; display: grid; gap: 4px; }
+.dx-curves svg { width: 100%; height: 150px; background: var(--surface); border: 1px solid var(--rule); }
+.dx-curves-line { transition: d 300ms var(--ease-out); }
+.dx-curves-dot { animation: dx-curves-pulse 1.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes dx-curves-pulse { 50% { transform: scale(1.6); } }
+.dx-curves-axis { font: 500 10px var(--font-mono); fill: var(--ink-muted); }
+.dx-curves figcaption { font-size: 12px; color: var(--ink-muted); line-height: 1.4; }
+.dx-curves figcaption b { color: var(--ink); }
+.dx-curves-wait { margin: 8px 0 0; font: italic 14px var(--font-display); color: var(--ink-muted); }
+
+/* Halt countdown ring. */
+.dx-ring { position: relative; width: 104px; height: 104px; display: grid; place-items: center; flex: none; }
+.dx-ring svg { position: absolute; inset: 0; }
+.dx-ring-num { font: 800 34px var(--font-display); line-height: 1; margin-top: -8px; }
+.dx-ring-label { position: absolute; bottom: 26px; font: 700 9px var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-muted); }
+.dx-ring.is-final .dx-ring-num { color: var(--stamp); animation: dx-ring-beat 1s ease-in-out infinite; }
+@keyframes dx-ring-beat { 50% { transform: scale(1.12); } }
+@media (prefers-reduced-motion: reduce) { .dx-curves-dot, .dx-ring.is-final .dx-ring-num { animation: none; } }
+
+/* The Wire, with the newest headline printing like a teleprinter. */
+.dx-wire { list-style: none; margin: 0; padding: 0; display: grid; }
+.dx-wire li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--rule); }
+.dx-wire-time { font-size: 11px; color: var(--ink-muted); padding-top: 2px; }
+.dx-wire-text { font-family: var(--font-display); font-size: 14px; line-height: 1.25; text-wrap: pretty; }
+.dx-wire li.is-newest .dx-wire-text { font-weight: 600; }
+.dx-caret { display: inline-block; margin-left: 1px; color: var(--accent); animation: dx-caret 0.6s steps(2) infinite; }
+@keyframes dx-caret { 50% { opacity: 0; } }

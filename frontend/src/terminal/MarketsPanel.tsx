@@ -1,6 +1,7 @@
-import { BreadthBar, PriceCell, RuledPanel, SectionLabel, TheWire } from '../design'
-import { hhmm } from '../lib/format'
+import { BreadthBar, PriceCell, RuledPanel, SectionLabel } from '../design'
 import { changePct, toRupees } from '../lib/format'
+import { VivaTag } from '../viva/VivaTag'
+import { WireColumn } from './WireColumn'
 import { useMarket } from '../store/market'
 
 /** Left column: every listed stock with its last price and day change, The Wire, and market breadth. */
@@ -43,11 +44,9 @@ export function MarketsPanel() {
       })}
       <div style={{ marginTop: 14 }}>
         <SectionLabel meta="Newest first">The Wire</SectionLabel>
+        <div className="dx-viva-row is-left"><VivaTag note="wire" align="left" /></div>
         {wire.length
-          ? <TheWire items={wire.slice(0, 6).map((h, i) => ({
-              id: h.id, time: hhmm(new Date(h.time)), headline: h.text, fresh: i === 0,
-              tone: h.tone === 'UP' ? 'up' : h.tone === 'DOWN' ? 'down' : h.tone === 'ALERT' ? 'alert' : undefined,
-            }))} />
+          ? <WireColumn items={wire} />
           : <p style={{ margin: '6px 0', fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 13, color: 'var(--ink-muted)' }}>
               No news yet. Big moves, block trades and storylines will be printed here.</p>}
       </div>

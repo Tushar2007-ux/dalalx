@@ -8,6 +8,8 @@ import type { XRay } from '../lib/types'
 import { Shell } from '../shell/Shell'
 import type { Headline } from '../terminal/headline'
 import { CIRCLED, mainTraderOf, xrayView } from './xrayView'
+import { VivaTag } from '../viva/VivaTag'
+import './xray.css'
 
 const label = { fontFamily: 'var(--font-ui)', fontSize: 'var(--text-label)', fontWeight: 700, letterSpacing: 'var(--tracking-label)', textTransform: 'uppercase' } as const
 const italic = { fontFamily: 'var(--font-display)', fontStyle: 'italic' } as const
@@ -121,6 +123,7 @@ function XRayBody({ xray, step, onStep }: { xray: XRay; step: number; onStep: (s
     <div style={{ display: 'flex', flexWrap: 'wrap', marginTop: 14, flex: 1, gap: 24 }}>
       <section style={{ flex: '2.2 1 640px', minWidth: 0 }}>
         <SectionLabel meta={`${xray.symbol} · ${buying ? 'asks' : 'bids'} when your order arrived`}>Order Book</SectionLabel>
+        <div className="dx-viva-row is-left"><VivaTag note="xray" align="left" /></div>
         <OrderSlip xray={xray} remaining={view.remaining} />
         <div style={{ display: 'grid', gridTemplateColumns: COLS, columnGap: 12, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-muted)', padding: '2px 0' }}>
           <span /><span style={{ textAlign: 'right' }}>{buying ? '▼ Ask' : '▲ Bid'}</span><span style={{ textAlign: 'right' }}>Qty</span><span>Bot</span><span>Depth</span><span>Explainer</span>
@@ -133,9 +136,14 @@ function XRayBody({ xray, step, onStep }: { xray: XRay; step: number; onStep: (s
           const numbers = view.fillNumbersAt.get(i) ?? []
           const isStop = view.stopShown && i === stopLevel && xray.remaining > 0 && xray.type !== 'MARKET'
           const left = total - taken
+          const latestFill = view.fillsShown - 1
+          const justHit = latestFill >= 0 && xray.fills[latestFill]?.level === i
           return (
-            <div key={level.price} style={{ display: 'grid', gridTemplateColumns: COLS, alignItems: 'center', columnGap: 12, minHeight: 36, borderBottom: isStop ? '2px dashed var(--pencil)' : '1px solid var(--rule)', background: numbers.length ? 'var(--surface)' : 'transparent' }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, lineHeight: 1, color: 'var(--pencil-text)', textAlign: 'center' }}>{numbers.map((n) => CIRCLED[n] ?? n + 1).join('')}</span>
+            <div key={level.price} className={`dx-xr-level${justHit ? ' is-hit' : ''}`} style={{ display: 'grid', gridTemplateColumns: COLS, alignItems: 'center', columnGap: 12, minHeight: 36, borderBottom: isStop ? '2px dashed var(--pencil)' : '1px solid var(--rule)', background: numbers.length ? 'var(--surface)' : 'transparent' }}>
+              <span key={numbers.length} className={numbers.length ? 'dx-xr-num' : undefined} style={{ fontFamily: 'var(--font-display)', fontSize: 20, lineHeight: 1, color: 'var(--pencil-text)', textAlign: 'center' }}>{numbers.map((n) => CIRCLED[n] ?? n + 1).join('')}</span>
+              {justHit && <span key={`chip-${latestFill}`} className="dx-xr-chip" aria-hidden="true" style={{ background: buying ? 'var(--buy)' : 'var(--sell)' }}>
+                {CIRCLED[latestFill] ?? latestFill + 1} {formatQty(xray.fills[latestFill].qty)}
+              </span>}
               <span className="dx-num" style={{ textAlign: 'right', fontSize: 17, fontWeight: 600, color: buying ? 'var(--sell)' : 'var(--buy)' }}>
                 {numbers.length ? <RedPencilCircle drawKey={`f${i}`} label="Matched level" style={{ padding: '3px 12px' }}>{formatPaise(level.price)}</RedPencilCircle> : formatPaise(level.price)}
               </span>
@@ -198,7 +206,10 @@ function OrderSlip({ xray, remaining }: { xray: XRay; remaining: number }) {
       <span style={{ ...label, color: 'var(--ink-muted)' }}>Still to {buying ? 'buy' : 'sell'}</span>
       <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22 }}>{buying ? 'Buy' : 'Sell'} {formatQty(xray.qty)} {xray.symbol}</span>
       <span className="dx-num" style={{ fontSize: 15 }}>{xray.type === 'MARKET' ? 'at market' : `limit ₹${formatPaise(xray.limitPrice)}`}</span>
-      <span className="dx-num" style={{ fontSize: 22, fontWeight: 600, justifySelf: 'end', color: remaining ? 'var(--ink)' : 'var(--ink-muted)' }}>{formatQty(remaining)}</span>
+      <span key={remaining} className="dx-num dx-xr-left" style={{ fontSize: 22, fontWeight: 600, justifySelf: 'end', color: remaining ? 'var(--ink)' : 'var(--ink-muted)' }}>{formatQty(remaining)}</span>
+      <span className="dx-xr-progress" aria-hidden="true" style={{ gridColumn: '1 / -1' }}>
+        <span style={{ width: `${((xray.qty - remaining) / Math.max(1, xray.qty)) * 100}%`, background: buying ? 'var(--buy)' : 'var(--sell)' }} />
+      </span>
     </div>
   )
 }

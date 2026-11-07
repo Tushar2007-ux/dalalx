@@ -11,6 +11,7 @@ import { Shell } from '../shell/Shell'
 import { pushReading, Sparkline } from './Sparkline'
 import { useMarket } from '../store/market'
 import type { Headline } from '../terminal/headline'
+import { VivaTag } from '../viva/VivaTag'
 
 const label = { fontFamily: 'var(--font-ui)', fontSize: 'var(--text-label)', fontWeight: 700, letterSpacing: 'var(--tracking-label)', textTransform: 'uppercase' } as const
 const link = { appearance: 'none', border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14, color: 'var(--ink)', textDecoration: 'underline', textUnderlineOffset: 3 } as const
@@ -79,6 +80,7 @@ export function Correspondents() {
 
   return (
     <Shell route="correspondents" headline={headline} page={4} section="Correspondents">
+      <div className="dx-viva-row is-left" style={{ marginTop: 12 }}><VivaTag note="bots" align="left" /></div>
       <div style={{ marginTop: 18, display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 40, lineHeight: 1, letterSpacing: '-0.01em' }}>Our Correspondents</h1>
