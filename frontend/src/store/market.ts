@@ -4,6 +4,7 @@ import {
 } from '../lib/market'
 import { formatPaise, formatQty } from '../lib/format'
 import type {
+  Board, EngineSnapshot,
   AuctionUpdate, BookSnapshot, Candle, Case, Interval, MarketStatus, MarketStatusChanged, OrderActivity, OrderView, SymbolInfo, Trade,
   WireHeadline,
 } from '../lib/types'
@@ -83,6 +84,12 @@ export interface MarketState {
   focusCase: string | null
   /** The Wire, newest first. */
   wire: WireHeadline[]
+  /** The latest Engine Room measurement. */
+  engine: EngineSnapshot | null
+  /** The latest leaderboard (presenter, audience, bots). */
+  board: Board | null
+  /** Display names for trader ids that aren't bots (audience guests), from the leaderboard. */
+  names: Record<string, string>
   /** Price (paise) the ticket should show after a click on a book level; bumped `nonce` re-applies the same price. */
   ticketPrefill: { price: number; nonce: number } | null
 
@@ -108,6 +115,8 @@ export interface MarketState {
   applyCase: (c: Case) => void
   applyAuction: (a: AuctionUpdate) => void
   setFocusCase: (id: string | null) => void
+  applyEngine: (e: EngineSnapshot) => void
+  applyBoard: (b: Board) => void
   showMoment: (m: Omit<Moment, 'id'>) => void
   clearMoment: () => void
 }
@@ -162,7 +171,16 @@ export const useMarket = create<MarketState>()((set, get) => ({
   cases: [],
   focusCase: null,
   auctions: {},
+  engine: null,
+  board: null,
+  names: {},
 
+  applyEngine: (engine) => set({ engine }),
+  applyBoard: (board) => set((s) => {
+    const names = { ...s.names }
+    for (const st of board.standings) names[st.traderId] = st.name
+    return { board, names }
+  }),
   setConnection: (connection) => set({ connection }),
   setSymbols: (symbols) => set((s) => ({
     symbols,

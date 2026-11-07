@@ -1,6 +1,12 @@
 import { useEffect } from 'react'
 import { DemoBar } from './demo/DemoBar'
 import { MomentOverlay } from './shell/MomentOverlay'
+import { PressIntro } from './shell/PressIntro'
+import { AudiencePage } from './audience/AudiencePage'
+import { JoinPage } from './audience/JoinPage'
+import { EngineRoom } from './engine/EngineRoom'
+import { BigBoard } from './pages/BigBoard'
+import { HowItWorks } from './pages/HowItWorks'
 import { useAutopilot, useDemo } from './demo/autopilot'
 import { Correspondents } from './pages/Correspondents'
 import { FrontPage } from './pages/FrontPage'
@@ -28,6 +34,7 @@ export default function App() {
       <Page route={route} />
       <MomentOverlay />
       <DemoBar />
+      <PressIntro />
     </>
   )
 }
@@ -38,6 +45,11 @@ function Page({ route }: { route: ReturnType<typeof useRoute> }) {
     case 'xray': return <XRayPage />
     case 'correspondents': return <Correspondents />
     case 'surveillance': return <Investigations />
+    case 'engine': return <EngineRoom />
+    case 'audience': return <AudiencePage />
+    case 'how': return <HowItWorks />
+    case 'wall': return <BigBoard />
+    case 'join': return <JoinPage />
     case 'demo': return <Terminal /> // the autopilot moves to its first page at once
     default: return <FrontPage />
   }

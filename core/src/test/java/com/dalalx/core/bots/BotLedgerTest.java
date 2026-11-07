@@ -50,4 +50,49 @@ class BotLedgerTest {
     void unknownTraderHasEmptyStats() {
         assertThat(ledger.stats("NOBODY")).isEqualTo(new BotStats("NOBODY", 0, 0, 0, 0, Map.of(), 0));
     }
+
+    @Test
+    void holdingsShowAverageCostAndUnrealisedProfit() {
+        ledger.record(trade("YOU", "MUNIM", 400000, 10));
+        ledger.record(trade("YOU", "MUNIM", 410000, 10)); // average ₹4,050
+        market.with("TCS", 400000, 420000);
+
+        assertThat(ledger.holdings("YOU")).containsExactly(
+                new Holding("TCS", 20, 405000, 420000, 8_400_000, 300_000)); // +₹3,000
+    }
+
+    @Test
+    void sellingPartKeepsTheAverageAndClosingAllRemovesTheLine() {
+        ledger.record(trade("YOU", "MUNIM", 400000, 10));
+        ledger.record(trade("MUNIM", "YOU", 500000, 4));
+
+        assertThat(ledger.holdings("YOU")).singleElement()
+                .extracting(Holding::qty, Holding::avgPrice).containsExactly(6L, 400000L);
+
+        ledger.record(trade("MUNIM", "YOU", 500000, 6));
+        assertThat(ledger.holdings("YOU")).isEmpty();
+    }
+
+    @Test
+    void flippingFromLongToShortStartsANewCostAtTheTradePrice() {
+        assertThat(BotLedger.costAfter(10, 4_000_000, -15, 420000)).isEqualTo(-5 * 420000L);
+        assertThat(BotLedger.costAfter(-5, -2_000_000, -5, 410000)).isEqualTo(-4_050_000L);
+        assertThat(BotLedger.costAfter(0, 0, 3, 100)).isEqualTo(300);
+    }
+
+    @Test
+    void aShortPositionProfitsWhenThePriceFalls() {
+        ledger.record(trade("MUNIM", "YOU", 400000, 10));
+        market.with("TCS", 400000, 390000);
+
+        Holding h = ledger.holdings("YOU").get(0);
+        assertThat(h.qty()).isEqualTo(-10);
+        assertThat(h.avgPrice()).isEqualTo(400000);
+        assertThat(h.unrealised()).isEqualTo(100_000);
+    }
+
+    @Test
+    void unknownTraderHasNoHoldings() {
+        assertThat(ledger.holdings("NOBODY")).isEmpty();
+    }
 }

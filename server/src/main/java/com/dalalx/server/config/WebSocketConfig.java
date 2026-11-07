@@ -30,7 +30,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws").setAllowedOriginPatterns("http://localhost:*");
+        // localhost for the presenter; private network addresses for audience phones on the same Wi-Fi.
+        registry.addEndpoint("/ws").setAllowedOriginPatterns(WebConfig.ALLOWED_ORIGINS);
     }
 
     @Override

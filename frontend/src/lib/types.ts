@@ -261,3 +261,109 @@ export interface RuleInfo {
   severity: Severity
   enabled: boolean
 }
+
+/** Where a worker's command came from (Engine Room colours). Mirrors core CommandSource. */
+export type CommandSource = 'PRESENTER' | 'AUDIENCE' | 'BOT' | 'CLOCK' | 'SYSTEM'
+export const COMMAND_SOURCES: CommandSource[] = ['PRESENTER', 'AUDIENCE', 'BOT', 'CLOCK', 'SYSTEM']
+
+/** How hard one worker thread worked over the last sample. Mirrors core WorkerLoad. */
+export interface WorkerLoad {
+  symbol: string
+  thread: string
+  state: string
+  running: string | null
+  pending: number
+  capacity: number
+  processed: number
+  perSecond: number
+  /** 0.0–1.0: share of the interval the thread spent running commands. */
+  utilisation: number
+  arrivalsPerSecond: Partial<Record<CommandSource, number>>
+}
+
+/** Pushed on /topic/engine about four times a second. */
+export interface EngineSnapshot {
+  at: string
+  workers: WorkerLoad[]
+}
+
+/** POST /api/engine/rush */
+export interface RushResult {
+  producers: number
+  commands: number
+  millis: number
+}
+
+export type EntrantKind = 'PRESENTER' | 'AUDIENCE' | 'BOT'
+
+/** One leaderboard row. */
+export interface Standing {
+  rank: number
+  traderId: string
+  name: string
+  kind: EntrantKind
+  pnl: number
+  trades: number
+  volume: number
+}
+
+/** Pushed on /topic/leaderboard once a second. */
+export interface Board {
+  standings: Standing[]
+  guests: number
+}
+
+/** One open position, with average cost (paise). */
+export interface Holding {
+  symbol: string
+  qty: number
+  avgPrice: number
+  lastPrice: number
+  value: number
+  unrealised: number
+}
+
+/** A trader's scorecard (same shape as a bot's stats). */
+export interface TraderStats {
+  traderId: string
+  orders: number
+  trades: number
+  volume: number
+  cash: number
+  positions: Record<string, number>
+  pnl: number
+}
+
+export interface Portfolio {
+  stats: TraderStats
+  holdings: Holding[]
+}
+
+/** The answer to joining from a phone. Keep the token secret. */
+export interface Joined {
+  traderId: string
+  name: string
+  token: string
+}
+
+export interface GuestView {
+  traderId: string
+  name: string
+  stats: TraderStats
+  holdings: Holding[]
+  rank: number
+  of: number
+}
+
+export interface Invite {
+  addresses: string[]
+  guests: number
+}
+
+export interface GuestOrder {
+  symbol: string
+  side: Side
+  type: 'MARKET' | 'LIMIT'
+  price?: number
+  qty: number
+}

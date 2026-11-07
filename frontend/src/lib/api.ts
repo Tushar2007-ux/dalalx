@@ -1,4 +1,5 @@
 import type {
+  Board, EngineSnapshot, GuestOrder, GuestView, Invite, Joined, Portfolio, RushResult,
   BookSnapshot, BotInfo, BotStyle, Candle, Case, RuleInfo, Storylines, WireHeadline, XRay, CancelResponse, Interval, OrderResult, PlaceOrder, SymbolInfo, Trade,
 } from './types'
 
@@ -73,4 +74,15 @@ export const api = {
   xray: (orderId: number) => request<XRay>(`/api/xray/${orderId}`),
   recentXRays: (limit = 10) => request<XRay[]>(`/api/xray?limit=${limit}`),
   stopScenario: () => requestNoBody('/api/scenarios/stop', { method: 'POST' }),
+  engine: () => request<EngineSnapshot>('/api/engine'),
+  rush: () => request<RushResult>('/api/engine/rush', { method: 'POST' }),
+  leaderboard: () => request<Board>('/api/leaderboard'),
+  portfolio: () => request<Portfolio>('/api/portfolio'),
+  invite: () => request<Invite>('/api/audience/invite'),
+  join: (name: string) => request<Joined>('/api/audience/join', json({ name })),
+  guestOrder: (token: string, order: GuestOrder) => request<OrderResult>('/api/audience/orders',
+    { ...json(order), headers: { 'Content-Type': 'application/json', 'X-Guest-Token': token } }),
+  guestCancelAll: (token: string) => request<number>('/api/audience/cancel-all',
+    { method: 'POST', headers: { 'X-Guest-Token': token } }),
+  me: (token: string) => request<GuestView>('/api/audience/me', { headers: { 'X-Guest-Token': token } }),
 }

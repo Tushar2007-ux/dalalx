@@ -62,10 +62,15 @@ public final class Exchange {
 
     private final Map<String, ListedStock> stocks = new LinkedHashMap<>();
     private final Map<String, SymbolWorker> workers = new LinkedHashMap<>();
-    private final Map<Long, String> symbolOfOrder;
+    private final Map<Long, Route> routes;
     private final EventBus events;
     private final AtomicLong ids = new AtomicLong();
     private ScheduledExecutorService ticker;
+    private volatile Function<String, CommandSource> sourceOfTrader = trader -> CommandSource.BOT;
+
+    /** Where an order lives and who sent it, so a cancel needs only the id. */
+    private record Route(String symbol, CommandSource source) {
+    }
 
     /** How often the exchange clock lets time pass on every worker. */
     static final long TICK_MILLIS = 200;
@@ -89,7 +94,7 @@ public final class Exchange {
      */
     public Exchange(List<ListedStock> listed, EventBus events, Clock clock, BreakerRule breaker) {
         this.events = Objects.requireNonNull(events, "events must not be null");
-        this.symbolOfOrder = Collections.synchronizedMap(boundedMap(ROUTE_HISTORY));
+        this.routes = Collections.synchronizedMap(boundedMap(ROUTE_HISTORY));
         // One counter for order ids, sequences and trade ids: all unique and increasing.
         // The factory and matchers hold no mutable state of their own (only this
         // AtomicLong and the clock), so all workers can safely share them.
@@ -105,16 +110,23 @@ public final class Exchange {
         }
     }
 
-    private static Map<Long, String> boundedMap(int maxSize) {
+    private static Map<Long, Route> boundedMap(int maxSize) {
         return new LinkedHashMap<>() {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<Long, String> eldest) {
+            protected boolean removeEldestEntry(Map.Entry<Long, Route> eldest) {
                 return size() > maxSize;
             }
         };
     }
 
-    /** Starts every symbol's worker thread. */
+    /**
+     * Tells the exchange how to label each trader's commands for monitoring
+     * (presenter, audience or bot). Only affects the Engine Room's counters.
+     */
+    public void classifySourcesWith(Function<String, CommandSource> classifier) {
+        this.sourceOfTrader = Objects.requireNonNull(classifier, "classifier must not be null");
+    }
+
     /** Lets {@code recorder} X-Ray the orders it wants, on every stock. Call before {@link #start()}. */
     public void recordXRays(XRayRecorder recorder) {
         workers.values().forEach(w -> w.engine().recordXRays(recorder));
@@ -138,6 +150,7 @@ public final class Exchange {
                 .thenApply(done -> perStock.stream().mapToInt(CompletableFuture::join).sum());
     }
 
+    /** Starts every symbol's worker thread and the exchange clock. */
     public void start() {
         workers.values().forEach(SymbolWorker::start);
         startClock();
@@ -161,7 +174,7 @@ public final class Exchange {
     private void tickAll() {
         for (SymbolWorker worker : workers.values()) {
             try {
-                worker.enqueue("tick", engine -> {
+                worker.enqueue("tick", CommandSource.CLOCK, engine -> {
                     engine.tick();
                     return null;
                 });
@@ -179,9 +192,10 @@ public final class Exchange {
      */
     public CompletableFuture<MatchResult> submit(OrderRequest request) {
         Objects.requireNonNull(request, "request must not be null");
-        return workerFor(request.symbol()).enqueue("submit", engine -> {
+        CommandSource source = sourceOfTrader.apply(request.traderId());
+        return workerFor(request.symbol()).enqueue("submit", source, engine -> {
             MatchResult result = engine.submit(request);
-            symbolOfOrder.put(result.incoming().id(), request.symbol());
+            routes.put(result.incoming().id(), new Route(request.symbol(), source));
             return result;
         });
     }
@@ -191,11 +205,11 @@ public final class Exchange {
      * belongs to and routes the cancel to that worker.
      */
     public CompletableFuture<CancelResult> cancel(long orderId) {
-        String symbol = symbolOfOrder.get(orderId);
-        if (symbol == null) {
+        Route route = routes.get(orderId);
+        if (route == null) {
             return CompletableFuture.completedFuture(CancelResult.unknown(orderId));
         }
-        return workerFor(symbol).enqueue("cancel", engine -> engine.cancel(orderId));
+        return workerFor(route.symbol()).enqueue("cancel", route.source(), engine -> engine.cancel(orderId));
     }
 
     /** @return an immutable view of the top {@code depth} levels of one book */
@@ -210,6 +224,12 @@ public final class Exchange {
      */
     public <T> CompletableFuture<T> onWorker(String symbol, String name, Function<SymbolEngine, T> action) {
         return workerFor(symbol).enqueue(name, action);
+    }
+
+    /** Like {@link #onWorker(String, String, Function)}, labelled with where the work came from (for monitoring). */
+    public <T> CompletableFuture<T> onWorker(String symbol, String name, CommandSource source,
+                                            Function<SymbolEngine, T> action) {
+        return workerFor(symbol).enqueue(name, source, action);
     }
 
     private SymbolWorker workerFor(String symbol) {
@@ -236,6 +256,11 @@ public final class Exchange {
             allStopped &= worker.awaitTermination(timeout, unit);
         }
         return allStopped;
+    }
+
+    /** @return a moment-in-time picture of every worker thread, in listing order (for the Engine Room) */
+    public List<WorkerStats> workerStats() {
+        return workers.values().stream().map(SymbolWorker::stats).toList();
     }
 
     /** @return the listed stocks, in listing order */

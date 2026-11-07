@@ -1,5 +1,7 @@
 import { Client, type IMessage, type StompSubscription } from '@stomp/stompjs'
-import type { AuctionUpdate, BookSnapshot, Case, MarketStatusChanged, OrderActivity, Trade, WireHeadline } from './types'
+import type {
+  AuctionUpdate, Board, BookSnapshot, Case, EngineSnapshot, MarketStatusChanged, OrderActivity, Trade, WireHeadline,
+} from './types'
 
 /**
  * Live market data over STOMP (a small messaging protocol on top of WebSocket).
@@ -18,6 +20,10 @@ export interface StreamHandlers {
   onCase: (c: Case) => void
   onAuction: (a: AuctionUpdate) => void
   onConnection: (connected: boolean) => void
+  /** Engine Room measurements (about 4 a second). */
+  onEngine?: (e: EngineSnapshot) => void
+  /** The leaderboard (once a second). */
+  onLeaderboard?: (b: Board) => void
 }
 
 export interface MarketStream {
@@ -63,6 +69,8 @@ export function connectStream(handlers: StreamHandlers): MarketStream {
       client.subscribe('/topic/auction', (m: IMessage) => handlers.onAuction(JSON.parse(m.body) as AuctionUpdate))
       client.subscribe('/topic/surveillance', (m: IMessage) => handlers.onCase(JSON.parse(m.body) as Case))
       client.subscribe('/topic/status', (m: IMessage) => handlers.onStatus(JSON.parse(m.body) as MarketStatusChanged))
+      client.subscribe('/topic/engine', (m: IMessage) => handlers.onEngine?.(JSON.parse(m.body) as EngineSnapshot))
+      client.subscribe('/topic/leaderboard', (m: IMessage) => handlers.onLeaderboard?.(JSON.parse(m.body) as Board))
       ;[...watched.keys()].forEach(subscribeSymbol)
     },
     onWebSocketClose: () => handlers.onConnection(false),

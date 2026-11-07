@@ -1,8 +1,11 @@
 package com.dalalx.server.config;
 
+import com.dalalx.core.audience.Guest;
+import com.dalalx.core.audience.GuestDesk;
 import com.dalalx.core.bots.BotRunner;
 import com.dalalx.core.breaker.StatusBoard;
 import com.dalalx.core.events.EventBus;
+import com.dalalx.core.exchange.CommandSource;
 import com.dalalx.core.exchange.Exchange;
 import com.dalalx.core.marketdata.CandleAggregator;
 import com.dalalx.core.marketdata.TradeHistory;
@@ -72,9 +75,16 @@ public class ExchangeConfig {
      * "The Munim's order..." instead of "MUNIM's order...".
      */
     @Bean
-    public XRayDesk xrayDesk(ObjectProvider<BotRunner> runner) {
-        return new XRayDesk(Set.of(OrderController.HUMAN), id -> OrderController.HUMAN.equals(id) ? "You"
-                : runner.getIfAvailable() == null ? id : runner.getObject().nameOf(id));
+    public XRayDesk xrayDesk(ObjectProvider<BotRunner> runner, ObjectProvider<GuestDesk> guests) {
+        return new XRayDesk(Set.of(OrderController.HUMAN), id -> {
+            if (OrderController.HUMAN.equals(id)) {
+                return "You";
+            }
+            if (Guest.isGuest(id) && guests.getIfAvailable() != null) {
+                return guests.getObject().byTrader(id).map(Guest::name).orElse(id);
+            }
+            return runner.getIfAvailable() == null ? id : runner.getObject().nameOf(id);
+        });
     }
 
     /** Traders barred by surveillance; every engine checks it before accepting an order. */
@@ -89,6 +99,9 @@ public class ExchangeConfig {
         Exchange exchange = new Exchange(Exchange.DEFAULT_STOCKS, bus, clock);
         exchange.recordXRays(xrays);
         exchange.guardWith(request -> suspensions.refusal(request.traderId()));
+        // Labels each order's source for the Engine Room (monitoring only).
+        exchange.classifySourcesWith(trader -> OrderController.HUMAN.equals(trader) ? CommandSource.PRESENTER
+                : Guest.isGuest(trader) ? CommandSource.AUDIENCE : CommandSource.BOT);
         exchange.start();
         return exchange;
     }

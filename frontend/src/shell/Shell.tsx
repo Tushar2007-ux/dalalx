@@ -3,7 +3,7 @@ import { Edition, Folio, HeadlineBanner, Masthead, Toast } from '../design'
 import { clockTime } from '../lib/format'
 import { useMarket, type ToastItem } from '../store/market'
 import type { Headline } from '../terminal/headline'
-import { ROUTES, type Route } from './route'
+import { ROUTES, type ShellRoute } from './route'
 import { TickerStrip } from './TickerStrip'
 import './shell.css'
 
@@ -17,7 +17,7 @@ const today = () => new Date().toLocaleDateString('en-IN', { weekday: 'long', da
  * folio at the foot and the toasts. Pages only supply their own columns.
  */
 export function Shell({ route, headline, page, section, status, band, full = false, children }: {
-  route: Exclude<Route, 'demo'>
+  route: ShellRoute
   /** Overrides the masthead's market status (e.g. 'halted' for the selected stock). */
   status?: 'live' | 'halted' | 'auction' | 'closed'
   /** Optional band printed between the headline and the page (halt, auction). */
@@ -44,6 +44,7 @@ export function Shell({ route, headline, page, section, status, band, full = fal
         ))}
       </nav>
       <span className="dx-sections-right">
+      <a href="#/wall" className="dx-focus dx-sections-board" title="Full-screen wall display for the projector">Big Board ⤢</a>
       <span data-testid="connection" style={{ fontSize: 12, color: connection === 'live' ? 'var(--buy)' : 'var(--ink-muted)' }}>
         {connection === 'live' ? '● Live wire' : connection === 'connecting' ? '○ Connecting…' : '○ Offline'}
       </span>

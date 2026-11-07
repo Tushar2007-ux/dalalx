@@ -1,0 +1,107 @@
+/* The Big Board: a dark wall display for the projector. */
+.dx-wall {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 18px;
+  padding: 18px 24px 14px;
+  box-sizing: border-box;
+}
+.dx-wall-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 28px;
+  align-items: center;
+  border-bottom: 3px double var(--rule-strong);
+  padding-bottom: 12px;
+}
+.dx-wall-brand { display: flex; align-items: baseline; gap: 12px; }
+.dx-wall-brand strong { font-family: var(--font-display); font-weight: 800; font-size: 40px; line-height: 1; }
+.dx-wall-brand span { font-family: var(--font-ui); font-weight: 700; font-size: 13px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent); }
+.dx-wall-breadth { display: flex; gap: 14px; font-size: 18px; font-weight: 700; }
+.dx-wall-clock { font-size: 22px; font-weight: 700; margin-left: auto; }
+.dx-wall-actions { display: flex; gap: 10px; align-items: center; }
+.dx-wall-actions button, .dx-wall-actions a {
+  appearance: none;
+  border: 1px solid var(--rule-strong);
+  background: none;
+  color: var(--ink);
+  font: 600 12px var(--font-ui);
+  padding: 5px 10px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.dx-wall-live { font: 600 12px var(--font-ui); color: var(--ink-muted); }
+.dx-wall-live.is-live { color: var(--buy); }
+
+.dx-wall-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-content: center;
+}
+.dx-wall-wait { font-family: var(--font-display); font-style: italic; font-size: 24px; color: var(--ink-muted); text-align: center; }
+.dx-tile {
+  --glow: 0.2;
+  --tone: var(--ink-muted);
+  position: relative;
+  overflow: hidden;
+  padding: 18px 20px 14px;
+  border: 1px solid color-mix(in srgb, var(--tone) 55%, transparent);
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--tone) calc(var(--glow) * 34%), transparent) 0%, transparent 70%),
+    var(--surface);
+  box-shadow: 0 0 calc(var(--glow) * 40px) color-mix(in srgb, var(--tone) calc(var(--glow) * 45%), transparent);
+  display: grid;
+  gap: 4px;
+  transition: box-shadow 600ms var(--ease-out), border-color 600ms var(--ease-out);
+  min-height: 230px;
+  container-type: inline-size;
+}
+@media (min-width: 1800px) { .dx-wall-tiles { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+@media (max-width: 900px) { .dx-wall-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .dx-wall-tiles { grid-template-columns: 1fr; } }
+.dx-tile.is-up { --tone: var(--buy); }
+.dx-tile.is-down { --tone: var(--sell); }
+.dx-tile.is-halted, .dx-tile.is-auction { --tone: var(--stamp); border-style: dashed; }
+.dx-tile-pulse {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--buy);
+  opacity: 0;
+  animation: dx-tile-pulse 900ms var(--ease-out);
+  pointer-events: none;
+}
+.dx-tile-pulse.is-sell { border-color: var(--sell); }
+@keyframes dx-tile-pulse { from { opacity: 0.9; transform: scale(0.985); } to { opacity: 0; transform: scale(1.02); } }
+.dx-tile-head { display: flex; justify-content: space-between; align-items: center; }
+.dx-tile-head strong { font-family: var(--font-ui); font-weight: 700; font-size: 20px; letter-spacing: 0.1em; }
+.dx-tile-badge { font: 700 11px var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--stamp); border: 1px solid var(--stamp); padding: 1px 6px; animation: dx-tile-blink 1.2s steps(2) infinite; }
+@keyframes dx-tile-blink { 50% { opacity: 0.3; } }
+.dx-tile-name { font-family: var(--font-display); font-style: italic; color: var(--ink-muted); font-size: 15px; }
+.dx-tile-price { font-family: var(--font-display); font-weight: 800; font-size: clamp(34px, 14cqi, 76px); line-height: 1.05; justify-self: start; padding: 0 4px; margin-left: -4px; }
+.dx-tile-change { font-size: 20px; font-weight: 700; color: var(--tone); display: flex; gap: 12px; align-items: baseline; }
+.dx-tile-change span { font-size: 14px; font-weight: 500; opacity: 0.85; }
+.dx-tile-spark { width: 100%; height: 56px; margin-top: 4px; }
+.dx-tile-spark-line { fill: none; stroke: var(--tone); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.dx-tile-spark-fill { fill: var(--tone); opacity: 0.12; }
+.dx-tile.is-flat .dx-tile-change { color: var(--ink-muted); }
+.dx-tile-foot { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-muted); }
+
+.dx-wall-foot { display: grid; gap: 8px; border-top: 1px solid var(--rule-strong); padding-top: 10px; }
+.dx-wall-news { font-family: var(--font-display); font-size: 20px; line-height: 1.25; }
+.dx-wall-news b { font-family: var(--font-ui); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); margin-right: 8px; }
+.dx-wall-tape {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 60px, #000 calc(100% - 60px), transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 60px, #000 calc(100% - 60px), transparent);
+}
+.dx-wall-tape-track { display: flex; width: max-content; animation: dx-ticker-scroll 60s linear infinite; }
+.dx-wall-tape-run { display: flex; }
+.dx-wall-tape-item { display: inline-grid; gap: 1px; padding: 0 26px; border-right: 1px solid var(--rule); font-family: var(--font-mono); font-size: 15px; white-space: nowrap; }
+.dx-wall-tape-item small { font-size: 11px; color: var(--ink-muted); }
+.dx-wall-tape-item b { font-family: var(--font-ui); letter-spacing: 0.06em; }
+
+@media (prefers-reduced-motion: reduce) {
+  .dx-tile-pulse, .dx-tile-badge, .dx-wall-tape-track { animation: none; }
+}

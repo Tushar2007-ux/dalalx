@@ -15,6 +15,9 @@ function toChartCandle(c: Candle, interval: Interval) {
 /** Centre column: big last price, the candlestick chart and the trade tape for the selected stock. */
 export function ChartPanel() {
   const selected = useMarket((s) => s.selected)
+  const names = useMarket((s) => s.names)
+  // Bots keep their ids (the tape shows their stamp); audience guests show the name they joined with.
+  const nameOf = (id: string) => (botKey(id) ? id : names[id] ?? id)
   const interval = useMarket((s) => s.interval)
   const setInterval = useMarket((s) => s.setInterval)
   const info = useMarket((s) => s.symbols.find((x) => x.symbol === s.selected))
@@ -50,7 +53,7 @@ export function ChartPanel() {
         {(tape ?? []).slice(0, 8).map((t, i) => (
           <TradeTapeRow key={t.id} time={clockTime(t.timestamp)} symbol={t.symbol}
             side={t.aggressorSide === 'BUY' ? 'buy' : 'sell'} price={toRupees(t.price)} qty={t.qty}
-            buyer={t.buyerId} seller={t.sellerId} buyerBot={botKey(t.buyerId)} sellerBot={botKey(t.sellerId)}
+            buyer={nameOf(t.buyerId)} seller={nameOf(t.sellerId)} buyerBot={botKey(t.buyerId)} sellerBot={botKey(t.sellerId)}
             mine={t.buyerId === ME || t.sellerId === ME} fresh={i === 0} />
         ))}
         {!tape?.length && <p style={{ margin: '8px 0', fontFamily: 'var(--font-display)', fontStyle: 'italic', color: 'var(--ink-muted)' }}>
