@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { joinUrl, loadGuest, rankMoves, saveGuest, signedRupees } from './guest'
+import type { Standing } from '../lib/types'
+import { closingVerdict, joinUrl, loadGuest, rankMoves, saveGuest, signedRupees } from './guest'
 
 describe('audience helpers', () => {
   beforeEach(() => localStorage.clear())
@@ -34,5 +35,31 @@ describe('audience helpers', () => {
     expect(signedRupees(125_000)).toBe('+₹1,250')
     expect(signedRupees(-8_000)).toBe('−₹80')
     expect(signedRupees(0)).toBe('₹0')
+  })
+})
+
+describe('closingVerdict', () => {
+  const s = (rank: number, kind: Standing['kind'], name: string): Standing =>
+    ({ rank, traderId: name.toUpperCase(), name, kind, pnl: 0, trades: 0, volume: 0 })
+
+  it('says nothing when nobody has traded', () => {
+    expect(closingVerdict([])).toBeNull()
+  })
+
+  it('credits the audience when a guest finishes above every bot', () => {
+    const v = closingVerdict([s(1, 'AUDIENCE', 'Richa'), s(2, 'BOT', 'The Munim')])!
+    expect(v.winner.name).toBe('Richa')
+    expect(v.humansBeatBots).toBe(true)
+    expect(v.deck).toContain('Richa')
+  })
+
+  it('credits the bots when they hold the top', () => {
+    const v = closingVerdict([s(1, 'BOT', 'The Munim'), s(2, 'AUDIENCE', 'Richa')])!
+    expect(v.humansBeatBots).toBe(false)
+    expect(v.deck).toContain('crown')
+  })
+
+  it('counts a guest as beating the bots when no bot is on the board', () => {
+    expect(closingVerdict([s(1, 'AUDIENCE', 'Surbhi')])!.humansBeatBots).toBe(true)
   })
 })

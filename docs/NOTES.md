@@ -127,3 +127,49 @@
 - **Bots come alive:** an **"On the floor now"** strip of the bots' heads beside the stock tabs. A head lifts with a green or red ring when its bot trades, showing what it just did ("▲ 250 INFY"); a suspended trader goes grey. Correspondent cards gained a **P&L sparkline** of the last two minutes.
 - **Layout and polish:** the floor became a CSS grid with breakpoints. Four columns on wide screens; on a 1280 px laptop the ticket tucks under the order book instead of falling below everything; it stacks on narrow screens. Page links moved from the crowded masthead into a newspaper **section bar**. Everything respects `prefers-reduced-motion`.
 - **Calmer, more believable market:** watching it live showed every stock drifting 4–5% in three minutes. Measuring who was aggressing showed the Panic Seller panicking at a 0.1% dip and dumping every turn, with Momentum Chaser piling on. Fixes: panic only on a real fall (0.35% over 20 trades) with a 15-second cooldown, buy back about as often as it sells, a higher trend threshold for Momentum (0.2%) with a shorter reach, and deeper market-maker quotes. Moves are now about ±2% over three minutes, and the Flash Crash still trips the breaker. Tests: 277 core, 32 server, 52 frontend.
+
+## Step 20 — A designed interface, not a styled one
+
+The pass after the design system: the parts of the paper that were still only
+*arranged* were given the behaviour of a finished product.
+
+**Surveillance stopped shouting.** One finding used to open one case, so the
+desk filed 151 of them in a session and the Wire printed each. A case is now
+one investigation per *(rule, trader, stock)*: a repeat offence folds into the
+case already open, bumping an incident count and extending its evidence
+(`Case.withIncident`, `SurveillanceDesk.openCaseFor`). The Wire files the
+first and then every tenth, so a persistent spoofer reads as "flagged for the
+10th time" instead of ten separate headlines. 151 cases became 16.
+
+**A closing bell.** An audience round had no ending. The presenter can now
+ring the bell and the paper prints a Final Edition: the winner, a three-step
+podium, and whether the room beat the machines. The rule behind the headline
+is one function, `closingVerdict`, so the judgement is testable and not buried
+in the component that draws it.
+
+**Tickets now fly.** When trades eat a whole price level, a chit carrying that
+size flies from the line in the order book to the top of the trade tape, where
+the trade prints a moment later. `flightPath` works out the journey and
+`TradeFlight` draws it over the panels so nothing clips it. It is the one step
+of matching that was otherwise invisible: two numbers changed in two panels
+and nothing connected them.
+
+**Every control answers.** Hover, press, disabled, busy and focus are stated
+once, in `ui.css`, over whatever colour a control already has (an inset wash,
+not a background swap — a green Buy button stays green and simply deepens).
+Nothing is left stateless, which was most of what made the interface feel
+unfinished.
+
+**The book holds its shape.** Price and quantity now keep a minimum width and
+the depth bar is the only column allowed to give width back, so a narrow panel
+loses chart rather than digits — they used to overlap below about 1500px.
+
+**README with the screens.** Eight screenshots and a GIF of the floor in
+motion, in `docs/screenshots/`.
+
+Viva points: *Single Responsibility* (the verdict and the flight path are
+rules, kept out of the components that render them) · *Open/Closed* (a new
+surveillance rule still needs no change to the desk) · one case per
+trader-and-rule is the same grouping an exchange's real surveillance does.
+
+Tests: 343 Java, 105 frontend.

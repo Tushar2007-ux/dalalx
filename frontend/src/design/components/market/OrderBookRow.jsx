@@ -20,7 +20,10 @@ export function OrderBookRow({ side = 'bid', price, qty, orders, depth = 0, best
       onClick={onClick ? () => onClick(price) : undefined} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       style={{
         position: 'relative', isolation: 'isolate',
-        display: 'grid', gridTemplateColumns: row ? '14px minmax(0,1fr) minmax(0,1fr) 40px' : '14px minmax(0,1fr) minmax(0,1fr) 36px 96px', alignItems: 'center', columnGap: 10,
+        display: 'grid', /* Price and quantity keep a floor wide enough for the digits; the depth
+           bar is the one column allowed to give its width back, so a narrow
+           panel loses chart, not numbers. */
+        gridTemplateColumns: row ? '14px minmax(58px,1fr) minmax(42px,0.8fr) 36px' : '14px minmax(58px,1fr) minmax(42px,0.8fr) 32px minmax(0,96px)', alignItems: 'center', columnGap: 8,
         height: 'var(--row-book)', padding: '0 6px 0 4px', borderBottom: '1px solid var(--rule)', cursor: onClick ? 'pointer' : 'default',
         background: isHover ? 'var(--surface-sunk)' : mine ? 'var(--surface)' : 'transparent', ...style,
       }}>

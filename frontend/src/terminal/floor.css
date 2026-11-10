@@ -261,3 +261,30 @@
 .dx-minilead li.is-me { font-weight: 700; background: var(--surface-sunk); }
 .dx-minilead li i { color: var(--pencil-text); font-size: var(--text-label); }
 .dx-minilead-link { font: italic 13.5px var(--font-display); color: var(--ink); }
+
+/* ---- Tickets in flight: book → tape ------------------------------------ */
+
+/* The chits are drawn above the panels and never take clicks. */
+.dx-flights { position: fixed; inset: 0; pointer-events: none; z-index: var(--z-raised); }
+
+.dx-chit {
+  position: fixed; translate: -50% -50%;
+  font-family: var(--font-mono); font-size: var(--text-micro); line-height: 1;
+  padding: 3px 5px; white-space: nowrap;
+  background: var(--paper); color: var(--ink);
+  border: var(--rule-hair) solid var(--ink);
+  box-shadow: 1px 1px 0 color-mix(in srgb, var(--ink) 30%, transparent);
+  animation: dx-fly var(--ms) var(--ease-out) forwards;
+}
+.dx-chit.is-bid { border-color: var(--up); color: var(--up); }
+.dx-chit.is-ask { border-color: var(--down); color: var(--down); }
+
+/* Out of the book, a small arc across, and folded into the tape. */
+@keyframes dx-fly {
+  0%   { transform: translate(0, 0) rotate(-4deg) scale(1); opacity: 0; }
+  12%  { opacity: 1; }
+  60%  { transform: translate(calc(var(--dx) * 0.62), calc(var(--dy) * 0.62 - 14px)) rotate(6deg) scale(1.04); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(0deg) scale(0.6); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) { .dx-flights { display: none; } }

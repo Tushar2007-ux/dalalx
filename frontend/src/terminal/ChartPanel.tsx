@@ -54,7 +54,7 @@ export function ChartPanel() {
           : <EmptyChart interval={interval} onInterval={setInterval} />}
       </div>
       <div style={{ marginTop: 'var(--space-3)' }}>
-        <SectionLabel count={tape?.length ?? 0} meta="Newest first">Trade Tape</SectionLabel>
+        <span id="dx-tape-target"><SectionLabel count={tape?.length ?? 0} meta="Newest first">Trade Tape</SectionLabel></span>
         {(tape ?? []).slice(0, 8).map((t, i) => (
           <div key={t.id} className={`dx-tape-row${fresh.has(t.id) ? ' is-new' : ''}${isBlockTrade(t) ? ' is-block' : ''}`}>
           <TradeTapeRow time={clockTime(t.timestamp)} symbol={t.symbol}

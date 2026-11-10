@@ -10,6 +10,7 @@ import { AuctionBand, AuctionStamp, HaltBand, HaltStamp } from './HaltBand'
 import { bannerHeadline } from './headline'
 import { MarketsPanel } from './MarketsPanel'
 import { TicketPanel } from './TicketPanel'
+import { TradeFlight } from './TradeFlight'
 import { PriceHero } from './PriceHero'
 import { PortfolioPanel } from './PortfolioPanel'
 import { VivaTag } from '../viva/VivaTag'
@@ -62,6 +63,7 @@ export function Terminal() {
           <div className="dx-floor-book dx-card"><Tag note="book" /><BookPanel /></div>
           <div className="dx-floor-ticket dx-card"><Tag note="ticket" /><TicketPanel /><PortfolioPanel /></div>
         </div>
+        <TradeFlight />
       </div>
     </Shell>
   )

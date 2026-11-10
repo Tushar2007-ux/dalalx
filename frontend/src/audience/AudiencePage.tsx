@@ -9,6 +9,7 @@ import type { Standing, Trade } from '../lib/types'
 import { Shell } from '../shell/Shell'
 import { useMarket } from '../store/market'
 import { joinUrl, rankMoves, signedRupees } from './guest'
+import { Podium } from './Podium'
 import './audience.css'
 import { VivaTag } from '../viva/VivaTag'
 
@@ -32,6 +33,7 @@ export function AudiencePage() {
   const [svg, setSvg] = useState('')
   const previous = useRef<Standing[]>([])
   const [moves, setMoves] = useState<Record<string, number>>({})
+  const [bellRung, setBellRung] = useState(false)
 
   useEffect(() => {
     api.invite().then((i) => setAddresses(i.addresses)).catch(() => {})
@@ -92,7 +94,13 @@ export function AudiencePage() {
 
         <section className="dx-aud-board" aria-label="Leaderboard">
           <div className="dx-viva-row"><VivaTag note="leaderboard" /></div>
-          <SectionLabel rule="double" meta={leader ? <>Leader: <b>{leader.name}</b> {signedRupees(leader.pnl)}</> : 'Updated every second'}>Leaderboard</SectionLabel>
+          <SectionLabel rule="double" meta={
+            <button type="button" className="dx-aud-bell dx-focus" disabled={!standings.length}
+              onClick={() => setBellRung(true)} title="End the session and show who won">
+              🔔 Ring the closing bell
+            </button>
+          }>Leaderboard</SectionLabel>
+          {leader && <p className="dx-aud-leader">Leading: <b>{leader.name}</b> {signedRupees(leader.pnl)}</p>}
           <ol className="dx-aud-rows">
             {standings.slice(0, 12).map((s) => (
               /* The row starts where it used to be and slides to where it now
@@ -120,6 +128,7 @@ export function AudiencePage() {
           {!crowdTrades.length && <p className="dx-aud-empty">No audience trades yet. Be the first!</p>}
         </section>
       </div>
+      {bellRung && <Podium standings={standings} guests={board?.guests ?? 0} onClose={() => setBellRung(false)} />}
     </Shell>
   )
 }

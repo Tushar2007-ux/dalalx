@@ -2,7 +2,11 @@
 
 A multi-stock exchange simulator with a real order-matching engine, built for an Object-Oriented Modelling course. Five simulated stocks trade live, each matched on its own thread. Trading bots make the market, storylines bend it, a circuit breaker and call auction protect it, and a surveillance desk catches the bot that cheats. The UI is a financial newspaper with Day and Night editions.
 
-![Matching classes](docs/uml/01-matching.png)
+![The Trading Floor](docs/screenshots/floor.png)
+
+The floor, live: the matching engine running behind it, with a chart, the order book, the tape and a ticket of your own.
+
+![The floor in motion](docs/screenshots/floor.gif)
 
 ## Run
 
@@ -18,8 +22,8 @@ Open http://localhost:5173 (the front page). For the guided tour, run `./demo.sh
 ## Test and benchmark
 
 ```bash
-mvn -q verify                                  # ~310 Java tests (core + server)
-(cd frontend && npm test && npm run build)     # 49 frontend tests + type check
+mvn -q verify                                  # 343 Java tests (core + server)
+(cd frontend && npm test && npm run build)     # 105 frontend tests + type check
 ./bench.sh                                     # matching benchmark (docs/BENCHMARK.md)
 ```
 
@@ -45,11 +49,21 @@ mvn -q verify                                  # ~310 Java tests (core + server)
 - **X-Ray:** a step-by-step replay of how your order was matched.
 - **Market surveillance:** spoofing, layering, wash-trade and pump detection, with evidence timelines and suspensions.
 - **The Wire:** live newspaper headlines.
+- **Audience trading:** the room joins from their phones by QR code and trades against the bots, with a closing bell and a winner's podium.
 - **Demo autopilot:** a 13-step guided tour of about 3 minutes (`./demo.sh` or `#/demo`).
 
 ### Design patterns
 
 Strategy · Template Method · Factory · Observer · State · Adapter · Memento · Null Object · Command, plus Open/Closed and Dependency Inversion. See `docs/UML.md`.
+
+## The screens
+
+| | |
+|---|---|
+| ![Front Page](docs/screenshots/front.png) **Front Page** — the day's market as a newspaper reads it | ![X-Ray](docs/screenshots/xray.png) **X-Ray** — your order matched, step by step |
+| ![Investigations](docs/screenshots/cases.png) **Investigations** — the surveillance desk's open case files | ![Correspondents](docs/screenshots/bots.png) **Correspondents** — the bots, what they do, and how to hire more |
+| ![Engine Room](docs/screenshots/engine.png) **Engine Room** — one press per stock, one thread each, orders queueing | ![Audience](docs/screenshots/audience.png) **Audience** — the room scans a QR code and trades against the bots |
+| ![How It Works](docs/screenshots/how.png) **How It Works** — matching explained with a book you can push orders into | ![Night edition](docs/screenshots/floor-night.png) **Night edition** — the same paper, printed after dark |
 
 ## Documentation
 
@@ -61,4 +75,5 @@ Strategy · Template Method · Factory · Observer · State · Adapter · Mement
 | `docs/DEMO_SCRIPT.md` | An 8-minute demo |
 | `docs/NOTES.md` | Build log: what each step added, with viva points |
 | `docs/BENCHMARK.md` | Performance numbers and how to measure them |
+| `docs/BEFORE_AFTER.md` | What the design pass changed on each screen, and why |
 | `CLAUDE.md` | Project rules |

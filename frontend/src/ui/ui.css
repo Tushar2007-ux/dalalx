@@ -297,3 +297,60 @@
      edge of the page. The portraits still light up, which is the point. */
   .dx-bubble { display: none; }
 }
+
+/* ---- Interactive states ------------------------------------------------
+   Every control in the paper answers the same way: it lifts a shade under
+   the pointer, presses down when held, dims and stops answering when it is
+   disabled, and shows a ruled outline when the keyboard reaches it. Stating
+   it once here means no panel has to invent its own, and nothing is left
+   without a state — the thing that makes an interface feel unfinished. */
+
+button, [role="button"], summary, .dx-pressable {
+  cursor: pointer;
+  transition: box-shadow var(--dur-tick) var(--ease-out),
+              background-color var(--dur-tick) var(--ease-out),
+              color var(--dur-tick) var(--ease-out),
+              border-color var(--dur-tick) var(--ease-out),
+              transform var(--dur-tick) var(--ease-out),
+              opacity var(--dur-tick) var(--ease-out);
+}
+
+/* Under the pointer: a wash of ink laid *over* whatever the control already
+   is, so a green Buy button stays green and simply deepens. An inset shadow
+   does this without touching the background a panel chose for itself. */
+button:hover:not(:disabled), [role="button"]:hover:not([aria-disabled="true"]), .dx-pressable:hover {
+  box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+/* Held down: a millimetre of travel, as if the key really went in. */
+button:active:not(:disabled), [role="button"]:active, .dx-pressable:active { transform: translateY(1px); }
+
+/* Already dark (an "on" control) — lighten instead, or nothing would show. */
+button.is-on:hover:not(:disabled) { box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--paper) 14%, transparent); }
+
+/* Out of action: visibly spent, and it no longer answers the pointer. */
+button:disabled, [aria-disabled="true"] {
+  opacity: 0.45; cursor: not-allowed; transform: none;
+  filter: saturate(0.4);
+}
+
+/* Working: the control says so rather than looking broken. */
+.dx-busy { position: relative; pointer-events: none; opacity: 0.7; }
+.dx-busy::after {
+  content: ""; position: absolute; inset: auto 6px 4px 6px; height: 2px;
+  background: repeating-linear-gradient(90deg, currentColor 0 6px, transparent 6px 12px);
+  animation: dx-busy-run 900ms linear infinite;
+}
+@keyframes dx-busy-run { to { background-position-x: 12px; } }
+
+/* A link in body copy answers the same way as everything else. */
+.dx-prose a:hover, .dx-body a:hover { background-color: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+/* Controls that carry their own shadow keep it: they opt out by name. */
+.dx-chip:hover, .dx-tab:hover { box-shadow: none; background-color: color-mix(in srgb, var(--ink) 8%, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  button, [role="button"], summary, .dx-pressable { transition: none; }
+  button:active, [role="button"]:active, .dx-pressable:active { transform: none; }
+  .dx-busy::after { animation: none; }
+}

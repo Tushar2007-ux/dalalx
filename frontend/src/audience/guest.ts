@@ -55,3 +55,24 @@ export function signedRupees(paise: number): string {
   const sign = rupees > 0 ? '+' : rupees < 0 ? '−' : ''
   return `${sign}₹${Math.abs(rupees).toLocaleString('en-IN')}`
 }
+
+/**
+ * What the closing-bell front page says about a session.
+ *
+ * The headline and the deck are the only judgement the paper makes, so the
+ * rule behind them lives here, in one plain function a test can read: did
+ * anyone from the audience finish ahead of every bot?
+ */
+export function closingVerdict(standings: Standing[]): { winner: Standing; humansBeatBots: boolean; deck: string } | null {
+  const winner = standings[0]
+  if (!winner) return null
+  const bestGuest = standings.find((s) => s.kind === 'AUDIENCE')
+  const bestBot = standings.find((s) => s.kind === 'BOT')
+  const humansBeatBots = bestGuest !== undefined && (bestBot === undefined || bestGuest.rank < bestBot.rank)
+  const deck = humansBeatBots
+    ? `The audience beat the machines: ${bestGuest!.name} finished ahead of every correspondent on the floor.`
+    : winner.kind === 'BOT'
+      ? 'The correspondents kept their crown this session. The audience will want another go.'
+      : 'Closed at the bell, with profit and loss marked to the last traded price.'
+  return { winner, humansBeatBots, deck }
+}

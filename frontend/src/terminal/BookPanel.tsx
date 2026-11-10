@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { OrderBookRow, RuledPanel } from '../design'
-import { formatPaise, toRupees } from '../lib/format'
+import { formatPaise, formatQty, toRupees } from '../lib/format'
 import { botKey, isWorking } from '../lib/market'
 import type { Level } from '../lib/types'
 import { useMarket } from '../store/market'
 import { sideChanges } from './bookChanges'
+import { launchTicket } from './flight'
 
 /** How long an eaten level lingers, crossed out, before it folds away. */
 const GONE_MS = 650
@@ -65,11 +66,18 @@ export function BookPanel() {
     .filter((o) => o.symbol === selected && isWorking(o)).map((o) => `${o.side}:${o.limitPrice}`))
   const spread = bids[0] && book?.asks[0] ? book.asks[0].price - bids[0].price : undefined
 
+  /* A level that has just been eaten sends its size to the tape: the chit
+     leaves from the row itself, which is still on screen as a ghost. */
+  const fly = (side: 'bid' | 'ask', l: Level) => (el: HTMLDivElement | null) => {
+    if (el) launchTicket(el, document.getElementById('dx-tape-target'), `×${formatQty(l.totalQty)}`, side)
+  }
+
   const row = (side: 'bid' | 'ask', best: boolean) => (l: Level) => {
     const isGhost = (side === 'bid' ? ghostBids : ghostAsks).includes(l)
     const eaten = (side === 'bid' ? bidChanges : askChanges).hits.get(l.price)
     return (
-    <div key={side + l.price} className={`dx-book-line is-${side}${isGhost ? ' is-gone' : ''}`}>
+    <div key={side + l.price} ref={isGhost ? fly(side, l) : undefined}
+      className={`dx-book-line is-${side}${isGhost ? ' is-gone' : ''}`}>
       {eaten !== undefined && !isGhost && <span key={`${l.price}-${l.totalQty}`} className="dx-book-bite" style={{ ['--bite-share' as string]: Math.max(0.12, eaten).toFixed(2) }} aria-hidden="true" />}
     <OrderBookRow side={side} price={toRupees(l.price)} qty={l.totalQty} orders={l.orderCount}
       depth={l.totalQty / maxQty} best={best && l === (side === 'bid' ? bids[0] : asks[asks.length - 1])}
@@ -84,7 +92,7 @@ export function BookPanel() {
       state={!book ? 'loading' : bids.length + asks.length ? 'ready' : 'empty'}
       emptyText="The book is empty. Your limit order would be the first line."
       style={{ minWidth: 0 }}>
-      <div style={{ ...header, display: 'grid', gridTemplateColumns: '14px minmax(0,1fr) minmax(0,1fr) 36px 96px', columnGap: 'var(--space-2)', padding: '2px 6px 2px 4px' }}>
+      <div style={{ ...header, display: 'grid', gridTemplateColumns: '14px minmax(58px,1fr) minmax(42px,0.8fr) 32px minmax(0,96px)', columnGap: 8, padding: '2px 6px 2px 4px' }}>
         <span /><span style={{ textAlign: 'right' }}>▼ Ask</span><span style={{ textAlign: 'right' }}>Qty</span><span style={{ textAlign: 'right' }}>{xray ? 'Bot' : 'Ord'}</span><span>Depth</span>
       </div>
       {shownAsks.map(row('ask', true))}
