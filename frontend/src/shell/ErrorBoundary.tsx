@@ -19,14 +19,14 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: E
   render() {
     if (!this.state.error) return this.props.children
     return (
-      <main role="alert" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--paper)', color: 'var(--ink)', padding: 24 }}>
-        <div style={{ maxWidth: 520, display: 'grid', gap: 12 }}>
-          <span style={{ fontFamily: 'var(--font-ui)', fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--accent)' }}>Stop press</span>
-          <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 36, lineHeight: 1.1 }}>The presses jammed</h1>
-          <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 16 }}>
+      <main role="alert" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', background: 'var(--paper)', color: 'var(--ink)', padding: 'var(--space-5)' }}>
+        <div style={{ maxWidth: 520, display: 'grid', gap: 'var(--space-3)' }}>
+          <span style={{ fontFamily: 'var(--font-ui)', fontSize: 'var(--text-label)', fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--accent)' }}>Stop press</span>
+          <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontSize: 'var(--text-figure)', lineHeight: 1.1 }}>The presses jammed</h1>
+          <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 'var(--text-deck)' }}>
             Something on this page broke. The exchange itself is unaffected; your orders are safe.
           </p>
-          <code style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{this.state.error.message}</code>
+          <code style={{ fontSize: 'var(--text-small)', color: 'var(--ink-muted)' }}>{this.state.error.message}</code>
           <button type="button" onClick={() => location.reload()} style={{ justifySelf: 'start', padding: '8px 14px', border: '1px solid var(--rule-strong)', background: 'var(--ink)', color: 'var(--ink-inverse)', cursor: 'pointer' }}>
             Reprint the page
           </button>

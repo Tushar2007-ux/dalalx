@@ -84,7 +84,7 @@ describe('market status', () => {
 describe('surveillance cases', () => {
   const c = (id: string, status: 'OPEN' | 'SUSPENDED') => ({
     id, ruleId: 'spoofing', ruleName: 'Spoofing', severity: 'CRITICAL' as const, traderId: 'SPOOFER', symbol: 'RELIANCE',
-    openedAt: '2026-11-04T09:15:00Z', summary: '3 large orders', figures: {}, notes: [], evidence: [], flagged: [], status,
+    openedAt: '2026-11-04T09:15:00Z', lastSeenAt: '2026-01-01T04:00:00Z', incidents: 1, summary: '3 large orders', figures: {}, notes: [], evidence: [], flagged: [], status,
   })
 
   it('adds new cases with a toast and updates known ones in place', () => {
@@ -122,7 +122,7 @@ describe('big moments', () => {
     expect(useMarket.getState().moment).toMatchObject({ kind: 'bell', headline: 'TCS reopens at ₹910.00' })
 
     const open = { id: 'SV-0001', ruleId: 'spoofing', ruleName: 'Spoofing', severity: 'CRITICAL' as const, traderId: 'SPOOFER',
-      symbol: 'TCS', openedAt: 't', summary: '', figures: {}, notes: [], evidence: [], flagged: [], status: 'OPEN' as const }
+      symbol: 'TCS', openedAt: 't', lastSeenAt: '2026-01-01T04:00:00Z', incidents: 1, summary: '', figures: {}, notes: [], evidence: [], flagged: [], status: 'OPEN' as const }
     useMarket.getState().applyCase(open)
     useMarket.getState().applyCase({ ...open, status: 'SUSPENDED' })
     expect(useMarket.getState().moment).toMatchObject({ kind: 'caught', headline: 'The Spoofer suspended', traderId: 'SPOOFER' })

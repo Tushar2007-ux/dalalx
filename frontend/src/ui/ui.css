@@ -1,0 +1,299 @@
+/**
+ * The house style: the handful of classes every page uses instead of writing
+ * its own sizes and spacing. Each one has a single job, and every value comes
+ * from a token in design/.
+ *
+ * Rule for the rest of the app: if you reach for `style={{ fontSize: 13 }}`,
+ * the class you want is probably already here.
+ */
+
+/* ---- Text ---------------------------------------------------------------
+   Four voices: a label above something, body copy, an italic aside in the
+   paper's voice, and a figure. Nothing else sets a font size by hand.      */
+.dx-label {
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+.dx-label-sm { font-size: var(--text-micro); letter-spacing: 0.12em; }
+.dx-muted { color: var(--ink-muted); }
+.dx-deck {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--text-deck);
+  line-height: var(--leading-body);
+}
+.dx-lead { font-family: var(--font-display); font-size: var(--text-lead); line-height: 1.4; }
+.dx-body { font-size: var(--text-body); line-height: var(--leading-body); }
+.dx-figure {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--text-figure);
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+/* Readable measure: copy never runs wider than the eye can track comfortably. */
+.dx-prose { max-width: 68ch; }
+
+/* ---- Stacks and rows ----------------------------------------------------
+   The grid/flex pattern that was being hand-written on nearly every page.  */
+.dx-stack { display: grid; gap: var(--space-2); }
+.dx-stack-sm { display: grid; gap: var(--space-1); }
+.dx-stack-lg { display: grid; gap: var(--space-4); }
+.dx-row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.dx-row-end { display: flex; align-items: flex-end; gap: var(--space-3); flex-wrap: wrap; }
+.dx-row-between { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+.dx-push { margin-left: auto; }
+
+/* ---- Card ---------------------------------------------------------------
+   One treatment for a panel of content, used by every column and page.     */
+.dx-card {
+  position: relative;
+  background: var(--card-bg);
+  border: var(--card-border);
+  box-shadow: var(--card-shadow);
+  padding: var(--card-pad) var(--space-4) var(--space-3);
+}
+/* A card's own section rule is the card edge; drop the component's. */
+.dx-card > section { border-left: none !important; border-right: none !important; padding-left: 0 !important; padding-right: 0 !important; }
+.dx-card-quiet { background: none; box-shadow: none; border: none; padding: 0; }
+
+/* ---- Stat ---------------------------------------------------------------
+   A number with a label under it: the Engine Room, the audience count, the
+   auction band and the portfolio all show their headline figures this way.  */
+.dx-stat { display: grid; gap: 2px; border-top: var(--rule-bold) solid var(--rule-strong); padding-top: var(--space-1); min-width: 110px; }
+.dx-stat-value { font-family: var(--font-display); font-weight: 800; font-size: var(--text-figure); line-height: 1; }
+.dx-stat-label { font-family: var(--font-ui); font-size: var(--text-label); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-muted); }
+.dx-stat-sm .dx-stat-value { font-size: var(--text-num-lg); }
+
+/* ---- Table --------------------------------------------------------------
+   Figures right, names left, a rule under the head and hairlines between.  */
+.dx-table { width: 100%; border-collapse: collapse; font-size: var(--text-small); }
+.dx-table th {
+  font-family: var(--font-ui);
+  font-size: var(--text-micro);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  text-align: right;
+  padding: 3px 0;
+  border-bottom: var(--rule-hair) solid var(--rule-strong);
+}
+.dx-table td { text-align: right; padding: var(--space-1) 0; border-bottom: var(--rule-hair) solid var(--rule); }
+.dx-table th:first-child, .dx-table td:first-child { text-align: left; }
+.dx-table td:first-child { font-family: var(--font-ui); font-weight: 600; letter-spacing: 0.04em; }
+
+/* ---- Tag ----------------------------------------------------------------
+   A small chip: a phase, a kind, a count.                                   */
+.dx-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-family: var(--font-ui);
+  font-size: var(--text-micro);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 2px var(--space-1);
+  border: var(--rule-hair) solid currentColor;
+  color: var(--ink-muted);
+}
+.dx-tag-alert { color: var(--stamp); }
+.dx-tag-up { color: var(--buy); }
+.dx-tag-down { color: var(--sell); }
+
+/* ---- Empty state --------------------------------------------------------
+   Readable ink, not pale grey, and always says what to do next.            */
+.dx-empty {
+  margin: var(--space-1) 0 var(--space-2);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--text-body);
+  color: var(--ink);
+  opacity: 0.82;
+}
+
+/* ---- Direction ----------------------------------------------------------
+   One pair of colours for up and down, everywhere.                          */
+.is-up { color: var(--buy); }
+.is-down { color: var(--sell); }
+.is-halt { color: var(--stamp); }
+
+/* ---- Loading ------------------------------------------------------------
+   A sheet feeding through the press, not a static grey block.               */
+.dx-shimmer {
+  display: block;
+  background: linear-gradient(90deg,
+    var(--surface-sunk) 0%,
+    color-mix(in srgb, var(--surface-sunk) 40%, var(--paper)) 40%,
+    var(--surface-sunk) 80%);
+  background-size: 300% 100%;
+  animation: dx-shimmer 1.4s linear infinite;
+}
+@keyframes dx-shimmer { from { background-position: 100% 0; } to { background-position: -50% 0; } }
+@media (prefers-reduced-motion: reduce) { .dx-shimmer { animation: none; } }
+
+/* ---- Notices ------------------------------------------------------------
+   Toasts stack up from the bottom right. The top of the page belongs to the
+   headline, the halt countdown and the auction figures; a notice must never
+   land on top of those.                                                     */
+.dx-toasts {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  display: grid;
+  gap: var(--space-2);
+  z-index: var(--z-toast);
+  max-width: min(380px, calc(100vw - var(--space-7)));
+  max-height: 60vh;
+  overflow: hidden;
+  align-content: end;
+}
+
+/* ---- The big stamps -----------------------------------------------------
+   STOP PRESS and CALL AUCTION slam across the page so nobody can miss them,
+   then shrink into the top-left corner after a beat so the chart, book and
+   ticket underneath are readable for the rest of the halt.                  */
+.dx-bigstamp {
+  position: absolute;
+  left: 50%;
+  top: 200px;
+  z-index: 30;
+  pointer-events: none;
+  transform-origin: center;
+  animation: dx-bigstamp-slam var(--dur-stamp) var(--ease-slam) both,
+             dx-bigstamp-retire 900ms 2s var(--ease-in-out) forwards;
+}
+@keyframes dx-bigstamp-slam {
+  from { transform: translateX(-50%) scale(3); opacity: 0; }
+  to   { transform: translateX(-50%) scale(2.2); opacity: 1; }
+}
+@keyframes dx-bigstamp-retire {
+  from { transform: translateX(-50%) scale(2.2); opacity: 1; }
+  to   { transform: translateX(-50%) scale(0.72) translate(-46%, -150px); opacity: 0.5; }
+}
+@media (max-width: 999px) {
+  @keyframes dx-bigstamp-retire {
+    from { transform: translateX(-50%) scale(2.2); opacity: 1; }
+    to   { transform: translateX(-50%) scale(0.6) translateY(-150px); opacity: 0.45; }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dx-bigstamp { animation: none; transform: translateX(-50%) scale(0.72) translate(-46%, -150px); opacity: 0.5; }
+}
+
+/* ---- Tools menu ---------------------------------------------------------
+   Viva mode, presenter mode, sound and the shortcut card behind one button,
+   so the section bar has room for the pages themselves.                     */
+.dx-tools { position: relative; }
+.dx-tools-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-left: var(--space-1);
+  background: var(--pencil);
+  vertical-align: middle;
+}
+.dx-tools-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--space-1));
+  z-index: var(--z-scrim);
+  width: 288px;
+  background: var(--paper);
+  border: var(--rule-hair) solid var(--rule-strong);
+  border-top: var(--rule-double) double var(--ink);
+  box-shadow: 0 18px 36px -18px color-mix(in srgb, var(--ink) 55%, transparent);
+  animation: dx-slip-in var(--dur-quick) var(--ease-out);
+}
+.dx-tools-item {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  appearance: none;
+  background: none;
+  border: none;
+  border-bottom: var(--rule-hair) solid var(--rule);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--font-ui);
+}
+.dx-tools-item:last-child { border-bottom: none; }
+.dx-tools-item:hover { background: var(--surface-sunk); }
+.dx-tools-box {
+  width: 15px;
+  height: 15px;
+  border: var(--rule-hair) solid var(--rule-strong);
+  display: grid;
+  place-items: center;
+  font-size: var(--text-micro);
+  line-height: 1;
+}
+.dx-tools-box.is-on { background: var(--ink); color: var(--ink-inverse); border-color: var(--ink); }
+.dx-tools-text { display: grid; font-size: var(--text-ui); font-weight: 600; }
+.dx-tools-text small { font-size: var(--text-micro); font-weight: 400; color: var(--ink-muted); letter-spacing: 0; text-transform: none; }
+.dx-tools-menu kbd {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  border: var(--rule-hair) solid var(--rule-strong);
+  border-bottom-width: 2px;
+  padding: 1px var(--space-1);
+  background: var(--surface);
+}
+
+/* ---- Hush ---------------------------------------------------------------
+   One thing moves at a time. While a big moment is on screen the page behind
+   it stops fidgeting — the ticker, the belts, the bubbles and the pulses all
+   hold still — so the eye has somewhere to go. Transitions that carry
+   meaning (a price changing, a bar growing) are left alone.                 */
+.dx-hushed .dx-ticker-track,
+.dx-hushed .dx-belt-surface,
+.dx-hushed .dx-ticket-ride,
+.dx-hushed .dx-press-ram,
+.dx-hushed .dx-tray-sheet,
+.dx-hushed .dx-bubble,
+.dx-hushed .dx-caret,
+.dx-hushed .dx-tile-pulse,
+.dx-hushed .dx-tile-badge,
+.dx-hushed .dx-curves-dot,
+.dx-hushed .dx-aud-move,
+.dx-hushed .dx-wall-tape-track { animation-play-state: paused; }
+.dx-hushed .dx-bubble, .dx-hushed .dx-ticket-ride { opacity: 0; }
+
+/* ---- Narrow screens -----------------------------------------------------
+   The floor is built for a laptop and a projector. On a phone the same
+   content has to stay readable rather than merely shrink, so a few pieces
+   step aside.                                                               */
+@media (max-width: 899px) {
+  /* The headline is set left-to-right like hot metal, which reads well on one
+     line and looks like broken type on three. Below this width it simply
+     appears. */
+  .dx-anim-typeset { animation: none !important; clip-path: none !important; }
+
+  /* The section bar scrolls sideways instead of stacking three rows deep and
+     pushing the news off the screen. */
+  .dx-sections { flex-wrap: nowrap; align-items: center; gap: var(--space-2); }
+  .dx-sections nav {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .dx-sections nav::-webkit-scrollbar { display: none; }
+  .dx-sections nav a { white-space: nowrap; }
+  .dx-sections-right { flex-wrap: nowrap; }
+  .dx-sections-board, .dx-sections-right [data-testid="connection"] { display: none; }
+}
+@media (max-width: 1099px) {
+  /* Speech bubbles need room beside a portrait; without it they hang off the
+     edge of the page. The portraits still light up, which is the point. */
+  .dx-bubble { display: none; }
+}

@@ -6,7 +6,7 @@
   background: color-mix(in srgb, var(--paper) 88%, var(--pencil));
   color: var(--pencil-text);
   font: 500 11px var(--font-ui);
-  padding: 2px 7px;
+  padding: 2px var(--space-2);
   cursor: pointer;
   transform: rotate(-1deg);
   box-shadow: 1px 1px 0 color-mix(in srgb, var(--pencil) 35%, transparent);
@@ -15,14 +15,14 @@
   animation: dx-slip-in var(--dur-quick) var(--ease-out);
 }
 .dx-viva-tag code { font: 600 11px var(--font-mono); color: var(--ink); }
-.dx-viva-tag em { font-family: var(--font-display); font-size: 12px; }
+.dx-viva-tag em { font-family: var(--font-display); font-size: var(--text-small); }
 .dx-viva-card {
   position: absolute;
   top: calc(100% + 6px);
   width: min(320px, 80vw);
   display: grid;
-  gap: 4px;
-  padding: 10px 12px;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
   background: var(--surface);
   border: 1px solid var(--pencil);
   border-left: 4px solid var(--pencil);
@@ -34,5 +34,10 @@
 .dx-viva-right .dx-viva-card { right: 0; }
 .dx-viva-left .dx-viva-card { left: 0; }
 .dx-viva-card b { font: 700 11px var(--font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--pencil-text); }
-.dx-viva-row { display: flex; justify-content: flex-end; margin: 2px 0 6px; }
+.dx-viva-row { display: flex; justify-content: flex-end; margin: 2px 0 var(--space-1); }
 .dx-viva-row.is-left { justify-content: flex-start; }
+
+/* In a panel, the note sits above the panel's own label with room for the
+   pencil mark in the margin, so it never covers a heading or gets clipped. */
+.dx-viva-corner { margin: 0 0 var(--space-1) var(--space-3); justify-content: flex-start; }
+.dx-viva-corner .dx-viva { max-width: calc(100% - var(--space-3)); }

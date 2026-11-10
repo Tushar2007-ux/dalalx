@@ -10,7 +10,7 @@ import { useMarket } from '../store/market'
 import { BotsSection } from './BotsSection'
 import { bandOf, checkTicket, outcomeToast } from './ticket'
 
-const italic = { margin: 0, fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14, color: 'var(--ink-muted)' } as const
+const italic = { margin: 0, fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 'var(--text-body)', color: 'var(--ink-muted)' } as const
 
 /** Right column: the order ticket (with a confirm step) and the trader's own working orders. */
 export function TicketPanel() {
@@ -34,22 +34,22 @@ export function TicketPanel() {
 
 function ClosedTicket() {
   return (
-    <div style={{ display: 'grid', gap: 10 }}>
+    <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
       <SideToggle value="buy" disabled />
       <OrderTypeToggle value="limit" disabled showHint={false} />
       <Button fullWidth size="lg" disabled>Market closed · exchange offline</Button>
-      <p style={italic}>Orders reopen as soon as the exchange answers again.</p>
+      <p className="dx-deck">Orders reopen as soon as the exchange answers again.</p>
     </div>
   )
 }
 
 function HaltedTicket({ symbol }: { symbol: string }) {
   return (
-    <div style={{ display: 'grid', gap: 10 }}>
+    <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
       <SideToggle value="buy" disabled />
       <OrderTypeToggle value="limit" disabled showHint={false} />
       <Button fullWidth size="lg" disabled>Order entry paused · {symbol} halted</Button>
-      <p style={italic}>New orders are refused until the halt ends. Your resting orders stay in the book, and you can still cancel them below.</p>
+      <p className="dx-deck">New orders are refused until the halt ends. Your resting orders stay in the book, and you can still cancel them below.</p>
     </div>
   )
 }
@@ -125,12 +125,12 @@ function Ticket({ symbol, auction = false }: { symbol: string; auction?: boolean
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 12, position: 'relative' }}
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: 'var(--space-3)', position: 'relative' }}
       onKeyDown={(e) => { if (e.key === 'Enter' && check.order && !confirm) setConfirm(check.order) }}>
       <SideToggle value={side} onChange={setSide} />
       <OrderTypeToggle value={auction ? 'limit' : type.toLowerCase()} onChange={(v) => setType(v.toUpperCase() as OrderType)}
         options={auction ? AUCTION_ONLY : undefined} />
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 'var(--space-2)' }}>
         <PriceInput label="Limit price" prefix="₹" value={type === 'MARKET' ? 'Market' : priceText} onChange={(v) => { typed.current = true; setPriceText(v) }}
           disabled={type === 'MARKET'} inputMode="decimal"
           error={type !== 'MARKET' && check.error && !check.error.startsWith('Quantity') ? check.error : undefined}
@@ -138,9 +138,9 @@ function Ticket({ symbol, auction = false }: { symbol: string; auction?: boolean
         <PriceInput label="Quantity" suffix="qty" value={qtyText} onChange={setQtyText} inputMode="numeric"
           error={check.error?.startsWith('Quantity') ? check.error : undefined} hint="Lot size 1" />
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--ink-muted)', borderTop: '1px solid var(--rule)', paddingTop: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-small)', color: 'var(--ink-muted)', borderTop: '1px solid var(--rule)', paddingTop: 'var(--space-2)' }}>
         <span>Order value{type === 'MARKET' ? ' (est.)' : ''}</span>
-        <span className="dx-num" style={{ color: 'var(--ink)', fontSize: 13 }}>₹{formatPaise(estimate)}</span>
+        <span className="dx-num" style={{ color: 'var(--ink)', fontSize: 'var(--text-ui)' }}>₹{formatPaise(estimate)}</span>
       </div>
       <Button variant={side === 'sell' ? 'danger' : 'primary'} fullWidth size="lg" kbd="↵"
         disabled={!check.order || sending} loading={sending} onClick={() => check.order && setConfirm(check.order)}>
@@ -171,7 +171,7 @@ function XRaySwitch() {
   const xray = useMarket((s) => s.xray)
   const setXray = useMarket((s) => s.setXray)
   return (
-    <div style={{ marginTop: 12, display: 'grid', gap: 6 }}>
+    <div style={{ marginTop: 'var(--space-3)', display: 'grid', gap: 'var(--space-1)' }}>
       <XRayToggle on={xray} onChange={setXray} />
       {xray && <MarginNote tone="ink" side="below">
         Each book level now shows the stamp of the trader behind it. <a href="#/xray">See how your last order was matched →</a>
@@ -186,7 +186,7 @@ function SurveillanceSection() {
   const open = cases.filter((c) => c.status === 'OPEN')
   const latest = open[0]
   return (
-    <div style={{ marginTop: 16 }}>
+    <div style={{ marginTop: 'var(--space-4)' }}>
       <SectionLabel meta={open.length ? <span style={{ color: 'var(--pencil-text)' }}>◆ {open.length} open</span> : 'All quiet'}>Surveillance</SectionLabel>
       {latest
         ? <div style={{ margin: '6px 0 4px' }}>
@@ -195,7 +195,7 @@ function SurveillanceSection() {
               {latest.summary}. <a href="#/surveillance">Open the case file →</a>
             </AlertNotice>
           </div>
-        : <p style={{ ...italic, fontSize: 13, margin: '6px 0' }}>The Inspector reads every line of the tape. Nothing to report.</p>}
+        : <p style={{ ...italic, fontSize: 'var(--text-ui)', margin: '6px 0' }}>The Inspector reads every line of the tape. Nothing to report.</p>}
     </div>
   )
 }
@@ -219,11 +219,11 @@ function YourOrders() {
   }
 
   return (
-    <div style={{ marginTop: 16 }}>
+    <div style={{ marginTop: 'var(--space-4)' }}>
       <SectionLabel count={working.length} meta="Resting in the book">Your Orders</SectionLabel>
-      {working.length === 0 && <p style={{ ...italic, fontSize: 13, margin: '6px 0' }}>Nothing resting. Limit orders that don&apos;t fill at once will wait here.</p>}
+      {working.length === 0 && <p style={{ ...italic, fontSize: 'var(--text-ui)', margin: '6px 0' }}>Nothing resting. Limit orders that don&apos;t fill at once will wait here.</p>}
       {working.map((o) => (
-        <div key={o.id} className="dx-num" style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 8, alignItems: 'center', padding: '4px 0', borderBottom: '1px solid var(--rule)', fontSize: 12 }}>
+        <div key={o.id} className="dx-num" style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 'var(--space-2)', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid var(--rule)', fontSize: 'var(--text-small)' }}>
           <span style={{ color: o.side === 'BUY' ? 'var(--buy)' : 'var(--sell)', fontWeight: 600 }}>{o.side === 'BUY' ? '▲' : '▼'} {o.symbol}</span>
           <span>{formatQty(o.remainingQty)}/{formatQty(o.originalQty)} @ ₹{formatPaise(o.limitPrice)}</span>
           <Button size="sm" variant="ghost" onClick={() => void cancel(o.id)}>Cancel</Button>

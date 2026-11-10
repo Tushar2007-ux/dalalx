@@ -4,7 +4,7 @@ import { timelineOf } from './timeline'
 
 const base: Case = {
   id: 'SV-0001', ruleId: 'spoofing', ruleName: 'Spoofing', severity: 'CRITICAL', traderId: 'SPOOFER', symbol: 'RELIANCE',
-  openedAt: '2026-11-04T09:15:30Z', summary: '', figures: {}, notes: ['a', 'b'], flagged: [1], status: 'OPEN',
+  openedAt: '2026-11-04T09:15:30Z', lastSeenAt: '2026-01-01T04:00:00Z', incidents: 1, summary: '', figures: {}, notes: ['a', 'b'], flagged: [1], status: 'OPEN',
   evidence: [
     { orderId: 1, traderId: 'SPOOFER', symbol: 'RELIANCE', side: 'BUY', price: 245000, qty: 9800, placedAt: '2026-11-04T09:15:15Z', endedAt: '2026-11-04T09:15:15.300Z', outcome: 'CANCELLED', filled: 0 },
     { orderId: 2, traderId: 'SPOOFER', symbol: 'RELIANCE', side: 'SELL', price: 245500, qty: 50, placedAt: '2026-11-04T09:15:29Z', endedAt: null, outcome: 'LIVE', filled: 0 },

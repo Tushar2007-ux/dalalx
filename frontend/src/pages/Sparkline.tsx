@@ -5,7 +5,7 @@
  */
 export function Sparkline({ values, width = 300, height = 36 }: { values: number[]; width?: number; height?: number }) {
   if (values.length < 2) {
-    return <div style={{ height, fontSize: 11, color: 'var(--ink-muted)', display: 'grid', alignItems: 'center' }}>Gathering P&amp;L…</div>
+    return <div style={{ height, fontSize: 'var(--text-label)', color: 'var(--ink-muted)', display: 'grid', alignItems: 'center' }}>Gathering P&amp;L…</div>
   }
   // Scale to the readings' own range so the trend is visible; show the zero line only if it's in view.
   const lo = Math.min(...values)

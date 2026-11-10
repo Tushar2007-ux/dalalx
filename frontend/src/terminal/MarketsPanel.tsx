@@ -34,26 +34,26 @@ export function MarketsPanel() {
               borderBottom: '1px solid var(--rule)',
               background: x.symbol === selected ? 'var(--surface-sunk)' : 'transparent',
             }}>
-            <span style={{ fontWeight: 600, fontSize: 12.5, letterSpacing: '0.04em' }}>{x.symbol}</span>
+            <span style={{ fontWeight: 600, fontSize: 'var(--text-small)', letterSpacing: '0.04em' }}>{x.symbol}</span>
             <PriceCell value={toRupees(price)} halted={halted} />
-            <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>{phase === 'HALTED' ? '■ Halted · circuit breaker' : phase === 'AUCTION' ? '■ Call auction' : x.name}</span>
+            <span style={{ fontSize: 'var(--text-label)', color: 'var(--ink-muted)' }}>{phase === 'HALTED' ? '■ Halted · circuit breaker' : phase === 'AUCTION' ? '■ Call auction' : x.name}</span>
             <PriceCell value={toRupees(price)} change={toRupees(price - x.referencePrice)}
               changePct={changePct(price, x.referencePrice)} changeOnly size="sm" />
           </button>
         )
       })}
-      <div style={{ marginTop: 14 }}>
+      <div style={{ marginTop: 'var(--space-3)' }}>
         <SectionLabel meta="Newest first">The Wire</SectionLabel>
         <div className="dx-viva-row is-left"><VivaTag note="wire" align="left" /></div>
         {wire.length
           ? <WireColumn items={wire} />
-          : <p style={{ margin: '6px 0', fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 13, color: 'var(--ink-muted)' }}>
+          : <p style={{ margin: '6px 0', fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 'var(--text-ui)', color: 'var(--ink-muted)' }}>
               No news yet. Big moves, block trades and storylines will be printed here.</p>}
       </div>
-      <div style={{ marginTop: 14 }}>
+      <div style={{ marginTop: 'var(--space-3)' }}>
         <SectionLabel under="hair">Market Breadth</SectionLabel>
         <BreadthBar advancing={advancing} declining={declining} unchanged={trading.length - advancing - declining}
-          halted={symbols.length - trading.length} style={{ marginTop: 4 }} />
+          halted={symbols.length - trading.length} style={{ marginTop: 'var(--space-1)' }} />
       </div>
     </RuledPanel>
   )

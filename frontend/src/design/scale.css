@@ -1,0 +1,47 @@
+/**
+ * The scale: every size, gap and duration in DalalX comes from here or from
+ * the four token files beside it. No raw pixel values anywhere else.
+ *
+ * The design export fixes the type, colour, layout and motion tokens. This
+ * file adds only what the later pages (Engine Room, Audience, Big Board,
+ * Portfolio) genuinely needed, and names each one by its job so there is
+ * never a reason to invent another.
+ */
+:root {
+  /* ---- Type: four sizes the export didn't cover, each with one job ---- */
+  --text-micro: 10px;        /* Plex Sans 700, uppercase, 0.12em — the smallest label that is still legible */
+  --text-lead: 17px;         /* Fraunces — standfirst and intro copy, one step above body */
+  --text-figure: 34px;       /* Fraunces 800 — a panel's headline number */
+  --text-figure-lg: 52px;    /* Fraunces 800 — the hero price and the big board */
+
+  /* ---- Motion: three story lengths, on top of the export's UI durations ---- */
+  --dur-slide: 420ms;        /* something moves to a new place: page turn, row re-rank */
+  --dur-beat: 900ms;         /* one beat of attention: a flash, a pulse, a bite */
+  --dur-scene: 1800ms;       /* a small scene plays out: speech bubble, ticket on the belt */
+
+  /* ---- Surfaces: the one card treatment every panel uses ---- */
+  --card-pad: var(--space-3);
+  /* Solid, not translucent: a card's contrast should not depend on what
+     happens to be behind it. */
+  --card-bg: color-mix(in srgb, var(--surface) 70%, var(--paper));
+  --card-border: var(--rule-hair) solid var(--rule);
+  --card-shadow: 0 1px 0 var(--rule), 0 10px 24px -18px color-mix(in srgb, var(--ink) 35%, transparent);
+
+  /* ---- Z-order: one ladder, so nothing ever covers the wrong thing ---- */
+  --z-raised: 5;             /* a tag or badge lifted off its panel */
+  --z-sticky: 20;            /* the section bar */
+  --z-toast: 40;             /* notices */
+  --z-scrim: 60;             /* a card over the page */
+  --z-moment: 80;            /* a big moment */
+  --z-intro: 200;            /* the opening */
+}
+
+/* The person asked for less movement: ambient loops stop, meaning-carrying
+   transitions shorten rather than vanish. Set once, here, for the whole app. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-slide: 1ms;
+    --dur-beat: 1ms;
+    --dur-scene: 1ms;
+  }
+}

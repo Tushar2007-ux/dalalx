@@ -4,6 +4,7 @@ import { MomentOverlay } from './shell/MomentOverlay'
 import { PressIntro } from './shell/PressIntro'
 import { HelpCard } from './shell/HelpCard'
 import { useShortcuts } from './shell/shortcuts'
+import { useSounds } from './shell/useSounds'
 import { useMarket } from './store/market'
 import { AudiencePage } from './audience/AudiencePage'
 import { JoinPage } from './audience/JoinPage'
@@ -28,7 +29,10 @@ export default function App() {
   useAutopilot()
   const route = useRoute()
   const presenter = useMarket((s) => s.presenter)
+  // A big moment gets the room's attention to itself: see .dx-hushed.
+  const moment = useMarket((s) => s.moment)
   useShortcuts(route !== 'join')
+  useSounds()
 
   useEffect(() => {
     if (route === 'demo') useDemo.getState().start()
@@ -37,7 +41,7 @@ export default function App() {
   return (
     <>
       {/* Each page turns in like a newspaper page; keyed by route so the animation replays on every visit. */}
-      <div key={route} className={`dx-page-turn${presenter && route !== 'join' ? ' dx-presenter' : ''}`}>
+      <div key={route} className={`dx-page-turn${presenter && route !== 'join' ? ' dx-presenter' : ''}${moment ? ' dx-hushed' : ''}`}>
         <Page route={route} />
       </div>
       <MomentOverlay />

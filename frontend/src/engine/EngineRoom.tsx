@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { SectionLabel } from '../design'
+import { Stat } from '../ui'
 import { api } from '../lib/api'
 import { COMMAND_SOURCES, type CommandSource, type RushResult, type WorkerLoad } from '../lib/types'
 import { Shell } from '../shell/Shell'
@@ -49,7 +50,10 @@ export function EngineRoom() {
 
   const workers = engine?.workers ?? []
   const total = workers.reduce((a, w) => a + w.perSecond, 0)
-  const busy = workers.filter((w) => threadMood(w) === 'Pressing').length
+  // A worker counts as running if it handled anything in the last sample. Asking
+  // whether it happened to be mid-command at the instant we looked would read 0
+  // on a thread doing hundreds of commands a second, each of them microseconds long.
+  const busy = workers.filter((w) => w.perSecond > 0 || w.pending > 0).length
   const totalProcessed = workers.reduce((a, w) => a + w.processed, 0)
 
   const startRush = async () => {
@@ -92,7 +96,7 @@ export function EngineRoom() {
         ))}
       </div>
 
-      <div className="dx-viva-row is-left" style={{ marginTop: 8 }}><VivaTag note="engine" align="left" /></div>
+      <div className="dx-viva-row is-left" style={{ marginTop: 'var(--space-2)' }}><VivaTag note="engine" align="left" /></div>
       <section className="dx-factory" aria-label="Worker threads">
         {workers.length === 0 && <p className="dx-engine-empty">Waiting for the first reading from the presses…</p>}
         {workers.map((w) => <Lane key={w.symbol} worker={w} peak={peak[w.symbol] ?? w.pending} />)}
@@ -113,14 +117,6 @@ export function EngineRoom() {
   )
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="dx-engine-stat">
-      <span className="dx-num">{value}</span>
-      <small>{label}</small>
-    </div>
-  )
-}
 
 function Explainer({ title, code, children }: { title: string; code: string; children: React.ReactNode }) {
   return (

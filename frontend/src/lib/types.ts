@@ -246,6 +246,10 @@ export interface Case {
   traderId: string
   symbol: string
   openedAt: string
+  /** When this investigation last saw an incident. */
+  lastSeenAt: string
+  /** How many times this trader has tripped this rule in this stock. */
+  incidents: number
   summary: string
   figures: Record<string, string>
   notes: string[]

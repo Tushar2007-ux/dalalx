@@ -105,15 +105,40 @@ public final class SurveillanceDesk implements EngineListener {
         return opened;
     }
 
+    /**
+     * Files a finding.
+     *
+     * <p>A real surveillance desk runs <em>one</em> investigation per trader per
+     * pattern per stock: a spoofer who spoofs forty times is one case with forty
+     * incidents, not forty cases. So a finding that matches an open case folds
+     * into it — the count goes up and the newest evidence replaces the old —
+     * and only a genuinely new pattern opens a case.
+     */
     private Case open(SurveillanceRule rule, Finding f, Instant at) {
         List<OrderLife> evidence = log.of(f.traderId(), f.symbol(), at.minus(Duration.ofSeconds(EVIDENCE_SECONDS)));
-        Case c = new Case("SV-%04d".formatted(++nextCase), rule.id(), rule.name(), rule.severity(), f.traderId(),
-                f.symbol(), at, f.summary(), f.figures(), List.of(f.notes()), evidence, List.copyOf(f.flagged()), Status.OPEN);
+        Case existing = openCaseFor(rule.id(), f.traderId(), f.symbol());
+        if (existing != null) {
+            Case updated = existing.withIncident(at, f.summary(), f.figures(), List.of(f.notes()),
+                    evidence, List.copyOf(f.flagged()));
+            cases.remove(existing);
+            cases.addFirst(updated);
+            return updated;
+        }
+        Case c = Case.opened("SV-%04d".formatted(++nextCase), rule, f.traderId(), f.symbol(), at,
+                f.summary(), f.figures(), List.of(f.notes()), evidence, List.copyOf(f.flagged()));
         cases.addFirst(c);
         if (cases.size() > MAX_CASES) {
             cases.removeLast();
         }
         return c;
+    }
+
+    /** @return the open case for this rule, trader and stock, or {@code null} if there isn't one */
+    private Case openCaseFor(String ruleId, String traderId, String symbol) {
+        return cases.stream()
+                .filter(c -> c.status() == Status.OPEN && c.ruleId().equals(ruleId)
+                        && c.traderId().equals(traderId) && c.symbol().equals(symbol))
+                .findFirst().orElse(null);
     }
 
     /** @return every case, newest first */

@@ -13,7 +13,6 @@ import type { Headline } from '../terminal/headline'
 import { timelineOf } from './timeline'
 import { VivaTag } from '../viva/VivaTag'
 
-const label = { fontFamily: 'var(--font-ui)', fontSize: 'var(--text-label)', fontWeight: 700, letterSpacing: 'var(--tracking-label)', textTransform: 'uppercase' } as const
 const SEVERITY = { CRITICAL: 'critical', WARNING: 'warning', NOTICE: 'notice' } as const
 const NAMES: Record<string, string> = { MUNIM: 'The Munim', MOMENTUM: 'Momentum Chaser', PANIC: 'Panic Seller', WHALE: 'The Whale', SPOOFER: 'The Spoofer', YOU: 'You' }
 
@@ -65,33 +64,34 @@ export function Investigations() {
 
   return (
     <Shell route="surveillance" headline={headline} page={5} section="Investigations">
-      <div className="dx-viva-row is-left" style={{ marginTop: 12 }}><VivaTag note="surveillance" align="left" /></div>
-      <header style={{ display: 'flex', alignItems: 'center', gap: 16, margin: '16px 0 12px' }}>
+      <div className="dx-viva-row is-left" style={{ marginTop: 'var(--space-3)' }}><VivaTag note="surveillance" align="left" /></div>
+      <header style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', margin: '16px 0 12px' }}>
         <Portrait bot="inspector" size={76} />
         <div>
-          <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 40, lineHeight: 1, letterSpacing: '-0.01em' }}>Investigations</h1>
-          <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 15, marginTop: 4 }}>
-            Filed by the Surveillance Inspector · <span className="dx-num" style={{ fontStyle: 'normal', fontSize: 13 }}>{open}</span> open {open === 1 ? 'case' : 'cases'}
+          <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-num-xl)', lineHeight: 1, letterSpacing: '-0.01em' }}>Investigations</h1>
+          <div style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 'var(--text-deck)', marginTop: 'var(--space-1)' }}>
+            Filed by the Surveillance Inspector · <span className="dx-num" style={{ fontStyle: 'normal', fontSize: 'var(--text-ui)' }}>{open}</span> open {open === 1 ? 'case' : 'cases'}
           </div>
         </div>
       </header>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', rowGap: 24 }}>
-        <section style={{ flex: '1 1 320px', minWidth: 0, paddingRight: 14 }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', rowGap: 'var(--space-5)' }}>
+        <section style={{ flex: '1 1 320px', minWidth: 0, paddingRight: 'var(--space-3)' }}>
           <SectionLabel count={cases.length} meta="Newest first">Alert Feed</SectionLabel>
           {cases.length === 0 && <p style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', color: 'var(--ink-muted)' }}>All quiet. The Inspector reads every line of the tape; cases appear here the moment a rule trips.</p>}
-          <div style={{ display: 'grid', gap: 10, marginTop: 6, maxHeight: 640, overflowY: 'auto', paddingRight: 4 }}>
+          <div style={{ display: 'grid', gap: 'var(--space-2)', marginTop: 'var(--space-1)', maxHeight: 640, overflowY: 'auto', paddingRight: 'var(--space-1)' }}>
             {cases.map((c) => (
               <div key={c.id} role="button" tabIndex={0} aria-pressed={c.id === selected?.id} onClick={() => setSelectedId(c.id)}
                 onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setSelectedId(c.id)} className="dx-focus"
                 style={{ cursor: 'pointer', outline: c.id === selected?.id ? '2px solid var(--rule-strong)' : 'none', outlineOffset: 3, opacity: c.status === 'DISMISSED' ? 0.6 : 1 }}>
                 <AlertNotice severity={c.status === 'OPEN' ? SEVERITY[c.severity] : 'info'} title={`${c.ruleName} · ${c.symbol}`}
-                  reference={c.id + (c.status !== 'OPEN' ? ` · ${c.status === 'SUSPENDED' ? 'Suspended' : 'Dismissed'}` : '')} time={clockTime(c.openedAt).slice(0, 8)}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                  reference={c.id + (c.incidents > 1 ? ` · ${c.incidents} incidents` : '') + (c.status !== 'OPEN' ? ` · ${c.status === 'SUSPENDED' ? 'Suspended' : 'Dismissed'}` : '')}
+                  time={clockTime(c.lastSeenAt ?? c.openedAt).slice(0, 8)}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 2 }}>
                     <Monogram bot={stampOf(c.traderId)} size={24} />
                     <span style={{ fontWeight: 600 }}>{nameOf(c.traderId)}</span>
                   </div>
-                  <div className="dx-num" style={{ fontSize: 12, marginTop: 5 }}>{c.summary}</div>
+                  <div className="dx-num" style={{ fontSize: 'var(--text-small)', marginTop: 'var(--space-1)' }}>{c.summary}</div>
                 </AlertNotice>
               </div>
             ))}
@@ -103,23 +103,23 @@ export function Investigations() {
         </section>
       </div>
 
-      <div style={{ marginTop: 28 }}>
+      <div style={{ marginTop: 'var(--space-5)' }}>
         <SectionLabel rule="double" meta="What the Inspector looks for">Rules</SectionLabel>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: '12px 24px', marginTop: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: '12px 24px', marginTop: 'var(--space-2)' }}>
           {rules.map((r) => (
-            <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 8, alignItems: 'center', borderTop: '1px solid var(--rule)', paddingTop: 8 }}>
+            <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 'var(--space-2)', alignItems: 'center', borderTop: '1px solid var(--rule)', paddingTop: 'var(--space-2)' }}>
               <div>
                 <div style={{ fontWeight: 700 }}>{r.name}</div>
-                <div className="dx-num" style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{r.threshold}</div>
+                <div className="dx-num" style={{ fontSize: 'var(--text-small)', color: 'var(--ink-muted)' }}>{r.threshold}</div>
               </div>
               <RuleSwitch on={r.enabled} label={r.name} onChange={(on) => api.setRule(r.id, on).then(setRules).catch(fail('Could not change the rule'))} />
             </div>
           ))}
         </div>
-        {suspended.length > 0 && <div style={{ marginTop: 18 }}>
+        {suspended.length > 0 && <div style={{ marginTop: 'var(--space-4)' }}>
           <SectionLabel under="hair">Suspended traders</SectionLabel>
           {suspended.map((t) => (
-            <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
+            <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: '6px 0' }}>
               <Monogram bot={stampOf(t)} size={24} /><span style={{ fontWeight: 600 }}>{nameOf(t)}</span>
               <Button size="sm" variant="secondary" onClick={() => void reinstate(t)}>Reinstate</Button>
             </div>
@@ -133,7 +133,7 @@ export function Investigations() {
 function RuleSwitch({ on, onChange, label: name }: { on: boolean; onChange: (on: boolean) => void; label: string }) {
   return (
     <button type="button" role="switch" aria-checked={on} aria-label={name} onClick={() => onChange(!on)} className="dx-focus"
-      style={{ appearance: 'none', borderRadius: 0, cursor: 'pointer', display: 'grid', gridTemplateColumns: '1fr 1fr', border: '1px solid var(--rule-strong)', padding: 0, height: 24, width: 74, background: 'transparent', fontFamily: 'var(--font-ui)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em' }}>
+      style={{ appearance: 'none', borderRadius: 0, cursor: 'pointer', display: 'grid', gridTemplateColumns: '1fr 1fr', border: '1px solid var(--rule-strong)', padding: 0, height: 24, width: 74, background: 'transparent', fontFamily: 'var(--font-ui)', fontSize: 'var(--text-label)', fontWeight: 700, letterSpacing: '0.08em' }}>
       <span style={{ display: 'grid', placeItems: 'center', background: on ? 'var(--ink)' : 'transparent', color: on ? 'var(--ink-inverse)' : 'var(--ink-muted)' }}>ON</span>
       <span style={{ display: 'grid', placeItems: 'center', background: on ? 'transparent' : 'var(--ink)', color: on ? 'var(--ink-muted)' : 'var(--ink-inverse)' }}>OFF</span>
     </button>
@@ -145,29 +145,32 @@ function CaseFile({ c, onRule }: { c: Case; onRule: (action: 'dismiss' | 'suspen
   return (
     <>
       <SectionLabel meta={`${c.id} · last 30 seconds`}>Case File</SectionLabel>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 16, margin: '6px 0 10px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 'var(--space-4)', margin: '6px 0 10px' }}>
         <div>
-          <div style={{ ...label, color: c.status === 'OPEN' ? 'var(--stamp)' : 'var(--ink-muted)' }}>{c.ruleName} · {c.symbol}</div>
-          <h2 style={{ margin: '3px 0 0', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 28, lineHeight: 1.1 }}>{nameOf(c.traderId)}: {c.summary.split(' · ')[0]}</h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}><Monogram bot={stampOf(c.traderId)} size={28} /><span style={{ fontSize: 13 }}>Trader {c.traderId} · opened {clockTime(c.openedAt).slice(0, 8)}</span></div>
+          <div className="dx-label" style={{ color: c.status === 'OPEN' ? 'var(--stamp)' : 'var(--ink-muted)' }}>{c.ruleName} · {c.symbol}</div>
+          <h2 style={{ margin: '3px 0 0', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-headline)', lineHeight: 1.1 }}>{nameOf(c.traderId)}: {c.summary.split(' · ')[0]}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}><Monogram bot={stampOf(c.traderId)} size={28} /><span style={{ fontSize: 'var(--text-ui)' }}>
+            Trader {c.traderId} · opened {clockTime(c.openedAt).slice(0, 8)}
+            {c.incidents > 1 && <> · <b>{c.incidents} incidents</b>, latest {clockTime(c.lastSeenAt).slice(0, 8)}</>}
+          </span></div>
         </div>
         <RubberStamp key={c.id + c.status} kind="under-investigation" text={stamp} color={c.status === 'DISMISSED' ? 'var(--ink-muted)' : undefined} sub={c.id} size="md" angle={-6} animate backed />
       </div>
-      <dl style={{ margin: '0 0 12px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
+      <dl style={{ margin: '0 0 12px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 'var(--space-3)' }}>
         {Object.entries(c.figures).map(([k, v]) => (
-          <div key={k} style={{ borderTop: '1px solid var(--rule-strong)', paddingTop: 5 }}>
-            <dt style={{ ...label, fontSize: 10, fontWeight: 600, color: 'var(--ink-muted)' }}>{k}</dt>
-            <dd className="dx-num" style={{ margin: '2px 0 0', fontSize: 22, fontWeight: 500 }}>{v}</dd>
+          <div key={k} style={{ borderTop: '1px solid var(--rule-strong)', paddingTop: 'var(--space-1)' }}>
+            <dt className="dx-label" style={{ fontSize: 'var(--text-micro)', fontWeight: 600, color: 'var(--ink-muted)' }}>{k}</dt>
+            <dd className="dx-num" style={{ margin: '2px 0 0', fontSize: 'var(--text-num-lg)', fontWeight: 500 }}>{v}</dd>
           </div>
         ))}
       </dl>
       <div style={{ border: '1px solid var(--rule)', background: 'var(--surface)', padding: '10px 12px 8px' }}><EvidenceTimeline c={c} /></div>
       <Legend />
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: 16, alignItems: 'end', marginTop: 14, borderTop: '3px double var(--rule-strong)', paddingTop: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: 'var(--space-4)', alignItems: 'end', marginTop: 'var(--space-3)', borderTop: '3px double var(--rule-strong)', paddingTop: 'var(--space-2)' }}>
         <MarginNote author="Inspector" time={hhmm(new Date(c.openedAt))} side="below">
           {c.status === 'SUSPENDED' ? 'Suspended. Resting orders cancelled on every stock.' : c.status === 'DISMISSED' ? 'Dismissed after review. No further action.' : c.notes.join(' ')}
         </MarginNote>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
           {c.status === 'OPEN' && <>
             <Button variant="secondary" onClick={() => onRule('dismiss')}>Dismiss</Button>
             <Button variant="danger" onClick={() => onRule('suspend')}>Suspend {nameOf(c.traderId)}</Button>
@@ -220,9 +223,9 @@ function EvidenceTimeline({ c }: { c: Case }) {
 }
 
 function Legend() {
-  const item = (mark: ReactNode, text: string) => <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>{mark}<span>{text}</span></span>
+  const item = (mark: ReactNode, text: string) => <span style={{ display: 'inline-flex', gap: 'var(--space-1)', alignItems: 'center' }}>{mark}<span>{text}</span></span>
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, fontSize: 12, color: 'var(--ink-muted)', marginTop: 8 }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)', fontSize: 'var(--text-small)', color: 'var(--ink-muted)', marginTop: 'var(--space-2)' }}>
       {item(<svg width="10" height="10"><rect x="2" y="2" width="6" height="6" fill="none" stroke="var(--ink)" /></svg>, 'Placed')}
       {item(<span style={{ color: 'var(--ink)' }}>✕</span>, 'Cancelled')}
       {item(<svg width="10" height="10"><circle cx="5" cy="5" r="3.2" fill="var(--ink)" /></svg>, 'Filled')}

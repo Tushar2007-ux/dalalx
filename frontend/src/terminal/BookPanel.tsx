@@ -11,7 +11,7 @@ const GONE_MS = 650
 
 interface Ghost { side: 'bid' | 'ask'; level: Level; until: number }
 
-const header = { fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--ink-muted)' }
+const header = { fontFamily: 'var(--font-mono)', fontSize: 'var(--text-micro)', color: 'var(--ink-muted)' }
 
 /**
  * Right-centre column: ten levels each side. Asks are printed highest first so
@@ -84,11 +84,11 @@ export function BookPanel() {
       state={!book ? 'loading' : bids.length + asks.length ? 'ready' : 'empty'}
       emptyText="The book is empty. Your limit order would be the first line."
       style={{ minWidth: 0 }}>
-      <div style={{ ...header, display: 'grid', gridTemplateColumns: '14px minmax(0,1fr) minmax(0,1fr) 36px 96px', columnGap: 10, padding: '2px 6px 2px 4px' }}>
+      <div style={{ ...header, display: 'grid', gridTemplateColumns: '14px minmax(0,1fr) minmax(0,1fr) 36px 96px', columnGap: 'var(--space-2)', padding: '2px 6px 2px 4px' }}>
         <span /><span style={{ textAlign: 'right' }}>▼ Ask</span><span style={{ textAlign: 'right' }}>Qty</span><span style={{ textAlign: 'right' }}>{xray ? 'Bot' : 'Ord'}</span><span>Depth</span>
       </div>
       {shownAsks.map(row('ask', true))}
-      <div className="dx-num" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--ink-muted)', padding: '4px 6px', borderBottom: '1px solid var(--rule-strong)', borderTop: '1px solid var(--rule-strong)' }}>
+      <div className="dx-num" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-label)', color: 'var(--ink-muted)', padding: '4px 6px', borderBottom: '1px solid var(--rule-strong)', borderTop: '1px solid var(--rule-strong)' }}>
         <span>Last {last !== undefined ? '₹' + formatPaise(last) : '—'}</span>
         <span>Spread {spread !== undefined ? '₹' + formatPaise(spread) : '—'}</span>
       </div>

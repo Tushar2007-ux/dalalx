@@ -94,7 +94,7 @@ function Tile({ stock, trades }: { stock: SymbolInfo; trades: Trade[] }) {
         <strong>{stock.symbol}</strong>
         {status !== 'OPEN' && <span className="dx-tile-badge">{status === 'HALTED' ? 'Halted' : 'Auction'}</span>}
       </div>
-      <div className="dx-tile-name">{stock.name.replace(' (simulated)', '')}</div>
+      <div className="dx-tile-name">{stock.name}</div>
       <div key={lastPrice} className={`dx-tile-price dx-num ${pct >= 0 ? 'dx-anim-ink-up' : 'dx-anim-ink-down'}`}>₹{formatPaise(lastPrice)}</div>
       <div className="dx-tile-change dx-num">{pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%<span>{pct >= 0 ? '+' : '−'}₹{formatPaise(Math.abs(lastPrice - stock.referencePrice))}</span></div>
       <svg className="dx-tile-spark" viewBox="0 0 200 50" preserveAspectRatio="none" aria-hidden="true">

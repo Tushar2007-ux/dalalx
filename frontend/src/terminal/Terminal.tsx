@@ -11,6 +11,7 @@ import { bannerHeadline } from './headline'
 import { MarketsPanel } from './MarketsPanel'
 import { TicketPanel } from './TicketPanel'
 import { PriceHero } from './PriceHero'
+import { PortfolioPanel } from './PortfolioPanel'
 import { VivaTag } from '../viva/VivaTag'
 
 /**
@@ -59,7 +60,7 @@ export function Terminal() {
           <div className="dx-floor-markets dx-card"><Tag note="markets" /><MarketsPanel /></div>
           <div className="dx-floor-chart dx-card"><Tag note="chart" /><ChartPanel /></div>
           <div className="dx-floor-book dx-card"><Tag note="book" /><BookPanel /></div>
-          <div className="dx-floor-ticket dx-card"><Tag note="ticket" /><TicketPanel /></div>
+          <div className="dx-floor-ticket dx-card"><Tag note="ticket" /><TicketPanel /><PortfolioPanel /></div>
         </div>
       </div>
     </Shell>

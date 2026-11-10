@@ -3,7 +3,6 @@ import { changePct, formatPaise, toRupees } from '../lib/format'
 import { Shell } from '../shell/Shell'
 import { useMarket } from '../store/market'
 
-const label = { fontFamily: 'var(--font-ui)', fontSize: 'var(--text-label)', fontWeight: 700, letterSpacing: 'var(--tracking-label)', textTransform: 'uppercase' } as const
 
 const STORIES = [
   { title: 'Matching Engine', kick: 'Page 3', href: '#/xray', art: 'book', sum: 'Every order meets the book in price-time priority. Watch each fill happen, step by step, in X-Ray.' },
@@ -21,8 +20,8 @@ const STEPS = [
 function Jump({ href, page, children }: { href: string; page: number; children: string }) {
   return (
     <a href={href} className="dx-focus" style={{ display: 'inline-grid', gap: 2, textDecoration: 'none', color: 'var(--ink)', borderTop: '2px solid var(--rule-strong)', borderBottom: '1px solid var(--rule-strong)', padding: '8px 2px 7px', minWidth: 220 }}>
-      <span style={{ whiteSpace: 'nowrap', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1.1 }}>{children} →</span>
-      <span style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 13, color: 'var(--ink-muted)' }}>Continued on page {page}</span>
+      <span style={{ whiteSpace: 'nowrap', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-num-lg)', lineHeight: 1.1 }}>{children} →</span>
+      <span style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 'var(--text-ui)', color: 'var(--ink-muted)' }}>Continued on page {page}</span>
     </a>
   )
 }
@@ -34,10 +33,10 @@ function MiniBook() {
   const bids = (book?.bids ?? []).slice(0, 2)
   const max = Math.max(1, ...asks.map((l) => l.totalQty), ...bids.map((l) => l.totalQty))
   const row = (side: 'bid' | 'ask') => (l: { price: number; totalQty: number }) => (
-    <div key={side + l.price} style={{ display: 'grid', gridTemplateColumns: '14px minmax(0,1fr) minmax(0,1fr) 64px', columnGap: 10, alignItems: 'center', height: 24, borderBottom: '1px solid var(--rule)' }}>
-      <span aria-hidden="true" style={{ fontSize: 9, color: side === 'bid' ? 'var(--buy)' : 'var(--sell)' }}>{side === 'bid' ? '▲' : '▼'}</span>
-      <span className="dx-num" style={{ textAlign: 'right', fontSize: 13, color: side === 'bid' ? 'var(--buy)' : 'var(--sell)' }}>{formatPaise(l.price)}</span>
-      <span className="dx-num" style={{ textAlign: 'right', fontSize: 13 }}>{l.totalQty.toLocaleString('en-IN')}</span>
+    <div key={side + l.price} style={{ display: 'grid', gridTemplateColumns: '14px minmax(0,1fr) minmax(0,1fr) 64px', columnGap: 'var(--space-2)', alignItems: 'center', height: 24, borderBottom: '1px solid var(--rule)' }}>
+      <span aria-hidden="true" style={{ fontSize: 'var(--text-micro)', color: side === 'bid' ? 'var(--buy)' : 'var(--sell)' }}>{side === 'bid' ? '▲' : '▼'}</span>
+      <span className="dx-num" style={{ textAlign: 'right', fontSize: 'var(--text-ui)', color: side === 'bid' ? 'var(--buy)' : 'var(--sell)' }}>{formatPaise(l.price)}</span>
+      <span className="dx-num" style={{ textAlign: 'right', fontSize: 'var(--text-ui)' }}>{l.totalQty.toLocaleString('en-IN')}</span>
       <span aria-hidden="true" style={{ height: 12, position: 'relative', borderLeft: '1px solid var(--rule)' }}>
         <span className="dx-hatch" style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${(l.totalQty / max) * 100}%`, color: side === 'bid' ? 'var(--buy)' : 'var(--sell)' }} />
       </span>
@@ -46,7 +45,7 @@ function MiniBook() {
   return (
     <div style={{ display: 'grid', alignContent: 'center', height: 150, padding: '0 4px' }}>
       {asks.map(row('ask'))}
-      <div className="dx-num" style={{ fontSize: 10.5, color: 'var(--ink-muted)', textAlign: 'center', padding: '2px 0' }}>
+      <div className="dx-num" style={{ fontSize: 'var(--text-micro)', color: 'var(--ink-muted)', textAlign: 'center', padding: '2px 0' }}>
         {asks.length && bids.length ? `spread ₹${formatPaise(book!.asks[0].price - bids[0].price)}` : 'RELIANCE · live'}
       </div>
       {bids.map(row('bid'))}
@@ -73,7 +72,7 @@ export function FrontPage() {
   const moves = open.map((x) => (lastPrice[x.symbol] ?? x.referencePrice) - x.referencePrice)
   const advancing = moves.filter((m) => m > 0).length
   const declining = moves.filter((m) => m < 0).length
-  const colRule = { borderTop: '1px solid var(--rule)', paddingTop: 10 }
+  const colRule = { borderTop: '1px solid var(--rule)', paddingTop: 'var(--space-2)' }
 
   return (
     <Shell route="front" full page={1} section="Front Page">
@@ -82,26 +81,26 @@ export function FrontPage() {
           WATCH A STOCK MARKET THINK
         </h1>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '24px 32px', borderTop: '3px double var(--rule-strong)', paddingTop: 18 }}>
-          <div style={{ display: 'grid', gap: 18, alignContent: 'start', ...colRule }}>
-            <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 24, lineHeight: 1.3 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '24px 32px', borderTop: '3px double var(--rule-strong)', paddingTop: 'var(--space-4)' }}>
+          <div style={{ display: 'grid', gap: 'var(--space-4)', alignContent: 'start', ...colRule }}>
+            <p style={{ margin: 0, fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 'var(--text-num-lg)', lineHeight: 1.3 }}>
               A live exchange where every order is matched in plain sight, by bots with personalities, under the eye of a surveillance desk.
             </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
               <Jump href="#/floor" page={2}>Open the terminal</Jump>
               <Jump href="#/xray" page={3}>See how matching works</Jump>
             </div>
-            <a href="#/demo" className="dx-focus" style={{ display: 'grid', gridTemplateColumns: 'auto minmax(0,1fr)', gap: 14, alignItems: 'center', textDecoration: 'none', color: 'var(--ink-inverse)', background: 'var(--ink)', padding: '12px 16px' }}>
-              <span aria-hidden="true" style={{ fontSize: 22 }}>▶</span>
+            <a href="#/demo" className="dx-focus" style={{ display: 'grid', gridTemplateColumns: 'auto minmax(0,1fr)', gap: 'var(--space-3)', alignItems: 'center', textDecoration: 'none', color: 'var(--ink-inverse)', background: 'var(--ink)', padding: '12px 16px' }}>
+              <span aria-hidden="true" style={{ fontSize: 'var(--text-num-lg)' }}>▶</span>
               <span>
-                <span style={{ ...label, display: 'block', opacity: 0.9 }}>Demo autopilot</span>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 18 }}>Read today’s story: a guided tour of about four minutes</span>
+                <span className="dx-label" style={{ display: 'block', opacity: 0.9 }}>Demo autopilot</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 'var(--text-lead)' }}>Read today’s story: a guided tour of about four minutes</span>
               </span>
             </a>
           </div>
           <figure style={{ margin: 0, ...colRule }}>
             <Portrait bot="munim" size={300} style={{ width: '100%', height: 'auto', aspectRatio: '1', maxWidth: 360 }} />
-            <figcaption style={{ marginTop: 8, fontSize: 12.5, color: 'var(--ink-muted)', borderTop: '1px solid var(--rule)', paddingTop: 6 }}>
+            <figcaption style={{ marginTop: 'var(--space-2)', fontSize: 'var(--text-small)', color: 'var(--ink-muted)', borderTop: '1px solid var(--rule)', paddingTop: 'var(--space-1)' }}>
               <strong style={{ color: 'var(--ink)' }}>The Munim</strong>, the market maker, has quoted both sides of every stock since the opening bell.
             </figcaption>
           </figure>
@@ -112,49 +111,49 @@ export function FrontPage() {
               const halted = (status[x.symbol]?.phase ?? 'OPEN') !== 'OPEN'
               return (
                 <a key={x.symbol} href="#/floor" onClick={() => useMarket.getState().select(x.symbol)}
-                  style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto auto', gap: 12, alignItems: 'baseline', padding: '7px 0', borderBottom: '1px solid var(--rule)', textDecoration: 'none', color: 'var(--ink)' }}>
-                  <span style={{ fontWeight: 600, fontSize: 13, letterSpacing: '0.04em', color: halted ? 'var(--ink-muted)' : 'var(--ink)' }}>{x.symbol}</span>
+                  style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto auto', gap: 'var(--space-3)', alignItems: 'baseline', padding: '7px 0', borderBottom: '1px solid var(--rule)', textDecoration: 'none', color: 'var(--ink)' }}>
+                  <span style={{ fontWeight: 600, fontSize: 'var(--text-ui)', letterSpacing: '0.04em', color: halted ? 'var(--ink-muted)' : 'var(--ink)' }}>{x.symbol}</span>
                   <PriceCell value={toRupees(price)} halted={halted} />
                   <PriceCell value={toRupees(price)} change={toRupees(price - x.referencePrice)} changePct={changePct(price, x.referencePrice)} changeOnly size="sm" />
                 </a>
               )
             })}
             <BreadthBar advancing={advancing} declining={declining} unchanged={open.length - advancing - declining}
-              halted={symbols.length - open.length} style={{ marginTop: 12 }} />
+              halted={symbols.length - open.length} style={{ marginTop: 'var(--space-3)' }} />
           </div>
         </div>
 
-        <div style={{ marginTop: 34 }}>
+        <div style={{ marginTop: 'var(--space-6)' }}>
           <SectionLabel rule="double" meta="Four stories inside">In this edition</SectionLabel>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '28px 32px', marginTop: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))', gap: '28px 32px', marginTop: 'var(--space-3)' }}>
             {STORIES.map((e) => (
-              <article key={e.title} style={{ display: 'grid', gap: 8, alignContent: 'start', borderTop: '1px solid var(--rule)', paddingTop: 10 }}>
+              <article key={e.title} style={{ display: 'grid', gap: 'var(--space-2)', alignContent: 'start', borderTop: '1px solid var(--rule)', paddingTop: 'var(--space-2)' }}>
                 <Art kind={e.art} />
-                <span style={{ ...label, color: 'var(--accent)' }}>{e.kick}</span>
-                <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 23, lineHeight: 1.1 }}>{e.title}</h3>
-                <p style={{ margin: 0, fontSize: 14, lineHeight: 1.45 }}>{e.sum}</p>
-                <a href={e.href} style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14 }}>Continued on {e.kick.toLowerCase()} →</a>
+                <span className="dx-label" style={{ color: 'var(--accent)' }}>{e.kick}</span>
+                <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-num-lg)', lineHeight: 1.1 }}>{e.title}</h3>
+                <p style={{ margin: 0, fontSize: 'var(--text-body)', lineHeight: 1.45 }}>{e.sum}</p>
+                <a href={e.href} style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 'var(--text-body)' }}>Continued on {e.kick.toLowerCase()} →</a>
               </article>
             ))}
           </div>
         </div>
 
-        <div style={{ marginTop: 34 }}>
+        <div style={{ marginTop: 'var(--space-6)' }}>
           <SectionLabel rule="double" meta={<a href="#/xray" style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic' }}>See it in X-Ray →</a>}>How your order gets matched</SectionLabel>
           <ol style={{ listStyle: 'none', margin: '12px 0 0', padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))' }}>
             {STEPS.map(([title, body], i) => (
               <li key={title} style={{ display: 'grid', gridTemplateColumns: 'auto minmax(0,1fr)', gap: '4px 12px', padding: '4px 20px 4px 0' }}>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: 40, lineHeight: 1, color: 'var(--pencil-text)', gridRow: 'span 2' }}>{['①', '②', '③'][i]}</span>
-                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 19, lineHeight: 1.2 }}>{title}</span>
-                <span style={{ fontSize: 14, lineHeight: 1.45 }}>{body}</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-num-xl)', lineHeight: 1, color: 'var(--pencil-text)', gridRow: 'span 2' }}>{['①', '②', '③'][i]}</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-title)', lineHeight: 1.2 }}>{title}</span>
+                <span style={{ fontSize: 'var(--text-body)', lineHeight: 1.45 }}>{body}</span>
               </li>
             ))}
           </ol>
         </div>
 
-        <footer style={{ marginTop: 40, display: 'grid', gap: 8, textAlign: 'center', borderTop: '4px double var(--rule-strong)', paddingTop: 12 }}>
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 22 }}>DalalX</span>
-          <span style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14 }}>Printed with Java 21, Spring Boot and React · An IIIT Allahabad OOM project</span>
+        <footer style={{ marginTop: 'var(--space-6)', display: 'grid', gap: 'var(--space-2)', textAlign: 'center', borderTop: '4px double var(--rule-strong)', paddingTop: 'var(--space-3)' }}>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-num-lg)' }}>DalalX</span>
+          <span style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 'var(--text-body)' }}>Printed with Java 21, Spring Boot and React · An IIIT Allahabad OOM project</span>
         </footer>
       </div>
     </Shell>

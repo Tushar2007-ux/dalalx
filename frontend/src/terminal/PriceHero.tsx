@@ -39,7 +39,7 @@ export function PriceHero() {
     <div className="dx-hero" aria-live="off">
       <div className="dx-hero-name">
         <strong>{selected}</strong>
-        <span>{info.name.replace(' (simulated)', '')}</span>
+        <span>{info.name}</span>
       </div>
       <div className="dx-hero-price">
         <Odometer key={tone?.key} value={`₹${formatPaise(shown)}`} tone={tone?.dir} />

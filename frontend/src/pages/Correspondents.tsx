@@ -13,8 +13,7 @@ import { useMarket } from '../store/market'
 import type { Headline } from '../terminal/headline'
 import { VivaTag } from '../viva/VivaTag'
 
-const label = { fontFamily: 'var(--font-ui)', fontSize: 'var(--text-label)', fontWeight: 700, letterSpacing: 'var(--tracking-label)', textTransform: 'uppercase' } as const
-const link = { appearance: 'none', border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 14, color: 'var(--ink)', textDecoration: 'underline', textUnderlineOffset: 3 } as const
+const link = { appearance: 'none', border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 'var(--text-body)', color: 'var(--ink)', textDecoration: 'underline', textUnderlineOffset: 3 } as const
 const italic = { margin: 0, fontFamily: 'var(--font-display)', fontStyle: 'italic' } as const
 
 export const SIZE_WORDS = ['Small lots', 'Modest', 'Standard', 'Large', 'Block size']
@@ -80,32 +79,32 @@ export function Correspondents() {
 
   return (
     <Shell route="correspondents" headline={headline} page={4} section="Correspondents">
-      <div className="dx-viva-row is-left" style={{ marginTop: 12 }}><VivaTag note="bots" align="left" /></div>
-      <div style={{ marginTop: 18, display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+      <div className="dx-viva-row is-left" style={{ marginTop: 'var(--space-3)' }}><VivaTag note="bots" align="left" /></div>
+      <div style={{ marginTop: 'var(--space-4)', display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 40, lineHeight: 1, letterSpacing: '-0.01em' }}>Our Correspondents</h1>
-          <div className="dx-num" style={{ fontSize: 12, color: 'var(--ink-muted)', marginTop: 6 }}>
+          <h1 style={{ margin: 0, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-num-xl)', lineHeight: 1, letterSpacing: '-0.01em' }}>Our Correspondents</h1>
+          <div className="dx-num" style={{ fontSize: 'var(--text-small)', color: 'var(--ink-muted)', marginTop: 'var(--space-1)' }}>
             {bots.length} on staff · {filing} filing · {bots.length - filing} on leave
           </div>
         </div>
         <Button variant="primary" onClick={() => setHiring(true)} disabled={connection === 'offline'}>+ Hire a correspondent</Button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(380px, 100%), 1fr))', gap: '26px 28px', marginTop: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(380px, 100%), 1fr))', gap: '26px 28px', marginTop: 'var(--space-3)' }}>
         {bots.map((b) => <BotCard key={b.id} bot={b} history={pnlHistory[b.id] ?? []} onChange={replace} onFail={fail} onRemoved={load} />)}
         <button type="button" onClick={() => setHiring(true)} className="dx-focus"
-          style={{ appearance: 'none', borderRadius: 0, cursor: 'pointer', border: '1px dashed var(--rule-strong)', borderTop: '2px solid var(--rule-strong)', background: 'transparent', color: 'var(--ink)', minHeight: 260, display: 'grid', placeItems: 'center', textAlign: 'center', padding: 20 }}>
-          <span style={{ display: 'grid', gap: 6 }}>
-            <span style={{ ...label, color: 'var(--ink-muted)' }}>Situations vacant</span>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 24 }}>Hire a correspondent</span>
-            <span style={{ ...italic, fontSize: 14, color: 'var(--ink-muted)' }}>Add a bot with its own trading style →</span>
+          style={{ appearance: 'none', borderRadius: 0, cursor: 'pointer', border: '1px dashed var(--rule-strong)', borderTop: '2px solid var(--rule-strong)', background: 'transparent', color: 'var(--ink)', minHeight: 260, display: 'grid', placeItems: 'center', textAlign: 'center', padding: 'var(--space-4)' }}>
+          <span style={{ display: 'grid', gap: 'var(--space-1)' }}>
+            <span className="dx-label" style={{ color: 'var(--ink-muted)' }}>Situations vacant</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-num-lg)' }}>Hire a correspondent</span>
+            <span style={{ ...italic, fontSize: 'var(--text-body)', color: 'var(--ink-muted)' }}>Add a bot with its own trading style →</span>
           </span>
         </button>
       </div>
 
-      <div style={{ marginTop: 34 }}>
+      <div style={{ marginTop: 'var(--space-6)' }}>
         <SectionLabel rule="double" meta={running ? <span style={{ color: 'var(--stamp)' }}>■ 1 story running</span> : 'One story at a time'}>Today’s Storylines</SectionLabel>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: '24px 28px', marginTop: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: '24px 28px', marginTop: 'var(--space-2)' }}>
           {(stories?.stories ?? []).map((s) => (
             <StoryCard key={s.id} story={s} running={running?.id === s.id} onRun={() => setAsking(s)} onStop={stopStory} />
           ))}
@@ -119,11 +118,11 @@ export function Correspondents() {
           <Button variant="secondary" onClick={() => setAsking(null)}>Not now</Button>
           <Button variant={asking?.tone === 'DOWN' ? 'danger' : 'primary'} onClick={() => asking && runStory(asking)}>Run the story</Button>
         </>}>
-        {asking && <div style={{ display: 'grid', gap: 10 }}>
-          <p style={{ ...italic, fontSize: 15 }}>{asking.deck}</p>
-          <div className="dx-num" style={{ fontSize: 12.5, color: 'var(--ink-muted)' }}>{storyMeta(asking)}</div>
+        {asking && <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
+          <p style={{ ...italic, fontSize: 'var(--text-deck)' }}>{asking.deck}</p>
+          <div className="dx-num" style={{ fontSize: 'var(--text-small)', color: 'var(--ink-muted)' }}>{storyMeta(asking)}</div>
           {running && <AlertNotice severity="warning" title={`This stops ${running.headline.split(':')[0]}`}>Only one storyline runs at a time.</AlertNotice>}
-          <p style={{ margin: 0, fontSize: 13 }}>Your open orders stay in the book. Prices will move quickly; check your limits.</p>
+          <p style={{ margin: 0, fontSize: 'var(--text-ui)' }}>Your open orders stay in the book. Prices will move quickly; check your limits.</p>
         </div>}
       </Modal>
     </Shell>
@@ -150,41 +149,41 @@ function BotCard({ bot, history, onChange, onFail, onRemoved }: {
     api.tuneBot(bot.id, aggressiveness, size).then(onChange).catch(onFail(`Could not retune ${bot.name}`))
 
   return (
-    <article style={{ display: 'grid', gap: 10, alignContent: 'start', borderTop: '2px solid var(--rule-strong)', paddingTop: 12 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '120px minmax(0,1fr)', gap: 14, alignItems: 'start' }}>
+    <article style={{ display: 'grid', gap: 'var(--space-2)', alignContent: 'start', borderTop: '2px solid var(--rule-strong)', paddingTop: 'var(--space-3)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '120px minmax(0,1fr)', gap: 'var(--space-3)', alignItems: 'start' }}>
         <div style={{ opacity: on ? 1 : 0.6 }}>
           {key && key !== 'you'
             ? <Portrait bot={key as BotKey} size={120} />
             : <div style={{ width: 120, height: 120, display: 'grid', placeItems: 'center', border: '1px dashed var(--rule-strong)' }}><Monogram bot={monogramOf(bot.name)} size={56} /></div>}
         </div>
         <div style={{ minWidth: 0 }}>
-          <div style={{ ...label, color: 'var(--ink-muted)' }}>By</div>
-          <h3 style={{ margin: '1px 0 0', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 23, lineHeight: 1.1 }}>{bot.name}</h3>
-          <div style={{ ...label, fontWeight: 600, fontSize: 10.5, marginTop: 4, color: 'var(--ink-muted)' }}>{bot.role}</div>
-          <p style={{ ...italic, margin: '6px 0 0', fontSize: 14.5, lineHeight: 1.35 }}>“{bot.line}”</p>
+          <div className="dx-label" style={{ color: 'var(--ink-muted)' }}>By</div>
+          <h3 style={{ margin: '1px 0 0', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-num-lg)', lineHeight: 1.1 }}>{bot.name}</h3>
+          <div className="dx-label" style={{ fontWeight: 600, fontSize: 'var(--text-micro)', marginTop: 'var(--space-1)', color: 'var(--ink-muted)' }}>{bot.role}</div>
+          <p style={{ ...italic, margin: '6px 0 0', fontSize: 'var(--text-body)', lineHeight: 1.35 }}>“{bot.line}”</p>
         </div>
       </div>
-      <dl style={{ margin: 0, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: 10 }}>
+      <dl style={{ margin: 0, display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: 'var(--space-2)' }}>
         <Stat k="Status" v={<span style={{ color: on ? 'var(--buy)' : 'var(--ink-muted)', fontFamily: 'var(--font-ui)', fontWeight: 600 }}>{on ? '● Filing' : '○ On leave'}</span>} />
         <Stat k="Orders today" v={bot.stats.orders.toLocaleString('en-IN')} />
         <Stat k="P&L today" v={<span style={{ color: pnl >= 0 ? 'var(--buy)' : 'var(--sell)' }}>{pnl >= 0 ? '▲ ' : '▼ '}₹{formatPaise(Math.abs(pnl))}</span>} />
       </dl>
-      <div style={{ borderTop: '1px solid var(--rule)', paddingTop: 4 }}>
-        <div style={{ ...label, fontSize: 10, fontWeight: 600, color: 'var(--ink-muted)', marginBottom: 2 }}>P&amp;L, last two minutes</div>
+      <div style={{ borderTop: '1px solid var(--rule)', paddingTop: 'var(--space-1)' }}>
+        <div className="dx-label" style={{ fontSize: 'var(--text-micro)', fontWeight: 600, color: 'var(--ink-muted)', marginBottom: 2 }}>P&amp;L, last two minutes</div>
         <Sparkline values={history} />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 'var(--space-4)' }}>
         <Dial label="Aggressiveness" value={bot.tuning.aggressiveness} words={AGGRESSION_WORDS} disabled={!on}
           onChange={(v) => void tune(v, bot.tuning.size)} />
         <Dial label="Order size" value={bot.tuning.size} words={SIZE_WORDS} disabled={!on}
           onChange={(v) => void tune(bot.tuning.aggressiveness, v)} />
       </div>
-      <div style={{ display: 'flex', gap: 18, alignItems: 'baseline', borderTop: '1px solid var(--rule)', paddingTop: 8, minHeight: 22 }}>
+      <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'baseline', borderTop: '1px solid var(--rule)', paddingTop: 'var(--space-2)', minHeight: 22 }}>
         {confirm ? <>
-          <span style={{ fontSize: 13 }}>Remove {bot.name} from the floor?</span>
-          <button type="button" style={{ ...link, color: 'var(--sell)', fontStyle: 'normal', fontFamily: 'var(--font-ui)', fontWeight: 600, fontSize: 13 }}
+          <span style={{ fontSize: 'var(--text-ui)' }}>Remove {bot.name} from the floor?</span>
+          <button type="button" style={{ ...link, color: 'var(--sell)', fontStyle: 'normal', fontFamily: 'var(--font-ui)', fontWeight: 600, fontSize: 'var(--text-ui)' }}
             onClick={() => api.removeBot(bot.id).then(onRemoved).catch(onFail(`Could not remove ${bot.name}`))}>Remove</button>
-          <button type="button" style={{ ...link, fontStyle: 'normal', fontFamily: 'var(--font-ui)', fontSize: 13 }} onClick={() => setConfirm(false)}>Keep</button>
+          <button type="button" style={{ ...link, fontStyle: 'normal', fontFamily: 'var(--font-ui)', fontSize: 'var(--text-ui)' }} onClick={() => setConfirm(false)}>Keep</button>
         </> : <>
           <button type="button" style={link} className="dx-focus"
             onClick={() => api.setBotActive(bot.id, !on).then(onChange).catch(onFail(`Could not update ${bot.name}`))}>
@@ -199,9 +198,9 @@ function BotCard({ bot, history, onChange, onFail, onRemoved }: {
 
 function Stat({ k, v }: { k: string; v: ReactNode }) {
   return (
-    <div style={{ borderTop: '1px solid var(--rule)', paddingTop: 4 }}>
-      <dt style={{ ...label, fontSize: 10, fontWeight: 600, color: 'var(--ink-muted)' }}>{k}</dt>
-      <dd className="dx-num" style={{ margin: 0, fontSize: 14, fontWeight: 500 }}>{v}</dd>
+    <div style={{ borderTop: '1px solid var(--rule)', paddingTop: 'var(--space-1)' }}>
+      <dt className="dx-label" style={{ fontSize: 'var(--text-micro)', fontWeight: 600, color: 'var(--ink-muted)' }}>{k}</dt>
+      <dd className="dx-num" style={{ margin: 0, fontSize: 'var(--text-body)', fontWeight: 500 }}>{v}</dd>
     </div>
   )
 }
@@ -214,8 +213,8 @@ function Dial({ label: name, value, words, onChange, disabled }: {
   return (
     <div style={{ display: 'grid', gap: 3 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <label htmlFor={id} style={{ ...label, fontSize: 10, color: 'var(--ink-muted)' }}>{name}</label>
-        <span style={{ fontSize: 12, fontWeight: 600 }}>{words[value]}</span>
+        <label htmlFor={id} className="dx-label" style={{ fontSize: 'var(--text-micro)', color: 'var(--ink-muted)' }}>{name}</label>
+        <span style={{ fontSize: 'var(--text-small)', fontWeight: 600 }}>{words[value]}</span>
       </div>
       <input id={id} type="range" min="0" max="4" step="1" value={value} disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))} aria-valuetext={words[value]} style={{ accentColor: 'var(--ink)' }} />
@@ -225,15 +224,15 @@ function Dial({ label: name, value, words, onChange, disabled }: {
 
 function StoryCard({ story, running, onRun, onStop }: { story: Story; running: boolean; onRun: () => void; onStop: () => void }) {
   return (
-    <article style={{ display: 'grid', gap: 8, alignContent: 'start', borderTop: '2px solid var(--rule-strong)', paddingTop: 10, position: 'relative', minWidth: 0 }}>
-      <span style={{ ...label, color: 'var(--accent)' }}>{story.kicker}</span>
-      <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, lineHeight: 1.12 }}>
-        {story.tone !== 'NEUTRAL' && <span aria-hidden="true" style={{ color: story.tone === 'UP' ? 'var(--buy)' : 'var(--sell)', fontSize: '0.65em', marginRight: 6, verticalAlign: '0.12em' }}>{story.tone === 'UP' ? '▲' : '▼'}</span>}
+    <article style={{ display: 'grid', gap: 'var(--space-2)', alignContent: 'start', borderTop: '2px solid var(--rule-strong)', paddingTop: 'var(--space-2)', position: 'relative', minWidth: 0 }}>
+      <span className="dx-label" style={{ color: 'var(--accent)' }}>{story.kicker}</span>
+      <h3 style={{ margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-num-lg)', lineHeight: 1.12 }}>
+        {story.tone !== 'NEUTRAL' && <span aria-hidden="true" style={{ color: story.tone === 'UP' ? 'var(--buy)' : 'var(--sell)', fontSize: '0.65em', marginRight: 'var(--space-1)', verticalAlign: '0.12em' }}>{story.tone === 'UP' ? '▲' : '▼'}</span>}
         {story.headline}
       </h3>
-      <p style={{ ...italic, fontSize: 14.5, lineHeight: 1.35, color: 'var(--ink-muted)' }}>{story.deck}</p>
-      <span className="dx-num" style={{ fontSize: 11.5, color: 'var(--ink-muted)' }}>{storyMeta(story)}</span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4 }}>
+      <p style={{ ...italic, fontSize: 'var(--text-body)', lineHeight: 1.35, color: 'var(--ink-muted)' }}>{story.deck}</p>
+      <span className="dx-num" style={{ fontSize: 'var(--text-label)', color: 'var(--ink-muted)' }}>{storyMeta(story)}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginTop: 'var(--space-1)' }}>
         {running
           ? <Button variant="danger" size="sm" onClick={onStop}>■ Stop this story</Button>
           : <Button variant="secondary" size="sm" onClick={onRun}>Run this story →</Button>}
@@ -259,13 +258,13 @@ function HireDialog({ open, onClose, onHired, onFail }: {
           {`Hire ${clean || 'correspondent'}`}
         </Button>
       </>}>
-      <div style={{ display: 'grid', gap: 14 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '56px minmax(0,1fr)', gap: 12, alignItems: 'end' }}>
+      <div style={{ display: 'grid', gap: 'var(--space-3)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '56px minmax(0,1fr)', gap: 'var(--space-3)', alignItems: 'end' }}>
           <Monogram bot={monogramOf(name)} size={56} />
           <PriceInput label="Byline name" value={name} onChange={setName} inputMode="text" align="left" hint="Shown on the tape as a stamp monogram" />
         </div>
-        <div style={{ display: 'grid', gap: 5 }}>
-          <span style={label}>Trading style</span>
+        <div style={{ display: 'grid', gap: 'var(--space-1)' }}>
+          <span className="dx-label">Trading style</span>
           <OrderTypeToggle value={style} onChange={(v) => setStyle(v as BotStyle)} options={STYLES} />
         </div>
       </div>

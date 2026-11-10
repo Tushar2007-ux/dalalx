@@ -151,14 +151,38 @@ public final class HeadlineWriter implements EngineListener, ScenarioDirector.Sc
                 null, buying ? Tone.UP : Tone.DOWN);
     }
 
+    /** How many repeat incidents pass before an investigation is worth another headline. */
+    private static final int REPEAT_EVERY = 10;
+
+    /** "10th", "21st" — for a headline that counts incidents. */
+    private static String ordinal(int n) {
+        int last = n % 100;
+        String suffix = last >= 11 && last <= 13 ? "th"
+                : switch (n % 10) { case 1 -> "st"; case 2 -> "nd"; case 3 -> "rd"; default -> "th"; };
+        return n + suffix;
+    }
+
     @Override
     public synchronized void caseChanged(Case c) {
         String who = names.apply(c.traderId());
         switch (c.status()) {
-            case OPEN -> file(c.openedAt(), "Investigations", c.symbol(),
-                    "Surveillance flags " + c.ruleName().toLowerCase(Locale.ROOT) + " in " + c.symbol()
-                            + "; " + who + " under investigation",
-                    c.summary() + " (case " + c.id() + ").", c.severity() == Severity.NOTICE ? Tone.NEUTRAL : Tone.ALERT);
+            // A new investigation is news. The same trader tripping the same rule
+            // again is not, until it has happened enough times to be a story of
+            // its own, so the wire doesn't fill up with one bot's behaviour.
+            case OPEN -> {
+                if (c.incidents() == 1) {
+                    file(c.openedAt(), "Investigations", c.symbol(),
+                            "Surveillance flags " + c.ruleName().toLowerCase(Locale.ROOT) + " in " + c.symbol()
+                                    + "; " + who + " under investigation",
+                            c.summary() + " (case " + c.id() + ").",
+                            c.severity() == Severity.NOTICE ? Tone.NEUTRAL : Tone.ALERT);
+                } else if (c.incidents() % REPEAT_EVERY == 0) {
+                    file(c.lastSeenAt(), "Investigations", c.symbol(),
+                            who + " flagged for the " + ordinal(c.incidents()) + " time in " + c.symbol(),
+                            "Case " + c.id() + " now runs to " + c.incidents() + " incidents of "
+                                    + c.ruleName().toLowerCase(Locale.ROOT) + ".", Tone.ALERT);
+                }
+            }
             case SUSPENDED -> file(Instant.now(), "Stop Press", null,
                     who + " suspended from trading; all resting orders cancelled",
                     "Ruling on case " + c.id() + " (" + c.ruleName() + ", " + c.symbol() + ").", Tone.ALERT);

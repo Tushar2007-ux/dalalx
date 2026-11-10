@@ -18,9 +18,9 @@
   top: 0;
   height: 70px;
   display: grid;
-  gap: 4px;
+  gap: var(--space-1);
   opacity: 0;
-  animation: dx-intro-show 300ms 0ms forwards, dx-intro-hide 400ms 3300ms forwards;
+  animation: dx-intro-show var(--dur-depth) 0ms forwards, dx-intro-hide var(--dur-slide) 3var(--dur-depth) forwards;
 }
 .dx-intro-rollers i {
   display: block;
@@ -37,43 +37,43 @@
   display: grid;
   grid-template-rows: 1fr 1fr;
   transform-style: preserve-3d;
-  animation: dx-intro-feed 650ms 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: dx-intro-feed var(--dur-ink) 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .dx-intro-half {
   background: var(--paper);
   background-image: var(--grain);
   color: var(--ink);
-  padding: 26px 34px;
+  padding: var(--space-5) var(--space-6);
   box-sizing: border-box;
   backface-visibility: hidden;
 }
 .dx-intro-top {
   display: grid;
   align-content: end;
-  gap: 8px;
+  gap: var(--space-2);
   transform-origin: top center;
   border-bottom: 1px dashed color-mix(in srgb, var(--ink) 25%, transparent);
-  animation: dx-intro-fold-up 800ms 3450ms cubic-bezier(0.6, 0, 0.4, 1) forwards;
+  animation: dx-intro-fold-up var(--dur-beat) 3var(--dur-slide) cubic-bezier(0.6, 0, 0.4, 1) forwards;
 }
 .dx-intro-bottom {
   display: grid;
   align-content: start;
-  gap: 14px;
+  gap: var(--space-3);
   transform-origin: bottom center;
-  animation: dx-intro-fold-down 800ms 3450ms cubic-bezier(0.6, 0, 0.4, 1) forwards;
+  animation: dx-intro-fold-down var(--dur-beat) 3var(--dur-slide) cubic-bezier(0.6, 0, 0.4, 1) forwards;
 }
 .dx-intro-meta {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-ui);
-  font-size: 11px;
+  font-size: var(--text-label);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-muted);
   border-bottom: 1px solid var(--rule-strong);
-  padding-bottom: 6px;
+  padding-bottom: var(--space-1);
   opacity: 0;
-  animation: dx-intro-show 400ms 1300ms forwards;
+  animation: dx-intro-show var(--dur-slide) 1var(--dur-depth) forwards;
 }
 .dx-intro-mast {
   font-family: var(--font-display);
@@ -83,9 +83,9 @@
   letter-spacing: -0.02em;
   text-align: center;
   opacity: 0;
-  animation: dx-intro-stamp 380ms 950ms cubic-bezier(0.55, 0, 0.9, 0.4) forwards;
+  animation: dx-intro-stamp var(--dur-pen) 950ms cubic-bezier(0.55, 0, 0.9, 0.4) forwards;
 }
-.dx-intro-rule { height: 0; border-top: 4px double var(--ink); transform: scaleX(0); animation: dx-intro-draw 500ms 2150ms ease-out forwards; }
+.dx-intro-rule { height: 0; border-top: 4px double var(--ink); transform: scaleX(0); animation: dx-intro-draw var(--dur-pencil) 2var(--dur-tick) ease-out forwards; }
 .dx-intro-headline {
   font-family: var(--font-display);
   font-weight: 800;
@@ -95,10 +95,10 @@
   text-transform: uppercase;
   letter-spacing: 0.02em;
   opacity: 0;
-  animation: dx-intro-slam 320ms 2450ms cubic-bezier(0.55, 0, 0.9, 0.4) forwards;
+  animation: dx-intro-slam var(--dur-pen) 2var(--dur-slide) cubic-bezier(0.55, 0, 0.9, 0.4) forwards;
 }
-.dx-intro-cols { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
-.dx-intro-cols div { display: grid; gap: 8px; align-content: start; clip-path: inset(0 0 100% 0); animation: dx-intro-type 700ms steps(9, end) forwards; }
+.dx-intro-cols { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); }
+.dx-intro-cols div { display: grid; gap: var(--space-2); align-content: start; clip-path: inset(0 0 100% 0); animation: dx-intro-type var(--dur-ink) steps(9, end) forwards; }
 .dx-intro-cols span { height: 7px; background: color-mix(in srgb, var(--ink) 18%, transparent); }
 .dx-intro-deck {
   font-family: var(--font-display);
@@ -106,7 +106,7 @@
   font-size: clamp(18px, 2.4vw, 24px);
   text-align: center;
   opacity: 0;
-  animation: dx-intro-show 500ms 2850ms forwards;
+  animation: dx-intro-show var(--dur-pencil) 2var(--dur-beat) forwards;
 }
 .dx-intro-skip {
   position: absolute;

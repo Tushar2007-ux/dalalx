@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { Edition, Folio, HeadlineBanner, Masthead, Toast } from '../design'
 import { clockTime } from '../lib/format'
 import { useMarket, type ToastItem } from '../store/market'
+import { ToolsMenu } from './ToolsMenu'
 import type { Headline } from '../terminal/headline'
 import { ROUTES, type ShellRoute } from './route'
 import { TickerStrip } from './TickerStrip'
@@ -35,11 +36,6 @@ export function Shell({ route, headline, page, section, status, band, full = fal
   const connection = useMarket((s) => s.connection)
   const toasts = useMarket((s) => s.toasts)
   const dismiss = useMarket((s) => s.dismissToast)
-  const viva = useMarket((s) => s.viva)
-  const setViva = useMarket((s) => s.setViva)
-  const presenter = useMarket((s) => s.presenter)
-  const setPresenter = useMarket((s) => s.setPresenter)
-  const setHelpOpen = useMarket((s) => s.setHelpOpen)
 
   const sections = (
     <div className="dx-sections">
@@ -49,19 +45,13 @@ export function Shell({ route, headline, page, section, status, band, full = fal
         ))}
       </nav>
       <span className="dx-sections-right">
-      <button type="button" className={`dx-focus dx-mode${viva ? ' is-on' : ''}`} aria-pressed={viva} onClick={() => setViva(!viva)}
-        title="Label every panel with the Java class and pattern behind it (V)">✎ Viva mode</button>
-      <button type="button" className={`dx-focus dx-mode${presenter ? ' is-on' : ''}`} aria-pressed={presenter} onClick={() => setPresenter(!presenter)}
-        title="Bigger type for a projector (P)">Presenter</button>
-      <button type="button" className="dx-focus dx-mode dx-mode-key" onClick={() => setHelpOpen(true)} title="Keyboard shortcuts (?)">?</button>
+      <ToolsMenu />
       <a href="#/wall" className="dx-focus dx-sections-board" title="Full-screen wall display for the projector (W)">Big Board ⤢</a>
-      <span data-testid="connection" style={{ fontSize: 12, color: connection === 'live' ? 'var(--buy)' : 'var(--ink-muted)' }}>
+      <span data-testid="connection" style={{ fontSize: 'var(--text-small)', color: connection === 'live' ? 'var(--buy)' : 'var(--ink-muted)' }}>
         {connection === 'live' ? '● Live wire' : connection === 'connecting' ? '○ Connecting…' : '○ Offline'}
       </span>
-      <button type="button" className="dx-focus" onClick={() => setEdition(edition === 'day' ? 'night' : 'day')}
-        style={{ appearance: 'none', background: 'none', border: '1px solid var(--rule-strong)', color: 'var(--ink)', fontFamily: 'var(--font-ui)', fontSize: 12, fontWeight: 600, padding: '3px 9px', cursor: 'pointer' }}>
-        {edition === 'day' ? 'Night edition →' : 'Day edition →'}
-      </button>
+      <button type="button" className="dx-focus dx-mode" onClick={() => setEdition(edition === 'day' ? 'night' : 'day')}
+        title="Switch between the day and night editions (N)">{edition === 'day' ? 'Night edition →' : 'Day edition →'}</button>
       </span>
     </div>
   )
@@ -83,15 +73,19 @@ export function Shell({ route, headline, page, section, status, band, full = fal
       {headline && <HeadlineBanner {...headline} time={headline.time ?? clockTime(Date.now()).slice(0, 8)} />}
       {band}
       {children}
-      <Folio page={page} section={section} right={<span>Prices in ₹ · simulated exchange · paper money only</span>} style={{ marginTop: 18 }} />
-      <div aria-live="polite" style={{ position: 'fixed', top: full ? 230 : 116, right: 16, display: 'grid', gap: 8, zIndex: 40 }}>
+      <Folio page={page} section={section} right={<span>Prices in ₹ · simulated exchange · paper money only</span>} style={{ marginTop: 'var(--space-4)' }} />
+      <div className="dx-toasts" aria-live="polite">
         {toasts.map((t) => <AutoToast key={t.id} toast={t} onClose={() => dismiss(t.id)} />)}
       </div>
     </Edition>
   )
 }
 
-/** Toasts sit below the masthead (so they never cover its buttons) and leave by themselves after a few seconds. */
+/**
+ * Toasts stack up from the bottom right: the top of the page carries the
+ * headline, the halt countdown and the auction figures, and a notice must
+ * never sit on top of those. They leave by themselves after a few seconds.
+ */
 const TOAST_MS = 6000
 
 function AutoToast({ toast, onClose }: { toast: ToastItem; onClose: () => void }) {

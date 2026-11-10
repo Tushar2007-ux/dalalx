@@ -16,7 +16,7 @@ export function WireColumn({ items, limit = 6 }: { items: WireHeadline[]; limit?
           <li key={h.id} className={i === 0 ? 'is-newest' : undefined}>
             <span className="dx-num dx-wire-time">{hhmm(new Date(h.time))}</span>
             <span className="dx-wire-text">
-              {glyph && <span aria-hidden="true" style={{ color: colour, fontSize: 10, marginRight: 5, verticalAlign: '0.1em' }}>{glyph}</span>}
+              {glyph && <span aria-hidden="true" style={{ color: colour, fontSize: 'var(--text-micro)', marginRight: 'var(--space-1)', verticalAlign: '0.1em' }}>{glyph}</span>}
               {i === 0 ? <Teleprinter text={h.text} /> : h.text}
             </span>
           </li>

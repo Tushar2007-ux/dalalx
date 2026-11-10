@@ -12,6 +12,9 @@ import { joinUrl, rankMoves, signedRupees } from './guest'
 import './audience.css'
 import { VivaTag } from '../viva/VivaTag'
 
+/** A leaderboard row's height, so a re-rank can be animated without measuring. */
+const ROW_H = 54
+
 type BotKey = 'munim' | 'momentum' | 'panic' | 'whale' | 'spoofer' | 'inspector'
 
 /**
@@ -92,7 +95,11 @@ export function AudiencePage() {
           <SectionLabel rule="double" meta={leader ? <>Leader: <b>{leader.name}</b> {signedRupees(leader.pnl)}</> : 'Updated every second'}>Leaderboard</SectionLabel>
           <ol className="dx-aud-rows">
             {standings.slice(0, 12).map((s) => (
-              <li key={s.traderId} className={`dx-aud-row is-${s.kind.toLowerCase()}${s.rank === 1 ? ' is-first' : ''}`}>
+              /* The row starts where it used to be and slides to where it now
+                 belongs, so a climb up the board reads as a climb. Rows are a
+                 fixed height, so the offset is just the ranks it moved. */
+              <li key={s.traderId} className={`dx-aud-row is-${s.kind.toLowerCase()}${s.rank === 1 ? ' is-first' : ''}`}
+                style={moves[s.traderId] ? { ['--from' as string]: `${moves[s.traderId] * ROW_H}px`, animation: 'dx-aud-glide var(--dur-slide) var(--ease-out)' } : undefined}>
                 <span className="dx-aud-rank dx-num">{s.rank}</span>
                 <span className="dx-aud-face"><Face standing={s} /></span>
                 <span className="dx-aud-name">

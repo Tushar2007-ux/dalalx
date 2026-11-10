@@ -1,18 +1,18 @@
 /* X-Ray replay: your order visibly takes each level in turn. */
 .dx-xr-level { position: relative; }
-.dx-xr-level.is-hit { animation: dx-xr-flash 900ms var(--ease-out); }
+.dx-xr-level.is-hit { animation: dx-xr-flash var(--dur-beat) var(--ease-out); }
 @keyframes dx-xr-flash { 0% { background: color-mix(in srgb, var(--pencil) 22%, var(--surface)); } 100% { background: var(--surface); } }
 .dx-xr-chip {
   position: absolute;
   left: 40px;
   top: 50%;
   z-index: 4;
-  padding: 3px 9px;
+  padding: 3px var(--space-2);
   color: var(--on-buy);
   font: 700 13px var(--font-mono);
   box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.25);
   pointer-events: none;
-  animation: dx-xr-chip 1100ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation: dx-xr-chip var(--dur-beat) cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 @keyframes dx-xr-chip {
   0% { opacity: 0; transform: translate(-140px, -260%) rotate(-8deg) scale(1.15); }
@@ -21,10 +21,39 @@
   100% { opacity: 0; transform: translate(40px, -50%) scale(0.9); }
 }
 .dx-xr-num { display: inline-block; animation: dx-stamp var(--dur-stamp) var(--ease-slam) both; animation-delay: 380ms; --stamp-angle: -4deg; }
-.dx-xr-progress { display: block; height: 6px; margin-top: 8px; background: var(--surface-sunk); border: 1px solid var(--rule); }
-.dx-xr-progress span { display: block; height: 100%; transition: width 600ms var(--ease-out); }
-.dx-xr-left { animation: dx-slip-in 300ms var(--ease-out); }
+.dx-xr-progress { display: block; height: 6px; margin-top: var(--space-2); background: var(--surface-sunk); border: 1px solid var(--rule); }
+.dx-xr-progress span { display: block; height: 100%; transition: width var(--dur-ink) var(--ease-out); }
+.dx-xr-left { animation: dx-slip-in var(--dur-depth) var(--ease-out); }
 @media (prefers-reduced-motion: reduce) {
   .dx-xr-level.is-hit, .dx-xr-chip, .dx-xr-num, .dx-xr-left { animation: none; }
   .dx-xr-chip { display: none; }
 }
+
+/* The page before you have placed an order: it shows what an X-Ray is
+   rather than leaving the reader looking at an empty sheet. */
+.dx-xr-empty {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(300px, 0.9fr);
+  gap: var(--space-7);
+  align-items: start;
+  padding: var(--space-6) 0;
+}
+.dx-xr-empty p { margin: 0 0 var(--space-4); }
+.dx-xr-empty code { font-family: var(--font-mono); font-size: var(--text-ui); background: var(--surface-sunk); padding: 1px var(--space-1); }
+.dx-xr-empty-cta { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+.dx-xr-sample { margin: 0; border: var(--rule-hair) dashed var(--rule-strong); padding: var(--space-3); opacity: 0.75; }
+.dx-xr-sample figcaption { margin-bottom: var(--space-2); }
+.dx-xr-sample-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr);
+  gap: var(--space-2);
+  align-items: baseline;
+  padding: var(--space-2) 0;
+  border-bottom: var(--rule-hair) solid var(--rule);
+  font-size: var(--text-small);
+}
+.dx-xr-sample-row span:last-child { font-family: var(--font-display); font-style: italic; color: var(--pencil-text); }
+.dx-xr-sample-n { font-family: var(--font-display); font-size: var(--text-lead); color: var(--pencil-text); }
+.dx-xr-sample-row s { color: var(--ink-muted); text-decoration-color: var(--pencil); }
+.dx-xr-sample-row.is-stop { border-bottom: var(--rule-bold) dashed var(--pencil); }
+@media (max-width: 899px) { .dx-xr-empty { grid-template-columns: 1fr; gap: var(--space-5); } }

@@ -144,4 +144,52 @@ class SurveillanceRulesTest {
         assertThat(dismissed.status()).isEqualTo(Status.DISMISSED);
         assertThat(desk.rules()).filteredOn(r -> r.id().equals("layering")).extracting(r -> r.enabled()).containsExactly(false);
     }
+
+    @Test
+    void repeatOffencesBecomeIncidentsOnOneCaseNotACaseEach() {
+        spoofCycle(0, 1);
+        int afterFirst = desk.cases().size();
+        assertThat(desk.cases()).allSatisfy(c -> {
+            assertThat(c.incidents()).isEqualTo(1);
+            assertThat(c.isRepeat()).isFalse();
+        });
+
+        // Each rule holds a per-trader cooldown, so a repeat lands a minute later.
+        spoofCycle(70_000, 100);
+        spoofCycle(140_000, 200);
+
+        // Same spoofer, same rule, same stock: one investigation, three incidents.
+        assertThat(desk.cases()).hasSize(afterFirst);
+        Case spoofing = desk.cases().stream().filter(c -> c.ruleId().equals("spoofing")).findFirst().orElseThrow();
+        assertThat(spoofing.incidents()).isEqualTo(3);
+        assertThat(spoofing.isRepeat()).isTrue();
+        assertThat(spoofing.lastSeenAt()).isAfter(spoofing.openedAt());
+        assertThat(spoofing.flagged()).hasSizeGreaterThan(3); // evidence from every incident is kept
+    }
+
+    @Test
+    void aDifferentTraderOrStockStillOpensItsOwnCase() {
+        spoofCycle(0, 1);
+        int before = desk.cases().size();
+
+        for (int i = 0; i < 3; i++) {
+            feed(ev.placed(5_000, 300 + i, "OTHER", Side.BUY, 245_000 - i * 5, 9_800));
+        }
+        for (int i = 0; i < 3; i++) {
+            feed(ev.pulled(5_300, 300 + i, "OTHER", Side.BUY, 245_000 - i * 5, 9_800));
+        }
+
+        assertThat(desk.cases()).hasSizeGreaterThan(before);
+        assertThat(desk.cases()).extracting(Case::traderId).contains("OTHER", "SPOOFER");
+    }
+
+    @Test
+    void anIncidentAfterSuspensionDoesNotReopenTheClosedCase() {
+        spoofCycle(0, 1);
+        Case open = desk.cases().get(0);
+        desk.suspend(open.id());
+
+        assertThat(desk.find(open.id()).orElseThrow().status()).isEqualTo(Status.SUSPENDED);
+        assertThat(desk.find(open.id()).orElseThrow().incidents()).isEqualTo(1);
+    }
 }

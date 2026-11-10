@@ -96,6 +96,8 @@ export interface MarketState {
   presenter: boolean
   /** A side chosen by keyboard (B / S) for the ticket to pick up; `nonce` re-applies the same side. */
   ticketSide: { side: 'buy' | 'sell'; nonce: number } | null
+  /** Sound effects on or off. */
+  sound: boolean
   /** Whether the keyboard-shortcut card is open. */
   helpOpen: boolean
   /** Price (paise) the ticket should show after a click on a book level; bumped `nonce` re-applies the same price. */
@@ -127,6 +129,7 @@ export interface MarketState {
   setPresenter: (on: boolean) => void
   chooseSide: (side: 'buy' | 'sell') => void
   setHelpOpen: (open: boolean) => void
+  setSound: (on: boolean) => void
   applyEngine: (e: EngineSnapshot) => void
   applyBoard: (b: Board) => void
   showMoment: (m: Omit<Moment, 'id'>) => void
@@ -203,6 +206,8 @@ export const useMarket = create<MarketState>()((set, get) => ({
   presenter: savedFlag('dalalx-presenter'),
   ticketSide: null,
   helpOpen: false,
+  sound: (() => { try { return localStorage.getItem('dalalx-sound') !== '0' } catch { return true } })(),
+  setSound: (sound) => { saveFlag('dalalx-sound', sound); set({ sound }) },
 
   setViva: (viva) => { saveFlag('dalalx-viva', viva); set({ viva }) },
   setPresenter: (presenter) => { saveFlag('dalalx-presenter', presenter); set({ presenter }) },
@@ -216,13 +221,18 @@ export const useMarket = create<MarketState>()((set, get) => ({
     return { board, names }
   }),
   setConnection: (connection) => set({ connection }),
-  setSymbols: (symbols) => set((s) => ({
+  setSymbols: (rawSymbols) => set((s) => {
+    // The masthead and the folio already say this is a simulated exchange, so
+    // the per-stock "(simulated)" is dropped once, here, rather than on every
+    // row that prints a company name.
+    const symbols = rawSymbols.map((x) => ({ ...x, name: x.name.replace(/ \(simulated\)$/, '') }))
+    return {
     symbols,
     auctions: Object.fromEntries(symbols.filter((x) => x.auction).map((x) => [x.symbol, x.auction!])),
     status: Object.fromEntries(symbols.map((x) => [x.symbol, { phase: x.phase ?? 'OPEN', reason: x.reason ?? null, until: x.until ?? null, since: x.since ?? null }])),
     lastPrice: Object.fromEntries(symbols.map((x) => [x.symbol, s.lastPrice[x.symbol] ?? x.lastPrice])),
     selected: symbols.some((x) => x.symbol === s.selected) ? s.selected : symbols[0]?.symbol ?? s.selected,
-  })),
+    } }),
   select: (selected) => set({ selected }),
   setInterval: (interval) => set({ interval }),
   setEdition: (edition) => {

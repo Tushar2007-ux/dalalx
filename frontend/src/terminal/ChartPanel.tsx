@@ -53,7 +53,7 @@ export function ChartPanel() {
               interval={interval} intervals={INTERVALS} onInterval={(iv) => setInterval(iv as Interval)} minHeight={320} />
           : <EmptyChart interval={interval} onInterval={setInterval} />}
       </div>
-      <div style={{ marginTop: 12 }}>
+      <div style={{ marginTop: 'var(--space-3)' }}>
         <SectionLabel count={tape?.length ?? 0} meta="Newest first">Trade Tape</SectionLabel>
         {(tape ?? []).slice(0, 8).map((t, i) => (
           <div key={t.id} className={`dx-tape-row${fresh.has(t.id) ? ' is-new' : ''}${isBlockTrade(t) ? ' is-block' : ''}`}>
@@ -75,10 +75,10 @@ export function ChartPanel() {
 function EmptyChart({ interval, onInterval }: { interval: Interval; onInterval: (iv: Interval) => void }) {
   return (
     <div style={{ flex: 1, display: 'grid', placeItems: 'center', border: '1px solid var(--rule)', position: 'relative' }}>
-      <div style={{ position: 'absolute', top: 6, right: 8, display: 'flex', gap: 10 }}>
+      <div style={{ position: 'absolute', top: 6, right: 8, display: 'flex', gap: 'var(--space-2)' }}>
         {INTERVALS.map((iv) => (
           <button key={iv} type="button" className="dx-focus" onClick={() => onInterval(iv)}
-            style={{ all: 'unset', cursor: 'pointer', fontSize: 12, fontWeight: iv === interval ? 700 : 400,
+            style={{ all: 'unset', cursor: 'pointer', fontSize: 'var(--text-small)', fontWeight: iv === interval ? 700 : 400,
               textDecoration: iv === interval ? 'none' : 'underline' }}>{iv}</button>
         ))}
       </div>

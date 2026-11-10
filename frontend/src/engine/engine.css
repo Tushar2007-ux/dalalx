@@ -2,16 +2,16 @@
 .dx-engine-top {
   display: flex;
   flex-wrap: wrap;
-  gap: 18px 32px;
+  gap: var(--space-4) var(--space-6);
   align-items: center;
   justify-content: space-between;
-  margin: 18px 0 10px;
+  margin: var(--space-4) 0 var(--space-2);
 }
-.dx-engine-stats { display: flex; gap: 28px; flex-wrap: wrap; }
-.dx-engine-stat { display: grid; gap: 2px; border-top: 2px solid var(--rule-strong); padding-top: 6px; min-width: 120px; }
-.dx-engine-stat span { font-family: var(--font-display); font-weight: 800; font-size: 34px; line-height: 1; }
-.dx-engine-stat small { font-family: var(--font-ui); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-muted); }
-.dx-engine-rush { display: flex; gap: 14px; align-items: center; max-width: 620px; }
+.dx-engine-stats { display: flex; gap: var(--space-5); flex-wrap: wrap; }
+.dx-engine-stat { display: grid; gap: 2px; border-top: 2px solid var(--rule-strong); padding-top: var(--space-1); min-width: 120px; }
+.dx-engine-stat span { font-family: var(--font-display); font-weight: 800; font-size: var(--text-figure); line-height: 1; }
+.dx-engine-stat small { font-family: var(--font-ui); font-size: var(--text-label); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-muted); }
+.dx-engine-rush { display: flex; gap: var(--space-3); align-items: center; max-width: 620px; }
 .dx-engine-rush-btn {
   appearance: none;
   border: 2px solid var(--ink);
@@ -19,10 +19,10 @@
   color: var(--ink-inverse);
   font-family: var(--font-ui);
   font-weight: 700;
-  font-size: 14px;
+  font-size: var(--text-body);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 12px 18px;
+  padding: var(--space-3) var(--space-4);
   cursor: pointer;
   white-space: nowrap;
   box-shadow: 4px 4px 0 var(--accent);
@@ -31,21 +31,21 @@
 .dx-engine-rush-btn:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 var(--accent); }
 .dx-engine-rush-btn:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--accent); }
 .dx-engine-rush-btn:disabled { opacity: 0.55; cursor: progress; }
-.dx-engine-rush-note { font-size: 13.5px; line-height: 1.4; color: var(--ink-muted); }
+.dx-engine-rush-note { font-size: var(--text-ui); line-height: 1.4; color: var(--ink-muted); }
 .dx-engine-rush-note b { color: var(--ink); }
 
 .dx-engine-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 18px;
+  gap: var(--space-1) var(--space-4);
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: var(--text-small);
   color: var(--ink-muted);
-  padding: 8px 0;
+  padding: var(--space-2) 0;
   border-top: 1px solid var(--rule);
   border-bottom: 1px solid var(--rule-strong);
 }
-.dx-engine-legend span { display: inline-flex; gap: 6px; align-items: center; cursor: help; }
+.dx-engine-legend span { display: inline-flex; gap: var(--space-1); align-items: center; cursor: help; }
 
 .dx-ticket {
   display: inline-block;
@@ -66,27 +66,27 @@
   opacity: 0.8;
 }
 
-.dx-factory { display: grid; gap: 10px; margin: 14px 0 6px; }
+.dx-factory { display: grid; gap: var(--space-2); margin: var(--space-3) 0 var(--space-1); }
 .dx-engine-empty { font-style: italic; color: var(--ink-muted); }
 .dx-lane {
   display: grid;
   grid-template-columns: 110px minmax(160px, 1fr) 74px 230px 96px;
-  gap: 12px;
+  gap: var(--space-3);
   align-items: stretch;
   position: relative;
-  padding: 10px 12px;
+  padding: var(--space-2) var(--space-3);
   background: var(--surface);
   border: 1px solid var(--rule);
   border-left: 4px solid var(--rule-strong);
   min-height: 92px;
 }
 .dx-lane.is-working { border-left-color: var(--buy); }
-.dx-lane-head { display: grid; align-content: center; gap: 4px; }
-.dx-lane-head strong { font-family: var(--font-ui); font-weight: 700; letter-spacing: 0.08em; font-size: 14px; }
-.dx-lane-head span { font-size: 12px; color: var(--ink-muted); }
+.dx-lane-head { display: grid; align-content: center; gap: var(--space-1); }
+.dx-lane-head strong { font-family: var(--font-ui); font-weight: 700; letter-spacing: 0.08em; font-size: var(--text-body); }
+.dx-lane-head span { font-size: var(--text-small); color: var(--ink-muted); }
 .dx-lane-scale {
   font-family: var(--font-ui);
-  font-size: 10.5px;
+  font-size: var(--text-micro);
   letter-spacing: 0.04em;
   color: var(--pencil-text);
 }
@@ -113,11 +113,13 @@
   animation-fill-mode: forwards;
 }
 @keyframes dx-belt-run { from { background-position: 0 0; } to { background-position: 24px 0; } }
+/* A ticket rides the belt, tips over the end and drops into the queue bin,
+   so you can see work arriving rather than vanishing. */
 @keyframes dx-ticket-ride {
-  0% { left: -20px; transform: rotate(-4deg); opacity: 0; }
+  0% { left: -20px; transform: rotate(-4deg) translateY(0); opacity: 0; }
   8% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { left: calc(100% - 6px); transform: rotate(3deg) scale(0.8); opacity: 0; }
+  82% { left: calc(100% - 24px); transform: rotate(2deg) translateY(0); opacity: 1; }
+  100% { left: calc(100% - 10px); transform: rotate(32deg) translateY(26px) scale(0.85); opacity: 0; }
 }
 
 /* The queue bin: how many commands are waiting (log scale). */
@@ -137,17 +139,17 @@
   right: 0;
   bottom: 0;
   background: repeating-linear-gradient(0deg, var(--pencil) 0 3px, color-mix(in srgb, var(--pencil) 70%, var(--paper)) 3px 5px);
-  transition: height 240ms var(--ease-out);
+  transition: height var(--dur-depth) var(--ease-out);
 }
-.dx-bin-label { position: relative; font-weight: 700; font-size: 15px; background: var(--paper); padding: 0 4px; margin-bottom: 2px; }
-.dx-bin small { position: relative; font-family: var(--font-ui); font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-muted); background: var(--paper); padding: 0 3px 3px; }
+.dx-bin-label { position: relative; font-weight: 700; font-size: var(--text-deck); background: var(--paper); padding: 0 var(--space-1); margin-bottom: 2px; }
+.dx-bin small { position: relative; font-family: var(--font-ui); font-size: var(--text-micro); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-muted); background: var(--paper); padding: 0 3px 3px; }
 
 /* The press: the worker thread. Its ram stamps while it works. */
 .dx-press {
   position: relative;
   border: 2px solid var(--rule-strong);
   background: var(--paper);
-  padding: 30px 10px 8px;
+  padding: var(--space-6) var(--space-2) var(--space-2);
   display: grid;
   gap: 3px;
   overflow: hidden;
@@ -179,12 +181,26 @@
   45% { transform: translateX(-50%) translateY(6px); }
   55% { transform: translateX(-50%) translateY(6px); }
 }
-.dx-press-name { font-weight: 700; font-size: 13px; }
-.dx-press-mood { font-family: var(--font-ui); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); }
+.dx-press-name { font-weight: 700; font-size: var(--text-ui); }
+.dx-press-mood { font-family: var(--font-ui); font-size: var(--text-label); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-muted); }
+/* A press with nothing to do dozes: the worker thread is parked in take(). */
+.dx-lane:not(.is-working) .dx-press::after {
+  content: "z z z";
+  position: absolute;
+  right: var(--space-2);
+  top: var(--space-1);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--text-small);
+  color: var(--ink-muted);
+  letter-spacing: 0.2em;
+  animation: dx-doze 2.4s ease-in-out infinite;
+}
+@keyframes dx-doze { 0%, 100% { opacity: 0.25; transform: translateY(2px); } 50% { opacity: 0.8; transform: translateY(-2px); } }
 .dx-press-mood.is-on { color: var(--buy); font-weight: 700; }
 .dx-press-meter { height: 6px; background: var(--surface-sunk); border: 1px solid var(--rule); }
-.dx-press-meter span { display: block; height: 100%; background: var(--buy); transition: width 240ms var(--ease-out); }
-.dx-press-rate { font-size: 11.5px; color: var(--ink-muted); }
+.dx-press-meter span { display: block; height: 100%; background: var(--buy); transition: width var(--dur-depth) var(--ease-out); }
+.dx-press-rate { font-size: var(--text-label); color: var(--ink-muted); }
 
 /* The output tray: pressed sheets pile up. */
 .dx-tray { position: relative; display: grid; align-content: end; justify-items: center; gap: 1px; }
@@ -193,12 +209,12 @@
 .dx-tray-sheet:nth-child(3) { transform: rotate(2deg) translateX(2px); }
 .dx-lane.is-working .dx-tray-sheet:first-child { animation: dx-tray-drop var(--stroke, 600ms) ease-in infinite; }
 @keyframes dx-tray-drop { 0%, 50% { transform: translateY(-14px); opacity: 0; } 70%, 100% { transform: none; opacity: 1; } }
-.dx-tray span { font-weight: 700; font-size: 14px; margin-top: 4px; }
-.dx-tray small { font-family: var(--font-ui); font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-muted); }
+.dx-tray span { font-weight: 700; font-size: var(--text-body); margin-top: var(--space-1); }
+.dx-tray small { font-family: var(--font-ui); font-size: var(--text-micro); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-muted); }
 
-.dx-engine-explain { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; margin-top: 18px; }
-.dx-engine-explain p { margin: 8px 0 0; font-size: 14.5px; line-height: 1.5; }
-.dx-engine-explain code { font-family: var(--font-mono); font-size: 12px; background: var(--surface-sunk); padding: 1px 4px; }
+.dx-engine-explain { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-5); margin-top: var(--space-4); }
+.dx-engine-explain p { margin: var(--space-2) 0 0; font-size: var(--text-body); line-height: 1.5; }
+.dx-engine-explain code { font-family: var(--font-mono); font-size: var(--text-small); background: var(--surface-sunk); padding: 1px var(--space-1); }
 
 @media (max-width: 1100px) {
   .dx-lane { grid-template-columns: 90px minmax(120px, 1fr) 64px 200px; }
@@ -212,6 +228,7 @@
   .dx-press { grid-column: 1 / -1; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .dx-belt-surface, .dx-press-ram, .dx-tray-sheet, .dx-ticket-ride { animation: none !important; }
+  .dx-belt-surface, .dx-press-ram, .dx-tray-sheet, .dx-ticket-ride,
+  .dx-lane:not(.is-working) .dx-press::after { animation: none !important; }
   .dx-ticket-ride { display: none; }
 }

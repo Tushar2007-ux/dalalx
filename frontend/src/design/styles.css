@@ -2,5 +2,6 @@
 @import "./typography.css";
 @import "./colors.css";
 @import "./layout.css";
+@import "./scale.css";
 @import "./motion.css";
 @import "./print.css";

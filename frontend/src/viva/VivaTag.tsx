@@ -17,7 +17,8 @@ export function VivaTag({ note, align = 'right' }: { note: VivaKey; align?: 'lef
     <span className={`dx-viva dx-viva-${align}${open ? ' is-open' : ''}`}>
       <button type="button" className="dx-viva-tag dx-focus" aria-expanded={open} onClick={() => setOpen(!open)}
         title="What's behind this? (Viva mode)">
-        <span aria-hidden="true">✎</span> <code>{n.cls}</code> <em>{n.idea}</em>
+        <em>{n.idea}</em>
+        <code>{n.cls}</code>
       </button>
       {open && (
         <span className="dx-viva-card" role="note">
