@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { boardTone, sparkPath } from './bigBoard'
+import { boardTone, sparkPath } from './big-board'
 
 describe('Big Board helpers', () => {
   it('glows brighter the bigger the move, capped at full strength', () => {

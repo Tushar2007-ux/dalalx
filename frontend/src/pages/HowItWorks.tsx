@@ -3,7 +3,7 @@ import { SectionLabel } from '../design'
 import { Shell } from '../shell/Shell'
 import { Empty, Tag } from '../ui'
 import { VivaTag } from '../viva/VivaTag'
-import { START_BOOK, match, queueFor, type Kind, type Outcome, type Resting, type Side } from './howItWorks'
+import { START_BOOK, match, queueFor, type Kind, type Outcome, type Resting, type Side } from './how-it-works'
 import './howitworks.css'
 
 const KINDS: { kind: Kind; blurb: string }[] = [

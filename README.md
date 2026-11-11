@@ -23,7 +23,7 @@ Open http://localhost:5173 (the front page). For the guided tour, run `./demo.sh
 
 ```bash
 mvn -q verify                                  # 343 Java tests (core + server)
-(cd frontend && npm test && npm run build)     # 105 frontend tests + type check
+(cd frontend && npm test && npm run build)     # 161 frontend tests + type check
 ./bench.sh                                     # matching benchmark (docs/BENCHMARK.md)
 ```
 
@@ -55,6 +55,21 @@ mvn -q verify                                  # 343 Java tests (core + server)
 ### Design patterns
 
 Strategy · Template Method · Factory · Observer · State · Adapter · Memento · Null Object · Command, plus Open/Closed and Dependency Inversion. See `docs/UML.md`.
+
+## The print hall
+
+![The print hall](docs/screenshots/press-hall.png)
+
+The Engine Room draws the concurrency model: one press per stock, one thread
+each, paper riding each belt into that stock's own queue. Press **Start Rush
+Hour** and the bins fill with red as 40,000 commands hit the five queues at
+once, then drain. Everything moving is driven by a reading taken from the real
+threads four times a second — nothing here is decorative.
+
+It is WebGL (three.js), loaded only when it is going to be used: the library
+sits in its own chunk and is never fetched if the machine is weak, if the
+reader has asked for reduced motion, or if 3D is switched off in **Tools** (or
+with <kbd>D</kbd>). Every page works identically without it.
 
 ## The screens
 

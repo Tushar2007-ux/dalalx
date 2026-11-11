@@ -288,3 +288,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) { .dx-flights { display: none; } }
+
+/* The GPU-printed figure sits exactly over the DOM one, which stays in the
+   page (invisible) so the number can still be read aloud and selected. */
+.dx-hero-price { position: relative; }
+.dx-hero-price.is-gl > span { opacity: 0; }
+.dx-gl-price { position: absolute; inset: -6px -12px; pointer-events: none; }

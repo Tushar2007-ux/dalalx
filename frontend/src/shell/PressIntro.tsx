@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useMarket } from '../store/market'
+import { IntroInk } from '../webgl/lazy'
+import { useTier } from '../webgl/useTier'
 import './intro.css'
 
 /** The whole intro, start to fold-open. */
@@ -30,6 +32,7 @@ function alreadySeen(): boolean {
  */
 export function PressIntro() {
   const edition = useMarket((s) => s.edition)
+  const tier = useTier()
   const [show, setShow] = useState(() => shouldPlayIntro(location.hash, alreadySeen(),
     typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches))
 
@@ -46,6 +49,7 @@ export function PressIntro() {
   const date = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   return (
     <div className="dx-intro" data-edition={edition} onClick={() => setShow(false)} role="presentation">
+      {tier !== 'off' && <Suspense fallback={null}><IntroInk tier={tier} seconds={INTRO_MS / 1000} /></Suspense>}
       <div className="dx-intro-rollers" aria-hidden="true"><i /><i /><i /></div>
       <div className="dx-intro-page">
         <div className="dx-intro-half dx-intro-top">

@@ -3,7 +3,7 @@ import { Edition } from '../design'
 import { changePct, clockTime, formatPaise, formatQty } from '../lib/format'
 import type { SymbolInfo, Trade } from '../lib/types'
 import { useMarket } from '../store/market'
-import { boardTone, sparkPath } from './bigBoard'
+import { boardTone, sparkPath } from './big-board'
 import { Teleprinter } from '../terminal/Teleprinter'
 import './bigboard.css'
 

@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { changePct, formatPaise, formatQty } from '../lib/format'
 import { useMarket } from '../store/market'
+import { Suspense } from 'react'
+import { PriceGlitch } from '../webgl/lazy'
+import { useTier } from '../webgl/useTier'
 import { Odometer } from './Odometer'
 
 /**
@@ -8,12 +11,14 @@ import { Odometer } from './Odometer'
  * every change, with the day's move, high, low and volume beside it.
  */
 export function PriceHero() {
+  const tier = useTier()
   const selected = useMarket((s) => s.selected)
   const info = useMarket((s) => s.symbols.find((x) => x.symbol === s.selected))
   const price = useMarket((s) => s.lastPrice[s.selected])
   const tape = useMarket((s) => s.tapes[s.selected])
   const phase = useMarket((s) => s.status[s.selected]?.phase ?? 'OPEN')
   const before = useRef<number | undefined>(undefined)
+  const figure = useRef<HTMLSpanElement>(null)
   const [tone, setTone] = useState<{ dir: 'up' | 'down'; key: number } | null>(null)
 
   useEffect(() => {
@@ -41,8 +46,12 @@ export function PriceHero() {
         <strong>{selected}</strong>
         <span>{info.name}</span>
       </div>
-      <div className="dx-hero-price">
-        <Odometer key={tone?.key} value={`₹${formatPaise(shown)}`} tone={tone?.dir} />
+      {/* With 3D on, the GPU prints the figure and the DOM copy stays for
+          screen readers and for selecting the number. With it off, the
+          odometer rolls as before: nothing here depends on WebGL. */}
+      <div className={`dx-hero-price${tier !== 'off' ? ' is-gl' : ''}`}>
+        <span ref={figure}><Odometer key={tone?.key} value={`₹${formatPaise(shown)}`} tone={tone?.dir} /></span>
+        {tier !== 'off' && <Suspense fallback={null}><PriceGlitch text={`₹${formatPaise(shown)}`} tone={tone?.dir} tier={tier} anchor={figure} /></Suspense>}
       </div>
       <div className={`dx-hero-move dx-num ${pct >= 0 ? 'is-up' : 'is-down'}`}>
         <span>{pct >= 0 ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%</span>

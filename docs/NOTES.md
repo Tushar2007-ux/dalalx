@@ -173,3 +173,62 @@ surveillance rule still needs no change to the desk) · one case per
 trader-and-rule is the same grouping an exchange's real surveillance does.
 
 Tests: 343 Java, 105 frontend.
+
+## Step 21 — WebGL, where it earns its keep
+
+Three pieces of real-time graphics, each in a place where the flat version was
+leaving something unsaid. The rule throughout: the page must be complete
+without any of it.
+
+**The quality gate first.** `tierFor` reads the machine once — WebGL support,
+reduced-motion preference, cores, memory, screen width — and returns
+`off` / `low` / `high`; the reader overrules it from the Tools menu or with
+<kbd>D</kbd>. `useScene` owns one renderer per scene: it sizes the canvas to
+its box, caps the pixel ratio for the tier, stops drawing when the canvas
+scrolls off screen or the tab is hidden, and disposes every geometry, material
+and context on unmount. A leaked renderer is invisible until the browser runs
+out of contexts and the whole demo goes blank, so the audit checks that a page
+change leaves zero canvases behind.
+
+**The print hall** (`PressHall`, `hall.ts`). Five presses in a row, one per
+stock. Paper rides each belt into that press's bin — the worker's own
+`BlockingQueue` — and the press strokes to take them off one at a time. Start
+Rush Hour and all five bins fill red, then drain. This is the concurrency
+model as a picture: five lanes that never touch, one machine each. The
+arithmetic behind it (`strokesPerSecond`, `binFill`, `slipRate`, `shareBudget`)
+lives apart from the three.js and is covered by tests, because a rule that
+decides how fast a press hammers is a rule, not a drawing. All the paper in
+the hall is one `InstancedMesh`: one draw call for every slip on every belt.
+
+**The headline price** (`PriceGlitch`). The figure is printed by the GPU: on a
+tick the colour separations pull apart and bands of it slip sideways, like a
+press printing a number before the plates settle. The DOM figure stays in
+place, invisible, so it is still read aloud and still selectable. Its face,
+size and left edge are measured from that DOM element, so switching 3D off
+does not move the price by a pixel.
+
+**The opening** (`IntroInk`). A generated press room: ink blooming into the
+dark, fibre grain, and the plates shifting in the last half second. Nothing is
+downloaded for it — every shape comes from layered noise warped by more noise.
+
+**Paid for only if used.** three.js is ~500 kB, more than the rest of DalalX
+together. All three scenes are behind `React.lazy`, so the library sits in its
+own chunk and is only fetched when a tier above `off` asks for a scene. The
+main bundle went back from 1,001 kB to 491 kB, and a check confirms the chunk
+is never requested with 3D switched off.
+
+**Two bugs found on the way, both from the Step 19 token pass.** Seven
+animation delays in `intro.css` had been chopped into values like
+`3var(--dur-slide)` — not a CSS value, so the browser dropped the whole
+declaration and the opening had been running with none of its choreography,
+silently. And the intro sheet painted `--grain` straight on as a
+background-image at full strength instead of the house 7%, turning the paper
+to mud. `css.test.ts` now fails on both shapes.
+
+Viva points: *thread confinement, drawn* — the hall is the clearest statement
+of why no lock is needed · *separation of concerns* — `hall.ts` holds rules,
+`PressHall.tsx` holds drawing · *graceful degradation* — three independent
+scenes, each with a complete fallback already on the page · *paying for what
+you use* — code splitting measured, not assumed.
+
+Tests: 343 Java, 161 frontend.

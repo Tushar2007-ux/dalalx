@@ -232,3 +232,47 @@
   .dx-lane:not(.is-working) .dx-press::after { animation: none !important; }
   .dx-ticket-ride { display: none; }
 }
+
+/* ---- The print hall (3D) ---------------------------------------------- */
+
+.dx-hall-wrap { margin: var(--space-4) 0 0; }
+.dx-hall {
+  height: clamp(260px, 34vw, 400px);
+  border: var(--rule-hair) solid var(--rule);
+  border-bottom: none;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--surface) 75%, var(--paper)) 0%,
+    color-mix(in srgb, var(--rule) 22%, var(--paper)) 100%);
+}
+
+/* One column per press, so each label stands under its own machine. */
+.dx-hall-keys {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2) 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  border: var(--rule-hair) solid var(--rule);
+  border-top: none;
+  background: var(--surface);
+}
+.dx-hall-keys li {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  padding: 0 var(--space-1);
+  border-left: var(--rule-hair) solid var(--rule);
+  opacity: 0.55;
+}
+.dx-hall-keys li:first-child { border-left: none; }
+.dx-hall-keys li.is-working { opacity: 1; }
+.dx-hall-keys b { font: 700 var(--text-label) var(--font-ui); letter-spacing: 0.1em; }
+.dx-hall-keys small { font-size: var(--text-micro); color: var(--ink-muted); }
+.dx-hall-wrap figcaption {
+  margin-top: var(--space-2);
+  font: italic var(--text-body) var(--font-display);
+  color: var(--ink-muted);
+  max-width: 68ch;
+}
+@media (max-width: 699px) { .dx-hall { height: 220px; } }

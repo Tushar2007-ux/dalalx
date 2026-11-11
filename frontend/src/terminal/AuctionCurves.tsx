@@ -1,6 +1,6 @@
 import { formatPaise, formatQty } from '../lib/format'
 import type { AuctionUpdate, BookSnapshot } from '../lib/types'
-import { auctionCurves, bestCross } from './auctionCurves'
+import { auctionCurves, bestCross } from './auction-curves'
 
 const W = 360
 const H = 150

@@ -16,6 +16,8 @@ export function ToolsMenu() {
   const setPresenter = useMarket((s) => s.setPresenter)
   const sound = useMarket((s) => s.sound)
   const setSound = useMarket((s) => s.setSound)
+  const three = useMarket((s) => s.three)
+  const setThree = useMarket((s) => s.setThree)
   const setHelpOpen = useMarket((s) => s.setHelpOpen)
   const [open, setOpen] = useState(false)
   const box = useRef<HTMLDivElement>(null)
@@ -45,6 +47,8 @@ export function ToolsMenu() {
             checked={presenter} onClick={() => setPresenter(!presenter)} />
           <Item label="Sound" hint="Bell, circuit breaker and stamp" shortcut="M"
             checked={sound} onClick={() => setSound(!sound)} />
+          <Item label="3D" hint="Press intro, engine room and price hero" shortcut="D"
+            checked={three} onClick={() => setThree(!three)} />
           <button type="button" role="menuitem" className="dx-tools-item dx-focus"
             onClick={() => { setOpen(false); setHelpOpen(true) }}>
             <span className="dx-tools-box" aria-hidden="true" />

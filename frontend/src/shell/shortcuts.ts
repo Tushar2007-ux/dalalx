@@ -10,6 +10,7 @@ export const SHORTCUTS: { keys: string; what: string }[] = [
   { keys: 'P', what: 'Presenter mode on/off' },
   { keys: 'N', what: 'Day / Night edition' },
   { keys: 'M', what: 'Sound on/off' },
+  { keys: 'D', what: '3D on/off' },
   { keys: 'F', what: 'Trading Floor' },
   { keys: 'E', what: 'Engine Room' },
   { keys: 'W', what: 'Big Board' },
@@ -31,7 +32,7 @@ export function isTyping(target: EventTarget | null): boolean {
  * tested without a browser.
  */
 export function actionFor(key: string, symbols: string[]):
-  | { kind: 'side'; side: 'buy' | 'sell' } | { kind: 'select'; symbol: string } | { kind: 'toggle'; what: 'viva' | 'presenter' | 'edition' | 'help' | 'sound' }
+  | { kind: 'side'; side: 'buy' | 'sell' } | { kind: 'select'; symbol: string } | { kind: 'toggle'; what: 'viva' | 'presenter' | 'edition' | 'help' | 'sound' | 'three' }
   | { kind: 'go'; hash: string } | { kind: 'escape' } | null {
   const k = key.length === 1 ? key.toLowerCase() : key
   if (k === 'b') return { kind: 'side', side: 'buy' }
@@ -40,6 +41,7 @@ export function actionFor(key: string, symbols: string[]):
   if (k === 'p') return { kind: 'toggle', what: 'presenter' }
   if (k === 'n') return { kind: 'toggle', what: 'edition' }
   if (k === 'm') return { kind: 'toggle', what: 'sound' }
+  if (k === 'd') return { kind: 'toggle', what: 'three' }
   if (k === '?') return { kind: 'toggle', what: 'help' }
   if (k === 'Escape') return { kind: 'escape' }
   if (PAGES[k]) return { kind: 'go', hash: PAGES[k] }
@@ -69,6 +71,7 @@ export function useShortcuts(enabled: boolean): void {
           else if (action.what === 'presenter') s.setPresenter(!s.presenter)
           else if (action.what === 'edition') s.setEdition(s.edition === 'day' ? 'night' : 'day')
           else if (action.what === 'sound') s.setSound(!s.sound)
+          else if (action.what === 'three') s.setThree(!s.three)
           else s.setHelpOpen(!s.helpOpen)
           break
       }

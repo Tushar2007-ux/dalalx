@@ -98,6 +98,8 @@ export interface MarketState {
   ticketSide: { side: 'buy' | 'sell'; nonce: number } | null
   /** Sound effects on or off. */
   sound: boolean
+  /** The 3D pieces (press intro, engine room, price hero) on or off. */
+  three: boolean
   /** Whether the keyboard-shortcut card is open. */
   helpOpen: boolean
   /** Price (paise) the ticket should show after a click on a book level; bumped `nonce` re-applies the same price. */
@@ -130,6 +132,7 @@ export interface MarketState {
   chooseSide: (side: 'buy' | 'sell') => void
   setHelpOpen: (open: boolean) => void
   setSound: (on: boolean) => void
+  setThree: (on: boolean) => void
   applyEngine: (e: EngineSnapshot) => void
   applyBoard: (b: Board) => void
   showMoment: (m: Omit<Moment, 'id'>) => void
@@ -207,7 +210,13 @@ export const useMarket = create<MarketState>()((set, get) => ({
   ticketSide: null,
   helpOpen: false,
   sound: (() => { try { return localStorage.getItem('dalalx-sound') !== '0' } catch { return true } })(),
+  three: (() => { try { return localStorage.getItem('dalalx-three') !== '0' } catch { return true } })(),
   setSound: (sound) => { saveFlag('dalalx-sound', sound); set({ sound }) },
+
+  /* The 3D layer defaults to on, and remembers being switched off. What a
+     given machine can actually afford is decided separately, in quality.ts;
+     this is only the reader's own wish. */
+  setThree: (three) => { saveFlag('dalalx-three', three); set({ three }) },
 
   setViva: (viva) => { saveFlag('dalalx-viva', viva); set({ viva }) },
   setPresenter: (presenter) => { saveFlag('dalalx-presenter', presenter); set({ presenter }) },

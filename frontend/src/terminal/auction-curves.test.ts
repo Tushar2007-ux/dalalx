@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { auctionCurves, bestCross } from './auctionCurves'
+import { auctionCurves, bestCross } from './auction-curves'
 
 const lv = (price: number, totalQty: number) => ({ price, totalQty, orderCount: 1 })
 

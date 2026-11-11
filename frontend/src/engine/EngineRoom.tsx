@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { SectionLabel } from '../design'
 import { Stat } from '../ui'
 import { api } from '../lib/api'
 import { COMMAND_SOURCES, type CommandSource, type RushResult, type WorkerLoad } from '../lib/types'
 import { Shell } from '../shell/Shell'
 import { useMarket } from '../store/market'
+import { useTier } from '../webgl/useTier'
+import { PressHall } from '../webgl/lazy'
 import { SOURCE_STYLE, arrivalRate, compact, queueFill, threadMood, ticketScale, ticketsFor } from './factory'
 import './engine.css'
 import { VivaTag } from '../viva/VivaTag'
@@ -27,6 +29,7 @@ const SLICE_MS = 100
  * once, so you can watch the queues fill and drain.
  */
 export function EngineRoom() {
+  const tier = useTier()
   const engine = useMarket((s) => s.engine)
   const applyEngine = useMarket((s) => s.applyEngine)
   const connection = useMarket((s) => s.connection)
@@ -95,6 +98,31 @@ export function EngineRoom() {
           <span key={s} title={SOURCE_STYLE[s].who}><i className="dx-ticket" style={{ background: SOURCE_STYLE[s].colour }} />{SOURCE_STYLE[s].label}</span>
         ))}
       </div>
+
+      {/* The hall is the same five workers, standing up. It is a view of the
+          numbers below, never a substitute for them: with 3D off the page is
+          exactly what it was. */}
+      {tier !== 'off' && workers.length > 0 && (
+        <figure className="dx-hall-wrap">
+          <Suspense fallback={null}><PressHall workers={workers} peak={peak} tier={tier} /></Suspense>
+          {/* Which press is which, and what it is doing, in type rather than
+              in the scene: text drawn into WebGL is never as sharp, and these
+              are the labels someone reads out loud in a viva. */}
+          <ol className="dx-hall-keys" aria-hidden="true">
+            {workers.map((w) => (
+              <li key={w.symbol} className={w.perSecond > 0 || w.pending > 0 ? 'is-working' : undefined}>
+                <b>{w.symbol}</b>
+                <small className="dx-num">{w.thread}</small>
+                <small className="dx-num">{compact(w.perSecond)}/s · {compact(w.pending)} waiting</small>
+              </li>
+            ))}
+          </ol>
+          <figcaption>
+            Five presses, one thread each. Paper rides each belt into that stock’s own queue;
+            its press takes them off one at a time. No two presses ever reach into the same pile.
+          </figcaption>
+        </figure>
+      )}
 
       <div className="dx-viva-row is-left" style={{ marginTop: 'var(--space-2)' }}><VivaTag note="engine" align="left" /></div>
       <section className="dx-factory" aria-label="Worker threads">

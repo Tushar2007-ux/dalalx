@@ -1,4 +1,9 @@
-/* "The presses roll": the opening animation (4.3 s). */
+/* "The presses roll": the opening animation (4.3 s).
+
+   The delays here are the choreography and are written as plain
+   milliseconds on purpose: they are points on one four-second timeline, not
+   durations, so they do not belong to the motion scale and must not be
+   swapped for its tokens. `intro.test.ts` guards that. */
 .dx-intro {
   position: fixed;
   inset: 0;
@@ -20,7 +25,7 @@
   display: grid;
   gap: var(--space-1);
   opacity: 0;
-  animation: dx-intro-show var(--dur-depth) 0ms forwards, dx-intro-hide var(--dur-slide) 3var(--dur-depth) forwards;
+  animation: dx-intro-show var(--dur-depth) 0ms forwards, dx-intro-hide var(--dur-slide) 3600ms forwards;
 }
 .dx-intro-rollers i {
   display: block;
@@ -40,27 +45,40 @@
   animation: dx-intro-feed var(--dur-ink) 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .dx-intro-half {
+  position: relative;
   background: var(--paper);
-  background-image: var(--grain);
   color: var(--ink);
   padding: var(--space-5) var(--space-6);
   box-sizing: border-box;
   backface-visibility: hidden;
 }
+/* Grain belongs on its own layer at the house strength. Painted straight on
+   as a background-image it comes in at full opacity and turns the sheet to
+   mud — which is what it had been doing. */
+.dx-intro-half::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--grain);
+  opacity: var(--grain-opacity);
+  pointer-events: none;
+}
+.dx-intro-half > * { position: relative; }
+
 .dx-intro-top {
   display: grid;
   align-content: end;
   gap: var(--space-2);
   transform-origin: top center;
   border-bottom: 1px dashed color-mix(in srgb, var(--ink) 25%, transparent);
-  animation: dx-intro-fold-up var(--dur-beat) 3var(--dur-slide) cubic-bezier(0.6, 0, 0.4, 1) forwards;
+  animation: dx-intro-fold-up var(--dur-beat) 3400ms cubic-bezier(0.6, 0, 0.4, 1) forwards;
 }
 .dx-intro-bottom {
   display: grid;
   align-content: start;
   gap: var(--space-3);
   transform-origin: bottom center;
-  animation: dx-intro-fold-down var(--dur-beat) 3var(--dur-slide) cubic-bezier(0.6, 0, 0.4, 1) forwards;
+  animation: dx-intro-fold-down var(--dur-beat) 3400ms cubic-bezier(0.6, 0, 0.4, 1) forwards;
 }
 .dx-intro-meta {
   display: flex;
@@ -73,7 +91,7 @@
   border-bottom: 1px solid var(--rule-strong);
   padding-bottom: var(--space-1);
   opacity: 0;
-  animation: dx-intro-show var(--dur-slide) 1var(--dur-depth) forwards;
+  animation: dx-intro-show var(--dur-slide) 1600ms forwards;
 }
 .dx-intro-mast {
   font-family: var(--font-display);
@@ -85,7 +103,7 @@
   opacity: 0;
   animation: dx-intro-stamp var(--dur-pen) 950ms cubic-bezier(0.55, 0, 0.9, 0.4) forwards;
 }
-.dx-intro-rule { height: 0; border-top: 4px double var(--ink); transform: scaleX(0); animation: dx-intro-draw var(--dur-pencil) 2var(--dur-tick) ease-out forwards; }
+.dx-intro-rule { height: 0; border-top: 4px double var(--ink); transform: scaleX(0); animation: dx-intro-draw var(--dur-pencil) 2100ms ease-out forwards; }
 .dx-intro-headline {
   font-family: var(--font-display);
   font-weight: 800;
@@ -95,7 +113,7 @@
   text-transform: uppercase;
   letter-spacing: 0.02em;
   opacity: 0;
-  animation: dx-intro-slam var(--dur-pen) 2var(--dur-slide) cubic-bezier(0.55, 0, 0.9, 0.4) forwards;
+  animation: dx-intro-slam var(--dur-pen) 2400ms cubic-bezier(0.55, 0, 0.9, 0.4) forwards;
 }
 .dx-intro-cols { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); }
 .dx-intro-cols div { display: grid; gap: var(--space-2); align-content: start; clip-path: inset(0 0 100% 0); animation: dx-intro-type var(--dur-ink) steps(9, end) forwards; }
@@ -106,7 +124,7 @@
   font-size: clamp(18px, 2.4vw, 24px);
   text-align: center;
   opacity: 0;
-  animation: dx-intro-show var(--dur-pencil) 2var(--dur-beat) forwards;
+  animation: dx-intro-show var(--dur-pencil) 2900ms forwards;
 }
 .dx-intro-skip {
   position: absolute;
@@ -140,3 +158,10 @@
 @media (prefers-reduced-motion: reduce) {
   .dx-intro { display: none; }
 }
+
+/* The wet sheet the titles are printed on: behind everything in the intro,
+   and gone the moment the intro is. */
+.dx-gl-intro { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.dx-intro-rollers, .dx-intro-page, .dx-intro-skip { position: relative; z-index: 1; }
+/* The generated room replaces the flat one, so the two never show at once. */
+.dx-intro:has(.dx-gl-intro) { background: #0E0B0A; }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { START_BOOK, match, queueFor } from './howItWorks'
+import { START_BOOK, match, queueFor } from './how-it-works'
 
 describe('the explainer’s toy engine', () => {
   it('queues the best price first, then whoever arrived first', () => {
