@@ -37,8 +37,8 @@ fi
 echo "Building core and starting backend on http://localhost:8080 ..."
 # 'install' puts core into the local repo so the server module can resolve it,
 # then spring-boot:run starts the server. Only the build's key lines are shown.
-( mvn -DskipTests -ntp install 2>&1 | grep --line-buffered -E "Building |BUILD|ERROR" ;
-  [[ ${PIPESTATUS[0]} -eq 0 ]] && cd server && exec mvn -q spring-boot:run ) &
+( "$ROOT/mvnw" -DskipTests -ntp install 2>&1 | grep --line-buffered -E "Building |BUILD|ERROR" ;
+  [[ ${PIPESTATUS[0]} -eq 0 ]] && cd server && exec "$ROOT/mvnw" -q spring-boot:run ) &
 BACKEND_PID=$!
 
 # Say clearly when the exchange is up, or that it is still building.

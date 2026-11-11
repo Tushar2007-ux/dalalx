@@ -10,20 +10,25 @@ The floor, live: the matching engine running behind it, with a chart, the order 
 
 ## Run
 
-Requirements: Java 21+, Maven 3.9+, Node 20+.
+Requirements: **Java 21+** and **Node 20+**. Maven is not needed — `./mvnw`
+downloads the right version itself the first time it runs.
 
 ```bash
-(cd frontend && npm install)   # first time only
+java -version                  # must say 21 or higher
 ./run.sh                       # backend :8080 + frontend :5173 — Ctrl+C stops both
 ```
+
+`run.sh` installs the frontend's packages itself if they are missing. The first
+run takes a few minutes while Maven and the dependencies download; after that
+it starts in seconds.
 
 Open http://localhost:5173 (the front page). For the guided tour, run `./demo.sh`, or open http://localhost:5173/#/demo once it's running.
 
 ## Test and benchmark
 
 ```bash
-mvn -q verify                                  # 343 Java tests (core + server)
-(cd frontend && npm test && npm run build)     # 161 frontend tests + type check
+./mvnw -q verify                                  # 343 Java tests (core + server)
+(cd frontend && npm test && npm run build)     # 186 frontend tests + type check
 ./bench.sh                                     # matching benchmark (docs/BENCHMARK.md)
 ```
 
