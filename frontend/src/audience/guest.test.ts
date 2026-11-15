@@ -22,7 +22,7 @@ describe('audience helpers', () => {
   })
 
   it('ignores a corrupted saved guest', () => {
-    localStorage.setItem('dalalx-guest', '{"nope":1}')
+    localStorage.setItem('uncross-guest', '{"nope":1}')
     expect(loadGuest()).toBeNull()
   })
 

@@ -158,7 +158,7 @@ function saveFlag(key: string, on: boolean): void {
 
 function savedEdition(): Edition {
   try {
-    return localStorage.getItem('dalalx-edition') === 'night' ? 'night' : 'day'
+    return localStorage.getItem('uncross-edition') === 'night' ? 'night' : 'day'
   } catch {
     return 'day'
   }
@@ -205,21 +205,21 @@ export const useMarket = create<MarketState>()((set, get) => ({
   engine: null,
   board: null,
   names: {},
-  viva: savedFlag('dalalx-viva'),
-  presenter: savedFlag('dalalx-presenter'),
+  viva: savedFlag('uncross-viva'),
+  presenter: savedFlag('uncross-presenter'),
   ticketSide: null,
   helpOpen: false,
-  sound: (() => { try { return localStorage.getItem('dalalx-sound') !== '0' } catch { return true } })(),
-  three: (() => { try { return localStorage.getItem('dalalx-three') !== '0' } catch { return true } })(),
-  setSound: (sound) => { saveFlag('dalalx-sound', sound); set({ sound }) },
+  sound: (() => { try { return localStorage.getItem('uncross-sound') !== '0' } catch { return true } })(),
+  three: (() => { try { return localStorage.getItem('uncross-three') !== '0' } catch { return true } })(),
+  setSound: (sound) => { saveFlag('uncross-sound', sound); set({ sound }) },
 
   /* The 3D layer defaults to on, and remembers being switched off. What a
      given machine can actually afford is decided separately, in quality.ts;
      this is only the reader's own wish. */
-  setThree: (three) => { saveFlag('dalalx-three', three); set({ three }) },
+  setThree: (three) => { saveFlag('uncross-three', three); set({ three }) },
 
-  setViva: (viva) => { saveFlag('dalalx-viva', viva); set({ viva }) },
-  setPresenter: (presenter) => { saveFlag('dalalx-presenter', presenter); set({ presenter }) },
+  setViva: (viva) => { saveFlag('uncross-viva', viva); set({ viva }) },
+  setPresenter: (presenter) => { saveFlag('uncross-presenter', presenter); set({ presenter }) },
   chooseSide: (side) => set((s) => ({ ticketSide: { side, nonce: (s.ticketSide?.nonce ?? 0) + 1 } })),
   setHelpOpen: (helpOpen) => set({ helpOpen }),
 
@@ -245,7 +245,7 @@ export const useMarket = create<MarketState>()((set, get) => ({
   select: (selected) => set({ selected }),
   setInterval: (interval) => set({ interval }),
   setEdition: (edition) => {
-    try { localStorage.setItem('dalalx-edition', edition) } catch { /* private mode: not remembered */ }
+    try { localStorage.setItem('uncross-edition', edition) } catch { /* private mode: not remembered */ }
     set({ edition })
   },
   setXray: (xray) => set({ xray }),

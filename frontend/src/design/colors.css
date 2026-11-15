@@ -1,4 +1,4 @@
-/* DalalX — The Morning Edition. Two editions; every token resolves per nearest [data-edition]. */
+/* Uncross — The Morning Edition. Two editions; every token resolves per nearest [data-edition]. */
 :root,
 [data-edition="day"] {
   --edition: day;

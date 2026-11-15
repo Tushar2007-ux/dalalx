@@ -1,0 +1,280 @@
+package com.uncross.core.exchange;
+
+import com.uncross.core.book.BookSnapshot;
+import com.uncross.core.breaker.BreakerRule;
+import com.uncross.core.breaker.TradingSession;
+import com.uncross.core.events.EventBus;
+import com.uncross.core.matching.CancelResult;
+import com.uncross.core.matching.MatchResult;
+import com.uncross.core.matching.MatchingStrategies;
+import com.uncross.core.matching.OrderFactory;
+import com.uncross.core.matching.OrderGate;
+import com.uncross.core.matching.SymbolEngine;
+import com.uncross.core.model.OrderRequest;
+import com.uncross.core.xray.XRayRecorder;
+import java.time.Clock;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+
+/**
+ * The whole stock exchange: one {@link SymbolWorker} per listed stock, all
+ * sharing one id generator and one {@link EventBus}.
+ *
+ * <p>This is the entry point the rest of the system uses (the server, bots,
+ * scenarios). Every method returns a {@link CompletableFuture}, because the
+ * real work happens later on the symbol's own worker thread. The caller can
+ * {@code join()} to wait, or attach a callback.
+ *
+ * <p><b>Thread safety:</b> this class is safe to call from any number of
+ * threads at once. It doesn't use locks around order books: it only routes
+ * each call to the right worker's queue (see {@link SymbolWorker}). The only
+ * shared state is:
+ * <ul>
+ *   <li>one {@link AtomicLong} for order ids, sequence numbers and trade ids
+ *       (lock-free and never hands out the same number twice);</li>
+ *   <li>a small map from order id to symbol, so {@link #cancel(long)} needs only
+ *       the id. It is size-bounded and synchronised, and is touched once per
+ *       order, never during matching.</li>
+ * </ul>
+ */
+public final class Exchange {
+
+    /** The five simulated stocks and their starting prices. */
+    public static final List<ListedStock> DEFAULT_STOCKS = List.of(
+            new ListedStock("RELIANCE", "Reliance Industries (simulated)", 246000),
+            new ListedStock("TCS", "Tata Consultancy Services (simulated)", 409000),
+            new ListedStock("INFY", "Infosys (simulated)", 154200),
+            new ListedStock("HDFCBANK", "HDFC Bank (simulated)", 168300),
+            new ListedStock("TATAMOTORS", "Tata Motors (simulated)", 94235));
+
+    private static final int ROUTE_HISTORY = 500_000;
+
+    private final Map<String, ListedStock> stocks = new LinkedHashMap<>();
+    private final Map<String, SymbolWorker> workers = new LinkedHashMap<>();
+    private final Map<Long, Route> routes;
+    private final EventBus events;
+    private final AtomicLong ids = new AtomicLong();
+    private ScheduledExecutorService ticker;
+    private volatile Function<String, CommandSource> sourceOfTrader = trader -> CommandSource.BOT;
+
+    /** Where an order lives and who sent it, so a cancel needs only the id. */
+    private record Route(String symbol, CommandSource source) {
+    }
+
+    /** How often the exchange clock lets time pass on every worker. */
+    static final long TICK_MILLIS = 200;
+
+    /** An exchange for {@link #DEFAULT_STOCKS} using the system clock. */
+    public Exchange(EventBus events) {
+        this(DEFAULT_STOCKS, events, Clock.systemUTC());
+    }
+
+    /**
+     * @param listed the stocks to trade
+     * @param events where every symbol publishes its events
+     * @param clock  source of timestamps
+     */
+    public Exchange(List<ListedStock> listed, EventBus events, Clock clock) {
+        this(listed, events, clock, BreakerRule.STANDARD);
+    }
+
+    /**
+     * @param breaker the circuit-breaker rule for every stock, or {@code null} for none
+     */
+    public Exchange(List<ListedStock> listed, EventBus events, Clock clock, BreakerRule breaker) {
+        this.events = Objects.requireNonNull(events, "events must not be null");
+        this.routes = Collections.synchronizedMap(boundedMap(ROUTE_HISTORY));
+        // One counter for order ids, sequences and trade ids: all unique and increasing.
+        // The factory and matchers hold no mutable state of their own (only this
+        // AtomicLong and the clock), so all workers can safely share them.
+        OrderFactory factory = new OrderFactory(ids::incrementAndGet, ids::incrementAndGet, clock);
+        MatchingStrategies strategies = MatchingStrategies.standard(ids::incrementAndGet, clock);
+        for (ListedStock stock : listed) {
+            stocks.put(stock.symbol(), stock);
+            TradingSession session = breaker == null
+                    ? TradingSession.alwaysOpen(stock.symbol())
+                    : TradingSession.withBreaker(stock.symbol(), breaker);
+            workers.put(stock.symbol(),
+                    new SymbolWorker(new SymbolEngine(stock.symbol(), factory, strategies, events, clock, session)));
+        }
+    }
+
+    private static Map<Long, Route> boundedMap(int maxSize) {
+        return new LinkedHashMap<>() {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<Long, Route> eldest) {
+                return size() > maxSize;
+            }
+        };
+    }
+
+    /**
+     * Tells the exchange how to label each trader's commands for monitoring
+     * (presenter, audience or bot). Only affects the Engine Room's counters.
+     */
+    public void classifySourcesWith(Function<String, CommandSource> classifier) {
+        this.sourceOfTrader = Objects.requireNonNull(classifier, "classifier must not be null");
+    }
+
+    /** Lets {@code recorder} X-Ray the orders it wants, on every stock. Call before {@link #start()}. */
+    public void recordXRays(XRayRecorder recorder) {
+        workers.values().forEach(w -> w.engine().recordXRays(recorder));
+    }
+
+    /** Puts {@code gate} in front of every stock's engine. Call before {@link #start()}. */
+    public void guardWith(OrderGate gate) {
+        workers.values().forEach(w -> w.engine().guardWith(gate));
+    }
+
+    /**
+     * Cancels every resting order of a trader on every stock (each cancel runs
+     * on its stock's worker, as always).
+     *
+     * @return how many orders were cancelled, once all workers have answered
+     */
+    public CompletableFuture<Integer> cancelAllFor(String traderId) {
+        List<CompletableFuture<Integer>> perStock = workers.values().stream()
+                .map(w -> w.enqueue("cancel-all", engine -> engine.cancelAllFor(traderId))).toList();
+        return CompletableFuture.allOf(perStock.toArray(CompletableFuture[]::new))
+                .thenApply(done -> perStock.stream().mapToInt(CompletableFuture::join).sum());
+    }
+
+    /** Starts every symbol's worker thread and the exchange clock. */
+    public void start() {
+        workers.values().forEach(SymbolWorker::start);
+        startClock();
+    }
+
+    /**
+     * A halt must end on time even if nobody sends an order, so a small daemon
+     * thread drops a "tick" command into every worker's queue a few times a
+     * second. The tick itself runs on the worker, like everything else that
+     * touches a book or its session.
+     */
+    private void startClock() {
+        ticker = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "exchange-clock");
+            t.setDaemon(true);
+            return t;
+        });
+        ticker.scheduleAtFixedRate(this::tickAll, TICK_MILLIS, TICK_MILLIS, TimeUnit.MILLISECONDS);
+    }
+
+    private void tickAll() {
+        for (SymbolWorker worker : workers.values()) {
+            try {
+                worker.enqueue("tick", CommandSource.CLOCK, engine -> {
+                    engine.tick();
+                    return null;
+                });
+            } catch (RejectedExecutionException shuttingDown) {
+                return;
+            }
+        }
+    }
+
+    /**
+     * Places an order. It is matched on its symbol's worker thread.
+     *
+     * @return the match result, once the worker has processed it
+     * @throws IllegalArgumentException if the symbol isn't listed
+     */
+    public CompletableFuture<MatchResult> submit(OrderRequest request) {
+        Objects.requireNonNull(request, "request must not be null");
+        CommandSource source = sourceOfTrader.apply(request.traderId());
+        return workerFor(request.symbol()).enqueue("submit", source, engine -> {
+            MatchResult result = engine.submit(request);
+            routes.put(result.incoming().id(), new Route(request.symbol(), source));
+            return result;
+        });
+    }
+
+    /**
+     * Cancels an order by id alone. The exchange looks up which symbol it
+     * belongs to and routes the cancel to that worker.
+     */
+    public CompletableFuture<CancelResult> cancel(long orderId) {
+        Route route = routes.get(orderId);
+        if (route == null) {
+            return CompletableFuture.completedFuture(CancelResult.unknown(orderId));
+        }
+        return workerFor(route.symbol()).enqueue("cancel", route.source(), engine -> engine.cancel(orderId));
+    }
+
+    /** @return an immutable view of the top {@code depth} levels of one book */
+    public CompletableFuture<BookSnapshot> snapshot(String symbol, int depth) {
+        return workerFor(symbol).enqueue("snapshot", engine -> engine.snapshot(depth));
+    }
+
+    /**
+     * Runs any action on a symbol's worker thread. Later features (circuit
+     * breaker ticks, call auctions, bot market views) use this so that they too
+     * only touch a book from its own thread.
+     */
+    public <T> CompletableFuture<T> onWorker(String symbol, String name, Function<SymbolEngine, T> action) {
+        return workerFor(symbol).enqueue(name, action);
+    }
+
+    /** Like {@link #onWorker(String, String, Function)}, labelled with where the work came from (for monitoring). */
+    public <T> CompletableFuture<T> onWorker(String symbol, String name, CommandSource source,
+                                            Function<SymbolEngine, T> action) {
+        return workerFor(symbol).enqueue(name, source, action);
+    }
+
+    private SymbolWorker workerFor(String symbol) {
+        SymbolWorker worker = workers.get(symbol);
+        if (worker == null) {
+            throw new UnknownSymbolException(symbol);
+        }
+        return worker;
+    }
+
+    /**
+     * Stops accepting orders, lets queued commands finish, and waits for the
+     * worker threads to end.
+     *
+     * @return {@code true} if every worker stopped within the timeout
+     */
+    public boolean shutdown(long timeout, TimeUnit unit) throws InterruptedException {
+        if (ticker != null) {
+            ticker.shutdownNow();
+        }
+        workers.values().forEach(SymbolWorker::shutdown);
+        boolean allStopped = true;
+        for (SymbolWorker worker : workers.values()) {
+            allStopped &= worker.awaitTermination(timeout, unit);
+        }
+        return allStopped;
+    }
+
+    /** @return a moment-in-time picture of every worker thread, in listing order (for the Engine Room) */
+    public List<WorkerStats> workerStats() {
+        return workers.values().stream().map(SymbolWorker::stats).toList();
+    }
+
+    /** @return the listed stocks, in listing order */
+    public List<ListedStock> stocks() {
+        return List.copyOf(stocks.values());
+    }
+
+    /** @return the listed stock, if any */
+    public Optional<ListedStock> stock(String symbol) {
+        return Optional.ofNullable(stocks.get(symbol));
+    }
+
+    /** @return the event bus every symbol publishes to */
+    public EventBus events() {
+        return events;
+    }
+}

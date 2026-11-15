@@ -26,7 +26,7 @@ export function JoinPage() {
       <div className="dx-phone">
       <header className="dx-phone-mast">
         <span>Audience Edition</span>
-        <strong>DalalX</strong>
+        <strong>Uncross</strong>
         <span>Paper money only</span>
       </header>
       {guest

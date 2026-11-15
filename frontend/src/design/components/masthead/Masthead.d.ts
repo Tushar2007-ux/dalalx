@@ -1,8 +1,8 @@
 import * as React from 'react';
 
 /**
- * The DalalX nameplate with dateline and market status; one per screen, at the top.
- * @startingPoint section="DalalX" subtitle="The DalalX nameplate with dateline and market status; one per screen, at the top." viewport="700x300"
+ * The Uncross nameplate with dateline and market status; one per screen, at the top.
+ * @startingPoint section="Uncross" subtitle="The Uncross nameplate with dateline and market status; one per screen, at the top." viewport="700x300"
  */
 export interface MastheadProps {
   title?: string;

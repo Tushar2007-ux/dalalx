@@ -56,7 +56,7 @@ async function suspendTheSpoofer(s: MarketState) {
 export const DEMO: DemoStep[] = [
   {
     route: 'front', title: 'The front page', seconds: 8,
-    caption: 'DalalX is a simulated stock exchange: a real matching engine in pure Java, five stocks each matched on its own thread, and a newspaper on top.',
+    caption: 'Uncross is a simulated stock exchange: a real matching engine in pure Java, five stocks each matched on its own thread, and a newspaper on top.',
   },
   {
     route: 'floor', title: 'The trading floor', seconds: 12,
@@ -110,7 +110,7 @@ export const DEMO: DemoStep[] = [
     action: suspendTheSpoofer,
   },
   {
-    route: 'front', title: 'That’s DalalX', seconds: 6, action: (s) => s.setFocusCase(null),
+    route: 'front', title: 'That’s Uncross', seconds: 6, action: (s) => s.setFocusCase(null),
     caption: 'Matching, concurrency, bots, a circuit breaker, a call auction, X-Ray and surveillance. Thank you for reading.',
   },
 ]

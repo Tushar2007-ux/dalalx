@@ -4,7 +4,7 @@ import type { Joined, Standing } from '../lib/types'
  * Small, pure helpers for audience trading (the QR code page and the phone page).
  */
 
-const KEY = 'dalalx-guest'
+const KEY = 'uncross-guest'
 
 /** The phone remembers who it is, so a refresh doesn't make you join again. Fails quietly in private mode. */
 export function loadGuest(): Joined | null {

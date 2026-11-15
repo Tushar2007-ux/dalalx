@@ -12,7 +12,7 @@
 
 ### 1. The pitch (30 s) — Trading Floor
 
-> "DalalX is a simulated stock exchange: a matching engine in pure Java, five stocks each matched on its own thread, a Spring server, and a newspaper-style React front end. Everything you see moving is real matching, driven by five trading bots."
+> "Uncross is a simulated stock exchange: a matching engine in pure Java, five stocks each matched on its own thread, a Spring server, and a newspaper-style React front end. Everything you see moving is real matching, driven by five trading bots."
 
 Point at:
 - the Markets column and the stock tabs;

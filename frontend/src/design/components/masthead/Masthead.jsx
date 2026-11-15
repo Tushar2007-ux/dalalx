@@ -11,7 +11,7 @@ const STATUS = {
 const meta = { fontFamily: 'var(--font-ui)', fontSize: 'var(--text-label)', fontWeight: 600, letterSpacing: 'var(--tracking-label)', textTransform: 'uppercase', color: 'var(--ink-muted)' };
 
 export function Masthead({
-  title = 'DalalX',
+  title = 'Uncross',
   place = 'Prayagraj',
   date = 'Wednesday, 28 October 2026',
   session = 14,

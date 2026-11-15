@@ -1,4 +1,4 @@
-# DalalX: UML diagrams
+# Uncross: UML diagrams
 
 Every diagram is drawn from the real code. The editable source is the `.mmd` file next to each picture in `docs/uml/` (Mermaid; GitHub renders it). To redraw the PNGs after a change: `npx -p @mermaid-js/mermaid-cli mmdc -i docs/uml/01-matching.mmd -o docs/uml/01-matching.png -s 2 -b white`.
 

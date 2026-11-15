@@ -1,6 +1,6 @@
-# DalalX — Project Rules
+# Uncross — Project Rules
 
-DalalX is a stock exchange order matching system built for a university
+Uncross is a stock exchange order matching system built for a university
 Object-Oriented Modelling (OOM) course. The author will study and be examined
 on this code: **clarity and good OOP design matter more than cleverness.**
 
@@ -36,7 +36,7 @@ UI theme: **"The Morning Edition"** — a financial newspaper, with Day and Nigh
 - `docs/` — notes, UML, guides.
 
 ## Packages in core
-`com.dalalx.core.model`, `.book`, `.matching`, `.events`, `.exchange`, `.bots`,
+`com.uncross.core.model`, `.book`, `.matching`, `.events`, `.exchange`, `.bots`,
 `.scenarios`, `.breaker`, `.xray`, `.surveillance`, `.auction`, `.headlines`.
 
 ## Domain rules

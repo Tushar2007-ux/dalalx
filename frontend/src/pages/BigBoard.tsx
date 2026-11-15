@@ -44,7 +44,7 @@ export function BigBoard() {
     <Edition edition="night" style={{ minHeight: '100vh' }}>
       <div className="dx-wall">
         <header className="dx-wall-top">
-          <div className="dx-wall-brand"><strong>DalalX</strong><span>Big Board</span></div>
+          <div className="dx-wall-brand"><strong>Uncross</strong><span>Big Board</span></div>
           <div className="dx-wall-breadth dx-num"><span className="is-up">▲ {up} up</span><span className="is-down">▼ {symbols.length - up} down</span></div>
           <div className="dx-wall-clock dx-num">{now.toLocaleTimeString('en-IN', { hour12: false })} IST</div>
           <div className="dx-wall-actions">

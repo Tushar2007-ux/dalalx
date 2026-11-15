@@ -1,4 +1,4 @@
-# DalalX — The Morning Edition
+# Uncross — The Morning Edition
 
 A multi-stock exchange simulator with a real order-matching engine, built for an Object-Oriented Modelling course. Five simulated stocks trade live, each matched on its own thread. Trading bots make the market, storylines bend it, a circuit breaker and call auction protect it, and a surveillance desk catches the bot that cheats. The UI is a financial newspaper with Day and Night editions.
 

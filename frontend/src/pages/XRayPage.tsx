@@ -102,7 +102,7 @@ function EmptyXRay({ error }: { error: string | null }) {
         <SectionLabel rule="double">{offline ? 'The exchange is not answering' : 'Nothing to X-Ray yet'}</SectionLabel>
         <p className="dx-lead dx-prose" style={{ marginTop: 'var(--space-3)' }}>
           {offline
-            ? <>DalalX cannot reach the exchange ({error}), so there is nothing to replay. Start it with <code>./run.sh</code> and this page will fill itself.</>
+            ? <>Uncross cannot reach the exchange ({error}), so there is nothing to replay. Start it with <code>./run.sh</code> and this page will fill itself.</>
             : <>X-Ray replays <b>your</b> order against the book exactly as it stood the instant it arrived — every
               level it took, the price it paid at each one, and where it stopped. Place one order and come back.</>}
         </p>

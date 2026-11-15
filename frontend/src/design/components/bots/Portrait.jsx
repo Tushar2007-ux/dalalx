@@ -10,7 +10,7 @@ export const BOTS = {
 };
 
 function base() {
-  return (typeof window !== 'undefined' && window.DALALX_ASSET_BASE) || '/assets/portraits/';
+  return (typeof window !== 'undefined' && window.UNCROSS_ASSET_BASE) || '/assets/portraits/';
 }
 
 /* Ink-only PNGs (transparent paper). <48px → tight head crop. Night shows the light-ink print; `plate` shows the day print on a light inset instead. */

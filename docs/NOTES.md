@@ -1,4 +1,4 @@
-# DalalX — Build Notes
+# Uncross — Build Notes
 
 ## Step 0 — Project skeleton
 - **What was set up:** a Maven multi-module build (root `pom.xml` aggregating `core` and `server`, Java 21, JUnit 5 + AssertJ), a Vite + React + TypeScript frontend, and `run.sh` to start both. A first end-to-end path works: browser → Vite dev proxy (`/api` → `localhost:8080`) → Spring Boot `GET /api/health` → `{"status":"ok"}`, with tests at each layer.
@@ -211,7 +211,7 @@ does not move the price by a pixel.
 dark, fibre grain, and the plates shifting in the last half second. Nothing is
 downloaded for it — every shape comes from layered noise warped by more noise.
 
-**Paid for only if used.** three.js is ~500 kB, more than the rest of DalalX
+**Paid for only if used.** three.js is ~500 kB, more than the rest of Uncross
 together. All three scenes are behind `React.lazy`, so the library sits in its
 own chunk and is only fetched when a tier above `off` asks for a scene. The
 main bundle went back from 1,001 kB to 491 kB, and a check confirms the chunk

@@ -2,7 +2,7 @@ import * as React from 'react';
 
 /**
  * One price level of the book with a hatched depth bar in its own track.
- * @startingPoint section="DalalX" subtitle="One price level of the book with a hatched depth bar in its own track." viewport="700x300"
+ * @startingPoint section="Uncross" subtitle="One price level of the book with a hatched depth bar in its own track." viewport="700x300"
  */
 export interface OrderBookRowProps {
   side?: 'bid' | 'ask';

@@ -29,7 +29,7 @@ export function Podium({ standings, guests, onClose }:
       <article className="dx-podium-sheet" onClick={(e) => e.stopPropagation()}>
         <header className="dx-podium-mast">
           <span>Closing bell</span>
-          <strong>The DalalX Times</strong>
+          <strong>The Uncross Times</strong>
           <span>{guests} in the audience</span>
         </header>
         <div className="dx-podium-kicker">Final edition</div>

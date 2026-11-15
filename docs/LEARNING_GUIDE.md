@@ -1,4 +1,4 @@
-# Learning guide: how to study DalalX
+# Learning guide: how to study Uncross
 
 This guide is for you, Tushar. You know basic Java, the four OOP principles, UML, C++ and OS synchronisation (pthreads, mutexes, producer–consumer). Read the code in the order below: each stage builds on the one before. Allow about **12–15 hours** in total; the times are rough.
 
@@ -53,7 +53,7 @@ Read `Command`, `SymbolWorker`, `Exchange`, then `ExchangeStressTest`.
 
 Map it to what you know from OS:
 
-| OS course | DalalX |
+| OS course | Uncross |
 |---|---|
 | producer–consumer with a bounded buffer | `LinkedBlockingQueue` (capacity 100,000), with `offer` and a timeout, and `take()` |
 | a thread that owns a resource | each `SymbolWorker` thread owns one book (**thread confinement**): no mutex is needed on the book |

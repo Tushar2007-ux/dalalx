@@ -152,7 +152,7 @@ export function FrontPage() {
         </div>
 
         <footer style={{ marginTop: 'var(--space-6)', display: 'grid', gap: 'var(--space-2)', textAlign: 'center', borderTop: '4px double var(--rule-strong)', paddingTop: 'var(--space-3)' }}>
-          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-num-lg)' }}>DalalX</span>
+          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-num-lg)' }}>Uncross</span>
           <span style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 'var(--text-body)' }}>Printed with Java 21, Spring Boot and React · An IIIT Allahabad OOM project</span>
         </footer>
       </div>

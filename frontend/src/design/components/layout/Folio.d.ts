@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 /**
- * Folio line at the foot of a screen: "Page 1 · Markets · DalalX".
+ * Folio line at the foot of a screen: "Page 1 · Markets · Uncross".
  */
 export interface FolioProps {
   page?: number;

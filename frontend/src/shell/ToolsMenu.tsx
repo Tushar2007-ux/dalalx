@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useMarket } from '../store/market'
 
 /**
- * One menu for the things that change how DalalX is shown rather than what it
+ * One menu for the things that change how Uncross is shown rather than what it
  * shows: Viva mode, Presenter mode, sound and the shortcut card.
  *
  * They used to sit as four separate buttons in the section bar, which left no

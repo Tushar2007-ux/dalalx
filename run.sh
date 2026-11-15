@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Starts the DalalX backend (Spring Boot, :8080) and frontend (Vite, :5173) together.
+# Starts the Uncross backend (Spring Boot, :8080) and frontend (Vite, :5173) together.
 # Press Ctrl+C to stop both.
 set -euo pipefail
 
@@ -14,7 +14,7 @@ WATCH_PID=""
 cleanup() {
   trap - INT TERM EXIT
   echo
-  echo "Stopping DalalX..."
+  echo "Stopping Uncross..."
   for pid in "$WATCH_PID" "$FRONTEND_PID" "$BACKEND_PID"; do
     if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
       # Kill the whole process group so child processes (java, node) also stop.

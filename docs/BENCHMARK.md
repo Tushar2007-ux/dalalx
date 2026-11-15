@@ -1,4 +1,4 @@
-# DalalX benchmark
+# Uncross benchmark
 
 Run it yourself (numbers depend heavily on the machine):
 

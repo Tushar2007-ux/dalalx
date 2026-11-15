@@ -44,7 +44,7 @@ export function MomentOverlay() {
         <article className="dx-moment-sheet">
           <header className="dx-moment-nameplate">
             <span>{KICKERS[moment.kind]}</span>
-            <strong>The DalalX Times</strong>
+            <strong>The Uncross Times</strong>
             <span>{printedDate()}</span>
           </header>
           <div className="dx-moment-kicker">{moment.kicker}</div>

@@ -6,7 +6,7 @@ import './intro.css'
 
 /** The whole intro, start to fold-open. */
 export const INTRO_MS = 4300
-const SEEN_KEY = 'dalalx-intro-seen'
+const SEEN_KEY = 'uncross-intro-seen'
 
 /** Shown once per browser session, never in tests, the demo or on phones joining from the audience. */
 export function shouldPlayIntro(hash: string, seen: boolean, reducedMotion: boolean): boolean {
@@ -23,7 +23,7 @@ function alreadySeen(): boolean {
 }
 
 /**
- * "The presses roll": a four-second opening the first time DalalX is opened.
+ * "The presses roll": a four-second opening the first time Uncross is opened.
  *
  * Rollers spin, the masthead is stamped onto a blank page, columns of type
  * roll in, the day's headline slams down, and then the page folds open onto
@@ -54,7 +54,7 @@ export function PressIntro() {
       <div className="dx-intro-page">
         <div className="dx-intro-half dx-intro-top">
           <div className="dx-intro-meta"><span>Vol. I · A simulated stock exchange</span><span>{date}</span></div>
-          <div className="dx-intro-mast">DalalX</div>
+          <div className="dx-intro-mast">Uncross</div>
           <div className="dx-intro-rule" />
           <div className="dx-intro-headline">The Market Is Open</div>
         </div>

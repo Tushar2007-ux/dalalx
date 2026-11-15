@@ -71,7 +71,7 @@ export function EngineRoom() {
   return (
     <Shell route="engine" page={6} section="Engine Room" headline={{
       kicker: 'Inside the exchange', tone: 'neutral', state: connection === 'offline' ? 'stale' : 'live',
-      headline: 'Five presses, one thread each: how DalalX matches without a single lock',
+      headline: 'Five presses, one thread each: how Uncross matches without a single lock',
       deck: 'Every order is a ticket on a belt. Each stock’s worker thread takes them one at a time from its own queue, so no two threads ever touch the same book.',
     }}>
       <section className="dx-engine-top">

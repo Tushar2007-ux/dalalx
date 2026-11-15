@@ -63,7 +63,7 @@ export function AudiencePage() {
     <Shell route="audience" page={7} section="Audience" headline={{
       kicker: 'Audience Edition', tone: 'neutral', state: connection === 'offline' ? 'stale' : 'live',
       headline: board?.guests ? `${board.guests} ${board.guests === 1 ? 'trader has' : 'traders have'} joined the floor from the audience`
-        : 'Scan the code: you are now a trader on DalalX',
+        : 'Scan the code: you are now a trader on Uncross',
       deck: 'Same market, same bots, same matching engine. Buy and sell from your phone and climb the leaderboard.',
     }}>
       <div className="dx-aud">

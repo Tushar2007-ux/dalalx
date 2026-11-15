@@ -4,4 +4,4 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 "$(cd "$(dirname "$0")" && pwd)/mvnw" -q -pl core -DskipTests compile
-java -Xms512m -Xmx2g -cp core/target/classes com.dalalx.core.bench.Benchmark "$@"
+java -Xms512m -Xmx2g -cp core/target/classes com.uncross.core.bench.Benchmark "$@"

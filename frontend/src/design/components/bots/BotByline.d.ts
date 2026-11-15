@@ -2,7 +2,7 @@ import * as React from 'react';
 
 /**
  * Byline card for a bot: portrait, name, desk, quote, status, stats. card or compact layout.
- * @startingPoint section="DalalX" subtitle="Byline card for a bot: portrait, name, desk, quote, status, stats. card or compact layout." viewport="700x300"
+ * @startingPoint section="Uncross" subtitle="Byline card for a bot: portrait, name, desk, quote, status, stats. card or compact layout." viewport="700x300"
  */
 export interface BotBylineProps {
   bot?: 'munim' | 'momentum' | 'panic' | 'whale' | 'spoofer' | 'inspector';

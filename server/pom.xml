@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  DalalX server: a thin Spring Boot 3 adapter that exposes the core module
+  Uncross server: a thin Spring Boot 3 adapter that exposes the core module
   over REST/WebSocket. Business logic belongs in core, not here.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -9,13 +9,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.dalalx</groupId>
-        <artifactId>dalalx-parent</artifactId>
+        <groupId>com.uncross</groupId>
+        <artifactId>uncross-parent</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>dalalx-server</artifactId>
-    <name>DalalX Server</name>
+    <artifactId>uncross-server</artifactId>
+    <name>Uncross Server</name>
 
     <dependencyManagement>
         <dependencies>
@@ -32,8 +32,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.dalalx</groupId>
-            <artifactId>dalalx-core</artifactId>
+            <groupId>com.uncross</groupId>
+            <artifactId>uncross-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
