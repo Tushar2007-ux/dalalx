@@ -6,6 +6,9 @@ import { ToolsMenu } from './ToolsMenu'
 import type { Headline } from '../terminal/headline'
 import { ROUTES, type ShellRoute } from './route'
 import { TickerStrip } from './TickerStrip'
+import { BreakingBand } from '../visuals/BreakingBand'
+import { MastheadPnl } from '../visuals/MastheadPnl'
+import '../visuals/visuals.css'
 import './shell.css'
 
 const EDITION_NAMES = { day: 'Day Edition', night: 'Night Edition' } as const
@@ -14,7 +17,8 @@ const today = () => new Date().toLocaleDateString('en-IN', { weekday: 'long', da
 
 /**
  * The newspaper around every page: edition (Day/Night), strip masthead with
- * page links, connection light and edition switch, the headline banner, the
+ * page links, your running P&L, connection light and edition switch, the
+ * price ticker, the BREAKING band, the headline banner, the
  * folio at the foot and the toasts. Pages only supply their own columns.
  */
 export function Shell({ route, headline, page, section, status, band, full = false, children }: {
@@ -45,6 +49,7 @@ export function Shell({ route, headline, page, section, status, band, full = fal
         ))}
       </nav>
       <span className="dx-sections-right">
+      <MastheadPnl />
       <ToolsMenu />
       <a href="#/wall" className="dx-focus dx-sections-board" title="Full-screen wall display for the projector (W)">Big Board ⤢</a>
       <span data-testid="connection" style={{ fontSize: 'var(--text-small)', color: connection === 'live' ? 'var(--buy)' : 'var(--ink-muted)' }}>
@@ -69,7 +74,8 @@ export function Shell({ route, headline, page, section, status, band, full = fal
               status={connection === 'offline' ? 'closed' : status ?? 'live'} />
             {sections}
           </>}
-      <TickerStrip />
+      <TickerStrip stopped={status === 'halted'} />
+      <BreakingBand />
       {headline && <HeadlineBanner {...headline} time={headline.time ?? clockTime(Date.now()).slice(0, 8)} />}
       {band}
       {children}

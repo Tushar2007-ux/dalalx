@@ -5,6 +5,7 @@ import { addTradeToCandles, botKey, ME } from '../lib/market'
 import { isBlockTrade } from './tape'
 import { INTERVALS, type Candle, type Interval } from '../lib/types'
 import { chartKey, useMarket } from '../store/market'
+import { fillMarks } from '../visuals/signals'
 
 /** Candle from the server (paise, epoch millis) → the shape the chart component draws (rupees, label). */
 function toChartCandle(c: Candle, interval: Interval) {
@@ -13,7 +14,10 @@ function toChartCandle(c: Candle, interval: Interval) {
   return { t, o: toRupees(c.open), h: toRupees(c.high), l: toRupees(c.low), c: toRupees(c.close), v: c.volume }
 }
 
-/** Centre column: big last price, the candlestick chart and the trade tape for the selected stock. */
+/**
+ * Centre column: the candlestick chart, with a marker wherever one of my own
+ * orders filled, and the trade tape for the selected stock.
+ */
 export function ChartPanel() {
   const selected = useMarket((s) => s.selected)
   const names = useMarket((s) => s.names)
@@ -26,13 +30,17 @@ export function ChartPanel() {
   const chart = useMarket((s) => s.chart)
   const tape = useMarket((s) => s.tapes[s.selected])
 
-  const candles = useMemo(() => {
+  const myFills = useMarket((s) => s.myFills[s.selected])
+
+  const { candles, marks } = useMemo(() => {
     const fromServer = chart?.key === chartKey(selected, interval) ? chart.candles : []
     // Before the server's candles arrive, draw from the trades already on the tape, so the chart is never blank.
     const source = fromServer.length ? fromServer
       : [...(tape ?? [])].reverse().reduce<Candle[]>((acc, t) => addTradeToCandles(acc, t, interval), [])
-    return source.map((c) => toChartCandle(c, interval))
-  }, [chart, selected, interval, tape])
+    // My own fills, pinned to the candle each one happened in.
+    const marks = fillMarks(source.map((c) => c.startMillis), myFills ?? []).map((m) => ({ ...m, price: toRupees(m.price) }))
+    return { candles: source.map((c) => toChartCandle(c, interval)), marks }
+  }, [chart, selected, interval, tape, myFills])
   const reference = info?.referencePrice
   void price
 
@@ -49,7 +57,7 @@ export function ChartPanel() {
       style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
       <div style={{ flex: 1, minHeight: 320, display: 'flex' }}>
         {candles.length
-          ? <CandleChart candles={candles} prevClose={interval === '1D' || reference === undefined ? undefined : toRupees(reference)}
+          ? <CandleChart candles={candles} marks={marks} prevClose={interval === '1D' || reference === undefined ? undefined : toRupees(reference)}
               interval={interval} intervals={INTERVALS} onInterval={(iv) => setInterval(iv as Interval)} minHeight={320} />
           : <EmptyChart interval={interval} onInterval={setInterval} />}
       </div>

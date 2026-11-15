@@ -10,6 +10,8 @@ export interface CandleChartProps {
   l: number;
   c: number;
   v: number }[];
+  /** The reader's own fills, each pinned to a candle by index (price in rupees). */
+  marks?: { index: number; price: number; side: 'BUY' | 'SELL'; qty: number }[];
   prevClose?: number;
   interval?: string;
   intervals?: string[];

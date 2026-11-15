@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { makeTextPlate } from './textTexture'
 import { type Stage, useScene } from './useScene'
 import type { Tier } from './quality'
+import { useMarket } from '../store/market'
 
 /**
  * The headline price, printed by the GPU instead of the browser.
@@ -26,7 +27,22 @@ export function PriceGlitch({ text, tone, tier, anchor }:
     uTone: { value: 0 },           // +1 up, −1 down
     uTime: { value: 0 },
     uAspect: { value: 1 },
+    uInk: { value: new THREE.Color('#1A1614') },   // the edition's ink, read from the page
+    uUp: { value: new THREE.Color('#0A6B38') },
+    uDown: { value: new THREE.Color('#B31F1F') },
   })
+
+  /* The figure is printed in the edition's own ink and its buy/sell colours,
+     read from the real element, so the Night edition prints light on dark. */
+  const readInks = () => {
+    const el = anchor.current
+    if (!el) return
+    const css = getComputedStyle(el)
+    const set = (colour: THREE.Color, value: string) => { if (value) colour.setStyle(value, THREE.LinearSRGBColorSpace) }
+    set(uniforms.current.uInk.value, css.color)
+    set(uniforms.current.uUp.value, css.getPropertyValue('--buy').trim())
+    set(uniforms.current.uDown.value, css.getPropertyValue('--sell').trim())
+  }
 
   /* The figure must land exactly where the DOM one would, or switching 3D
      off would move the price. So the face, the size and the left edge are
@@ -42,6 +58,7 @@ export function PriceGlitch({ text, tone, tier, anchor }:
     const face = css ? `${css.fontWeight} ${css.fontSize} ${css.fontFamily}` : '800 48px serif'
     const ink = css?.color || getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || '#1A1614'
     const originX = rect && box ? rect.left - box.left : 0
+    readInks()
     uniforms.current.uAspect.value = stage.width / Math.max(1, stage.height)
     plate.current?.dispose()
     plate.current = makeTextPlate(face, ink, stage.tier === 'high' ? 2 : 1.25, originX)
@@ -70,6 +87,7 @@ export function PriceGlitch({ text, tone, tier, anchor }:
             varying vec2 vUv;
             uniform sampler2D uMap;
             uniform float uHit, uTone, uTime, uAspect;
+            uniform vec3 uInk, uUp, uDown;
 
             float hash(float n) { return fract(sin(n) * 43758.5453123); }
 
@@ -92,10 +110,8 @@ export function PriceGlitch({ text, tone, tier, anchor }:
 
               /* Ink is one colour; the split shows as colour only where the
                  channels disagree, which is exactly the edges of the glyphs. */
-              vec3 ink = vec3(0.102, 0.086, 0.078);
-              vec3 up  = vec3(0.04, 0.42, 0.22);
-              vec3 dn  = vec3(0.70, 0.12, 0.12);
-              vec3 edge = uTone > 0.0 ? up : dn;
+              vec3 ink = uInk;
+              vec3 edge = uTone > 0.0 ? uUp : uDown;
 
               float a = max(g, max(r, b));
               float fringe = clamp(abs(r - b), 0.0, 1.0);
@@ -116,6 +132,14 @@ export function PriceGlitch({ text, tone, tier, anchor }:
     },
     resize(stage) { makePlate(stage) },
   }, tier, true)
+
+  // Switching edition changes the ink; wait a frame so the page has the new colours.
+  const edition = useMarket((s) => s.edition)
+  useEffect(() => {
+    const frame = requestAnimationFrame(readInks)
+    return () => cancelAnimationFrame(frame)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [edition])
 
   // A new figure repaints the plate and kicks the hit back up to full.
   useEffect(() => {

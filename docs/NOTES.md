@@ -232,3 +232,52 @@ scenes, each with a complete fallback already on the page · *paying for what
 you use* — code splitting measured, not assumed.
 
 Tests: 343 Java, 161 frontend.
+
+## Step 22 — Uncross, and sixteen visual upgrades
+
+**The name.** The project is now **Uncross** — the word for what a call
+auction does when it matches every crossing order at one price. Packages are
+`com.uncross.*`, the server is `UncrossServerApplication`, the frontend
+package is `uncross-frontend`, and saved settings use `uncross-*` keys. The
+root `design/` folder is read-only and still carries the old name inside the
+exported files.
+
+**One file of rules, thin components.** Everything the new visuals decide is
+in `frontend/src/visuals/signals.ts` — pure functions, 31 tests — and the
+components in `visuals/` only draw what those functions return:
+
+| # | What | Where |
+|---|------|-------|
+| 1 | My fills marked on the candles (▲ bought, ▼ sold; one order's fills merged at the average price) | `fillMarks`, `CandleChart` `marks` prop |
+| 2 | Depth chart: cumulative bids and asks as two staircases | `depthCurve`, `DepthChart` |
+| 3 | Market map: tiles sized by traded value, inked by the day's move | `layoutTiles`, `moveInk`, `MarketMap` |
+| 4 | Ink roller wipes across on every page change | `InkWipe` |
+| 5 | STOP PRESS bar on a halt; the ticker freezes and greys | `StopPress`, `TickerStrip stopped` |
+| 6 | Night edition: lamp glow, vignette, heavier grain | `visuals.css` |
+| 7 | Sparklines beside every symbol (ticker, markets, front page, map) | `pushPrice`, `trailPath`, `Spark` |
+| 8 | Trade tape typed out behind a print head; block trades bold | `visuals.css` |
+| 9 | Order-book rows tinted by size | `levelHeat` |
+| 10 | Portraits react: Panic sweats, Momentum leans, a suspect gets a ring | `botMoodOf`, `FloorNow` |
+| 11 | BREAKING band for alert headlines, nine seconds | `breakingNow`, `BreakingBand` |
+| 12 | Running P&L odometer in the section bar | `MastheadPnl` |
+| 13 | FILLED stamp when a *resting* order is hit | store `fillStamp`, `TicketPanel` |
+| 14 | Crosshair carries a newsprint clipping with the candle's figures | `CandleChart` |
+| 15 | "Going to press…" loading shimmer | `RuledPanel` |
+| 16 | Market-outlook weather box, measured from the tape | `swing`, `weatherFor`, `WeatherBox` |
+
+**Two real bugs found by looking at the Night edition.**
+`--card-bg` is built from `--surface` and `--paper`, but it was declared only
+on `:root`. A custom property that uses `var()` is worked out where it is
+*declared*, so every card kept the day's cream at night, with night's cream
+text on top — unreadable. The scale tokens are now declared on
+`[data-edition]` as well. And the WebGL hero price had its ink colour written
+into the shader, so it printed dark on dark at night; the ink and the buy/sell
+colours are now uniforms read from the page.
+
+Viva points: *separation of concerns* — rules in `signals.ts`, drawing in
+components, so a rule can be tested without a browser · *single source of
+truth* — the masthead P&L reads the same leaderboard figure the Audience page
+ranks by · *thread confinement still holds* — none of this touches the engine;
+the browser only draws what the one worker per stock already published.
+
+Tests: 343 Java, 220 frontend.

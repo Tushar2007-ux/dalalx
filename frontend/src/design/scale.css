@@ -6,8 +6,13 @@
  * file adds only what the later pages (Engine Room, Audience, Big Board,
  * Portfolio) genuinely needed, and names each one by its job so there is
  * never a reason to invent another.
+ *
+ * Declared on each edition as well as the root: a token built from other
+ * tokens (the card background mixes surface and paper) is worked out where it
+ * is declared, so it must be declared again where the Night edition changes
+ * those colours, or night cards would keep the day's cream.
  */
-:root {
+:root, [data-edition] {
   /* ---- Type: four sizes the export didn't cover, each with one job ---- */
   --text-micro: 10px;        /* Plex Sans 700, uppercase, 0.12em — the smallest label that is still legible */
   --text-lead: 17px;         /* Fraunces — standfirst and intro copy, one step above body */

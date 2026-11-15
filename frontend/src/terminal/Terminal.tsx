@@ -14,6 +14,7 @@ import { TradeFlight } from './TradeFlight'
 import { PriceHero } from './PriceHero'
 import { PortfolioPanel } from './PortfolioPanel'
 import { VivaTag } from '../viva/VivaTag'
+import { StopPress } from '../visuals/StopPress'
 
 /**
  * The trading floor: stock tabs, then four newspaper columns (markets & wire
@@ -43,7 +44,7 @@ export function Terminal() {
 
   return (
     <Shell route="floor" headline={headline} page={2} section="Markets" status={halted ? 'halted' : inAuction ? 'auction' : undefined}
-      band={halted && selectedStatus ? <HaltBand symbol={selected} status={selectedStatus} />
+      band={halted && selectedStatus ? <><StopPress symbol={selected} /><HaltBand symbol={selected} status={selectedStatus} /></>
         : inAuction && selectedStatus ? <AuctionBand status={selectedStatus} auction={auction} book={book} /> : undefined}>
       <div className="dx-tabsrow">
         <StockTabs tabs={tabs} value={selected} onChange={select} />

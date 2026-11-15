@@ -4,6 +4,8 @@ import { formatQty } from '../lib/format'
 import { botKey } from '../lib/market'
 import { monogramOf } from '../lib/monogram'
 import { useMarket } from '../store/market'
+import { changePct } from '../lib/format'
+import { botMoodOf, type BotMood } from '../visuals/signals'
 import { bubbleLine } from './bubbles'
 
 type BotKey = 'munim' | 'momentum' | 'panic' | 'whale' | 'spoofer' | 'inspector'
@@ -12,16 +14,25 @@ const TRADERS = ['MUNIM', 'MOMENTUM', 'PANIC', 'WHALE', 'SPOOFER']
 const NAMES: Record<string, string> = { MUNIM: 'The Munim', MOMENTUM: 'Momentum', PANIC: 'Panic', WHALE: 'The Whale', SPOOFER: 'The Spoofer' }
 /** A head stays "lit" this long after its bot trades. */
 export const ACTIVE_MS = 1800
+/** What a head's caption says while its bot is in a mood. */
+const MOOD_LABEL: Partial<Record<BotMood, string>> = { sweating: 'Sweating', chasing: 'Chasing', watched: 'Being watched' }
 
 /**
  * "On the floor now": the bots' heads beside the stock tabs. A head lifts and
  * gets a ring the moment its bot trades, with what it just did underneath;
- * a suspended trader is greyed out with a stamp. It re-renders a few times a
+ * a suspended trader is greyed out with a stamp. The portraits also react to
+ * the market: Panic sweats in a fall, Momentum leans into a big move, and a
+ * trader under investigation gets the Inspector's ring. It re-renders a few times a
  * second, so the heads settle back after their moment.
  */
 export function FloorNow() {
   const lastTradeBy = useMarket((s) => s.lastTradeBy)
   const cases = useMarket((s) => s.cases)
+  // The selected stock's move today decides who is nervous and who is excited.
+  const movePct = useMarket((s) => {
+    const info = s.symbols.find((x) => x.symbol === s.selected)
+    return info ? changePct(s.lastPrice[s.selected] ?? info.referencePrice, info.referencePrice) : 0
+  })
   const [now, setNow] = useState(Date.now())
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 400)
@@ -40,8 +51,10 @@ export function FloorNow() {
         const active = !!last && now - last.at < ACTIVE_MS
         const suspended = cases.some((c) => c.traderId === id && c.status === 'SUSPENDED')
         const key = botKey(id)
+        const mood = botMoodOf(id, { suspended, movePct, tradedJustNow: active,
+          underInvestigation: cases.some((c) => c.traderId === id && c.status === 'OPEN') })
         return (
-          <span key={id} className={`dx-floornow-bot${active ? ' is-active' : ''}${suspended ? ' is-suspended' : ''}`}
+          <span key={id} className={`dx-floornow-bot is-mood-${mood}${active ? ' is-active' : ''}${suspended ? ' is-suspended' : ''}`}
             title={suspended ? `${NAMES[id]} · suspended` : last ? `${NAMES[id]} · last ${last.side === 'BUY' ? 'bought' : 'sold'} ${formatQty(last.qty)} ${last.symbol}` : NAMES[id]}>
             {active && !suspended && id === speaker && (
               <span key={last!.at} className={`dx-bubble ${last!.side === 'BUY' ? 'is-buy' : 'is-sell'}`} role="status">{bubbleLine(id, last!)}</span>
@@ -50,7 +63,7 @@ export function FloorNow() {
               {key && key !== 'you' ? <Portrait bot={key as BotKey} size={38} crop="head" /> : <Monogram bot={monogramOf(id)} size={34} />}
             </span>
             <span className="dx-floornow-what dx-num">
-              {suspended ? 'Suspended' : active ? `${last!.side === 'BUY' ? '▲' : '▼'} ${formatQty(last!.qty)} ${last!.symbol.slice(0, 4)}` : NAMES[id]}
+              {suspended ? 'Suspended' : active ? `${last!.side === 'BUY' ? '▲' : '▼'} ${formatQty(last!.qty)} ${last!.symbol.slice(0, 4)}` : MOOD_LABEL[mood] ?? NAMES[id]}
             </span>
           </span>
         )

@@ -3,8 +3,9 @@ import { changePct, toRupees } from '../lib/format'
 import { VivaTag } from '../viva/VivaTag'
 import { WireColumn } from './WireColumn'
 import { useMarket } from '../store/market'
+import { Spark } from '../visuals/Spark'
 
-/** Left column: every listed stock with its last price and day change, The Wire, and market breadth. */
+/** Left column: every listed stock with a sparkline, its last price and day change, The Wire, and market breadth. */
 export function MarketsPanel() {
   const symbols = useMarket((s) => s.symbols)
   const lastPrice = useMarket((s) => s.lastPrice)
@@ -12,6 +13,7 @@ export function MarketsPanel() {
   const select = useMarket((s) => s.select)
   const wire = useMarket((s) => s.wire)
   const status = useMarket((s) => s.status)
+  const trail = useMarket((s) => s.trail)
 
   const trading = symbols.filter((x) => (status[x.symbol]?.phase ?? 'OPEN') === 'OPEN')
   const moves = trading.map((x) => (lastPrice[x.symbol] ?? x.referencePrice) - x.referencePrice)
@@ -30,11 +32,11 @@ export function MarketsPanel() {
             aria-pressed={x.symbol === selected}
             style={{
               all: 'unset', boxSizing: 'border-box', width: '100%', cursor: 'pointer', display: 'grid',
-              gridTemplateColumns: '1fr auto', alignItems: 'baseline', padding: '6px 4px',
+              gridTemplateColumns: 'minmax(0,1fr) auto', alignItems: 'baseline', padding: '6px 4px',
               borderBottom: '1px solid var(--rule)',
               background: x.symbol === selected ? 'var(--surface-sunk)' : 'transparent',
             }}>
-            <span style={{ fontWeight: 600, fontSize: 'var(--text-small)', letterSpacing: '0.04em' }}>{x.symbol}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontWeight: 600, fontSize: 'var(--text-small)', letterSpacing: '0.04em' }}>{x.symbol}{!halted && <Spark values={trail[x.symbol]} width={30} height={12} />}</span>
             <PriceCell value={toRupees(price)} halted={halted} />
             <span style={{ fontSize: 'var(--text-label)', color: 'var(--ink-muted)' }}>{phase === 'HALTED' ? '■ Halted · circuit breaker' : phase === 'AUCTION' ? '■ Call auction' : x.name}</span>
             <PriceCell value={toRupees(price)} change={toRupees(price - x.referencePrice)}

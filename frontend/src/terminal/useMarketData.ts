@@ -44,6 +44,8 @@ export function useMarketData(): void {
           onLeaderboard: (b) => useMarket.getState().applyBoard(b),
         })
         symbols.forEach((s) => stream?.watch(s.symbol))
+        // Every stock's recent trades, so its sparkline and map tile have a shape before the first live trade.
+        symbols.forEach((s) => api.trades(s.symbol, 40).then((t) => !stopped && useMarket.getState().setTape(s.symbol, t)).catch(() => {}))
         api.wire().then((w) => !stopped && useMarket.getState().setWire(w)).catch(() => {})
         api.cases().then((c) => !stopped && useMarket.getState().setCases(c)).catch(() => {})
         api.leaderboard().then((b) => !stopped && useMarket.getState().applyBoard(b)).catch(() => {})

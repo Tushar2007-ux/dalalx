@@ -3,6 +3,7 @@ import {
   addTradeToCandles, applyFill, filledBy, isWorking, ME,
 } from '../lib/market'
 import { formatPaise, formatQty } from '../lib/format'
+import { pushFill, pushPrice, type MyFill } from '../visuals/signals'
 import type {
   Board, EngineSnapshot,
   AuctionUpdate, BookSnapshot, Candle, Case, Interval, MarketStatus, MarketStatusChanged, OrderActivity, OrderView, SymbolInfo, Trade,
@@ -72,6 +73,12 @@ export interface MarketState {
   moment: Moment | null
   /** Each trader's latest trade (both sides of every trade count). */
   lastTradeBy: Record<string, LastTrade>
+  /** Each stock's last few dozen trade prices, oldest first: the sparklines, the market map and the weather read it. */
+  trail: Record<string, number[]>
+  /** My own fills per stock, for the chart's markers (kept in memory only). */
+  myFills: Record<string, MyFill[]>
+  /** The FILLED stamp over the ticket: set when one of my orders trades, cleared by the stamp itself. */
+  fillStamp: { id: number; side: 'BUY' | 'SELL'; text: string } | null
   /** The price before the last change, per stock (the ticker flashes up or down from it). */
   tickerPrev: Record<string, number>
   /** Each stock's trading phase (open, halted by the circuit breaker, auction). */
@@ -135,6 +142,8 @@ export interface MarketState {
   setThree: (on: boolean) => void
   applyEngine: (e: EngineSnapshot) => void
   applyBoard: (b: Board) => void
+  stampFill: (side: 'BUY' | 'SELL', text: string) => void
+  clearFillStamp: () => void
   showMoment: (m: Omit<Moment, 'id'>) => void
   clearMoment: () => void
 }
@@ -198,6 +207,9 @@ export const useMarket = create<MarketState>()((set, get) => ({
   moment: null,
   lastTradeBy: {},
   tickerPrev: {},
+  trail: {},
+  myFills: {},
+  fillStamp: null,
   status: {},
   cases: [],
   focusCase: null,
@@ -222,6 +234,8 @@ export const useMarket = create<MarketState>()((set, get) => ({
   setPresenter: (presenter) => { saveFlag('uncross-presenter', presenter); set({ presenter }) },
   chooseSide: (side) => set((s) => ({ ticketSide: { side, nonce: (s.ticketSide?.nonce ?? 0) + 1 } })),
   setHelpOpen: (helpOpen) => set({ helpOpen }),
+  stampFill: (side, text) => set({ fillStamp: { id: nextToastId++, side, text } }),
+  clearFillStamp: () => set({ fillStamp: null }),
 
   applyEngine: (engine) => set({ engine }),
   applyBoard: (board) => set((s) => {
@@ -252,7 +266,11 @@ export const useMarket = create<MarketState>()((set, get) => ({
   setCandles: (symbol, interval, candles) => set({ chart: { key: chartKey(symbol, interval), candles } }),
   setTape: (symbol, trades) => set((s) => {
     const byId = new Map([...trades, ...(s.tapes[symbol] ?? [])].map((t) => [t.id, t]))
-    return { tapes: { ...s.tapes, [symbol]: [...byId.values()].sort((a, b) => b.id - a.id).slice(0, TAPE_SIZE) } }
+    const tape = [...byId.values()].sort((a, b) => b.id - a.id).slice(0, TAPE_SIZE)
+    // Seed the trail from the snapshot, oldest first, unless live trades already built a longer one.
+    const seeded = [...tape].reverse().map((t) => t.price)
+    const trail = (s.trail[symbol]?.length ?? 0) >= seeded.length ? s.trail : { ...s.trail, [symbol]: seeded }
+    return { tapes: { ...s.tapes, [symbol]: tape }, trail }
   }),
 
   applyBook: (book) => set((s) => ({ books: { ...s.books, [book.symbol]: book } })),
@@ -288,7 +306,17 @@ export const useMarket = create<MarketState>()((set, get) => ({
       lastTradeBy[t.buyerId] = { at: now, symbol, side: 'BUY', qty: t.qty }
       lastTradeBy[t.sellerId] = { at: now, symbol, side: 'SELL', qty: t.qty }
     }
+    let trail = s.trail[symbol]
+    let mine = s.myFills[symbol]
+    for (const t of trades) {
+      trail = pushPrice(trail, t.price)
+      if (t.buyerId === ME || t.sellerId === ME) {
+        mine = pushFill(mine, { at: Date.parse(t.timestamp), price: t.price, side: t.buyerId === ME ? 'BUY' : 'SELL', qty: t.qty })
+      }
+    }
     set({
+      trail: { ...s.trail, [symbol]: trail! },
+      myFills: mine === s.myFills[symbol] ? s.myFills : { ...s.myFills, [symbol]: mine! },
       lastTradeBy,
       tickerPrev: oldPrice !== undefined && oldPrice !== newPrice ? { ...s.tickerPrev, [symbol]: oldPrice } : s.tickerPrev,
       lastPrice: { ...s.lastPrice, [symbol]: newPrice },
@@ -296,7 +324,13 @@ export const useMarket = create<MarketState>()((set, get) => ({
       chart,
       myOrders,
     })
-    fillToasts(s.myOrders, trades).forEach(get().toast)
+    const filled = fillToasts(s.myOrders, trades)
+    filled.forEach(get().toast)
+    // A resting order of mine was hit: the ticket gets its stamp.
+    if (filled.length) {
+      const hit = trades.find((t) => t.buyerId === ME || t.sellerId === ME)
+      if (hit) get().stampFill(hit.buyerId === ME ? 'BUY' : 'SELL', `${formatQty(hit.qty)} ${symbol} @ ₹${formatPaise(hit.price)}`)
+    }
   },
 
   applyActivity: (activity) => set((s) => {

@@ -2,6 +2,9 @@ import { BreadthBar, Portrait, PriceCell, RubberStamp, SectionLabel } from '../d
 import { changePct, formatPaise, toRupees } from '../lib/format'
 import { Shell } from '../shell/Shell'
 import { useMarket } from '../store/market'
+import { MarketMap } from '../visuals/MarketMap'
+import { Spark } from '../visuals/Spark'
+import { WeatherBox } from '../visuals/WeatherBox'
 
 
 const STORIES = [
@@ -61,13 +64,15 @@ function Art({ kind }: { kind: (typeof STORIES)[number]['art'] }) {
 
 /**
  * The front page: the big headline, the two ways in (the terminal and X-Ray),
- * the demo autopilot, live prices, the four features as stories, and how an
+ * the demo autopilot, live prices, the market map and outlook, the four
+ * features as stories, and how an
  * order is matched. Layout follows design/export/ui_kits/landing.
  */
 export function FrontPage() {
   const symbols = useMarket((s) => s.symbols)
   const lastPrice = useMarket((s) => s.lastPrice)
   const status = useMarket((s) => s.status)
+  const trail = useMarket((s) => s.trail)
   const open = symbols.filter((x) => (status[x.symbol]?.phase ?? 'OPEN') === 'OPEN')
   const moves = open.map((x) => (lastPrice[x.symbol] ?? x.referencePrice) - x.referencePrice)
   const advancing = moves.filter((m) => m > 0).length
@@ -111,8 +116,9 @@ export function FrontPage() {
               const halted = (status[x.symbol]?.phase ?? 'OPEN') !== 'OPEN'
               return (
                 <a key={x.symbol} href="#/floor" onClick={() => useMarket.getState().select(x.symbol)}
-                  style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto auto', gap: 'var(--space-3)', alignItems: 'baseline', padding: '7px 0', borderBottom: '1px solid var(--rule)', textDecoration: 'none', color: 'var(--ink)' }}>
+                  style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto auto auto', gap: 'var(--space-3)', alignItems: 'baseline', padding: '7px 0', borderBottom: '1px solid var(--rule)', textDecoration: 'none', color: 'var(--ink)' }}>
                   <span style={{ fontWeight: 600, fontSize: 'var(--text-ui)', letterSpacing: '0.04em', color: halted ? 'var(--ink-muted)' : 'var(--ink)' }}>{x.symbol}</span>
+                  <span style={{ alignSelf: 'center', lineHeight: 0 }}><Spark values={trail[x.symbol]} width={56} height={16} /></span>
                   <PriceCell value={toRupees(price)} halted={halted} />
                   <PriceCell value={toRupees(price)} change={toRupees(price - x.referencePrice)} changePct={changePct(price, x.referencePrice)} changeOnly size="sm" />
                 </a>
@@ -120,6 +126,14 @@ export function FrontPage() {
             })}
             <BreadthBar advancing={advancing} declining={declining} unchanged={open.length - advancing - declining}
               halted={symbols.length - open.length} style={{ marginTop: 'var(--space-3)' }} />
+          </div>
+        </div>
+
+        <div style={{ marginTop: 'var(--space-6)' }}>
+          <SectionLabel rule="double" meta="Sized by trade · inked by move">The market map</SectionLabel>
+          <div className="dx-maprow">
+            <MarketMap />
+            <WeatherBox />
           </div>
         </div>
 

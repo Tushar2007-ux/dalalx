@@ -5,8 +5,10 @@ const fmtV = (v) => (v >= 1e5 ? (v / 1e5).toFixed(1) + 'L' : v >= 1e3 ? (v / 1e3
 const INTERVALS = ['1m', '5m', '15m', '1D'];
 
 /* Engraved candlesticks: up = hollow, outlined in buy ink; down = hatched, sell ink. Shape carries direction as well as colour.
-   Volume underneath in hatched ink. Fills its container (ResizeObserver) unless width/height are given. */
-export function CandleChart({ candles = [], prevClose, interval = '1m', intervals = INTERVALS, onInterval = () => {}, width: fw, height: fh, minHeight = 260, style }) {
+   Volume underneath in hatched ink. Fills its container (ResizeObserver) unless width/height are given.
+   `marks` pins the reader's own fills to the candle they happened in (▲ bought, ▼ sold), and the
+   crosshair carries a small newsprint clipping with that candle's figures. */
+export function CandleChart({ candles = [], marks = [], prevClose, interval = '1m', intervals = INTERVALS, onInterval = () => {}, width: fw, height: fh, minHeight = 260, style }) {
   const ref = React.useRef(null);
   const plotRef = React.useRef(null);
   const [box, setBox] = React.useState({ w: 520, h: 320 });
@@ -141,6 +143,19 @@ export function CandleChart({ candles = [], prevClose, interval = '1m', interval
               <rect x={plotW + 1} y={content.Y(last.c) - 8} width={pad.r - 2} height={16} fill={last.c >= (prevClose ?? last.o) ? 'var(--buy)' : 'var(--sell)'} />
               <text x={plotW + 6} y={content.Y(last.c) + 4} fontFamily="var(--font-mono)" fontSize="11" fontWeight="600" fill={last.c >= (prevClose ?? last.o) ? 'var(--on-buy)' : 'var(--on-sell)'}>{fmt(last.c)}</text>
             </g>
+            {marks.map((m, k) => {
+              if (m.index < 0 || m.index >= n) return null;
+              const buy = m.side === 'BUY', x = content.X(m.index), y = content.Y(m.price), col = buy ? 'var(--buy)' : 'var(--sell)';
+              // The arrow sits clear of the candle, pointing at the price: bought from below, sold from above.
+              const tip = buy ? y + 5 : y - 5, base = buy ? y + 14 : y - 14;
+              return (
+                <g key={'m' + k} className="dx-fillmark">
+                  <title>{'You ' + (buy ? 'bought ' : 'sold ') + m.qty + ' at ' + fmt(m.price)}</title>
+                  <line x1={x - content.bw / 2 - 3} x2={x + content.bw / 2 + 3} y1={y} y2={y} stroke={col} strokeWidth="1.5" />
+                  <path d={'M' + x + ' ' + tip + ' L' + (x - 5) + ' ' + base + ' L' + (x + 5) + ' ' + base + ' Z'} fill={col} stroke="var(--paper)" strokeWidth="1.5" paintOrder="stroke" />
+                </g>
+              );
+            })}
             {hover && hv && (
               <g pointerEvents="none">
                 <line x1={content.X(hover.i)} x2={content.X(hover.i)} y1={pad.t} y2={content.vBase} stroke="var(--ink)" strokeWidth="1" strokeDasharray="2 2" />
@@ -155,6 +170,23 @@ export function CandleChart({ candles = [], prevClose, interval = '1m', interval
             )}
           </svg>
         )}
+        {content && hover && hv && (() => {
+          const x = content.X(hover.i), flip = x > plotW - 190, up = hv.c >= hv.o;
+          const move = hv.o ? ((hv.c - hv.o) / hv.o) * 100 : 0;
+          return (
+            <div className="dx-clipping" aria-hidden="true" style={{ left: flip ? undefined : x + 14, right: flip ? W - x + 14 : undefined, top: Math.max(4, Math.min(hover.y - 20, H - 150)) }}>
+              <span className="dx-clipping-kicker">{interval} candle · {hv.t}</span>
+              <strong className="dx-clipping-price" style={{ color: up ? 'var(--buy)' : 'var(--sell)' }}>{up ? '▲' : '▼'} {fmt(hv.c)}</strong>
+              <span className="dx-clipping-move">{move >= 0 ? 'up' : 'down'} {Math.abs(move).toFixed(2)}% in the candle</span>
+              <dl>
+                <dt>Open</dt><dd>{fmt(hv.o)}</dd>
+                <dt>High</dt><dd>{fmt(hv.h)}</dd>
+                <dt>Low</dt><dd>{fmt(hv.l)}</dd>
+                <dt>Volume</dt><dd>{fmtV(hv.v)}</dd>
+              </dl>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

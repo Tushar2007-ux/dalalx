@@ -6,6 +6,8 @@ import type { Level } from '../lib/types'
 import { useMarket } from '../store/market'
 import { sideChanges } from './bookChanges'
 import { launchTicket } from './flight'
+import { DepthChart } from '../visuals/DepthChart'
+import { levelHeat } from '../visuals/signals'
 
 /** How long an eaten level lingers, crossed out, before it folds away. */
 const GONE_MS = 650
@@ -17,7 +19,9 @@ const header = { fontFamily: 'var(--font-mono)', fontSize: 'var(--text-micro)', 
 /**
  * Right-centre column: ten levels each side. Asks are printed highest first so
  * the two best prices meet in the middle, with the spread between them.
- * Clicking a level copies its price into the order ticket.
+ * Clicking a level copies its price into the order ticket. Each row is
+ * tinted by its size (the biggest level is the warmest), and the depth chart
+ * underneath adds the levels up into two staircases.
  *
  * Matching is visible: when trades eat into a level its bar flashes and
  * shrinks, and a level eaten completely is crossed out and folds away, so you
@@ -77,7 +81,8 @@ export function BookPanel() {
     const eaten = (side === 'bid' ? bidChanges : askChanges).hits.get(l.price)
     return (
     <div key={side + l.price} ref={isGhost ? fly(side, l) : undefined}
-      className={`dx-book-line is-${side}${isGhost ? ' is-gone' : ''}`}>
+      className={`dx-book-line is-${side}${isGhost ? ' is-gone' : ''}`}
+      style={{ ['--heat' as string]: isGhost ? 0 : levelHeat(l.totalQty, maxQty).toFixed(2) }}>
       {eaten !== undefined && !isGhost && <span key={`${l.price}-${l.totalQty}`} className="dx-book-bite" style={{ ['--bite-share' as string]: Math.max(0.12, eaten).toFixed(2) }} aria-hidden="true" />}
     <OrderBookRow side={side} price={toRupees(l.price)} qty={l.totalQty} orders={l.orderCount}
       depth={l.totalQty / maxQty} best={best && l === (side === 'bid' ? bids[0] : asks[asks.length - 1])}
@@ -102,6 +107,7 @@ export function BookPanel() {
       </div>
       {shownBids.map(row('bid', true))}
       <div style={{ ...header, padding: '3px 4px' }}>▲ Bids</div>
+      <DepthChart book={book} />
     </RuledPanel>
   )
 }

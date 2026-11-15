@@ -1,18 +1,22 @@
 import { changePct, formatPaise } from '../lib/format'
 import { useMarket } from '../store/market'
+import { Spark } from '../visuals/Spark'
 
 /**
  * The scrolling price strip under the section bar, like a broadcaster's
  * ticker. The list is printed twice and slid left by half its width, so the
  * loop is seamless. Each price is keyed by its value, so a change re-mounts
  * it and replays the ink flash (green up, red down). Hovering pauses it, and
- * it stands still for people who prefer reduced motion.
+ * it stands still for people who prefer reduced motion. Each stock carries a
+ * thumbnail of its recent trades, and `stopped` rolls the strip to a halt
+ * (the presses stop when a circuit breaker trips).
  */
-export function TickerStrip() {
+export function TickerStrip({ stopped = false }: { stopped?: boolean }) {
   const symbols = useMarket((s) => s.symbols)
   const lastPrice = useMarket((s) => s.lastPrice)
   const status = useMarket((s) => s.status)
   const before = useMarket((s) => s.tickerPrev)
+  const trail = useMarket((s) => s.trail)
   if (!symbols.length) return null
 
   const items = symbols.map((x) => {
@@ -24,6 +28,7 @@ export function TickerStrip() {
     return (
       <span key={x.symbol} className="dx-ticker-item">
         <a href="#/floor" onClick={() => useMarket.getState().select(x.symbol)}>{x.symbol}</a>
+        <Spark values={trail[x.symbol]} width={40} height={13} />
         <span key={price} className={`dx-num ${flash}`}>{formatPaise(price)}</span>
         <span className="dx-num" style={{ color: pct > 0 ? 'var(--buy)' : pct < 0 ? 'var(--sell)' : 'var(--ink-muted)' }}>
           {pct > 0 ? '▲' : pct < 0 ? '▼' : '·'} {Math.abs(pct).toFixed(2)}%
@@ -34,7 +39,7 @@ export function TickerStrip() {
   })
 
   return (
-    <div className="dx-ticker" aria-label="Live prices">
+    <div className={`dx-ticker${stopped ? ' is-stopped' : ''}`} aria-label="Live prices">
       <div className="dx-ticker-track">
         <div className="dx-ticker-run">{items}</div>
         <div className="dx-ticker-run" aria-hidden="true">{items}</div>

@@ -69,6 +69,13 @@ function Ticket({ symbol, auction = false }: { symbol: string; auction?: boolean
   const [confirm, setConfirm] = useState<PlaceOrder | null>(null)
   const [sending, setSending] = useState(false)
   const [stamp, setStamp] = useState<string | null>(null)
+  // A resting order of mine that someone else just hit gets the same stamp as an order that filled at once.
+  const restingFill = useMarket((s) => s.fillStamp)
+  useEffect(() => {
+    if (!restingFill) return
+    setStamp(restingFill.text)
+    useMarket.getState().clearFillStamp()
+  }, [restingFill])
 
   // The FILLED stamp lifts off after a few seconds so it never hides the controls for long.
   useEffect(() => {

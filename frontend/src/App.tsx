@@ -19,6 +19,7 @@ import { XRayPage } from './pages/XRayPage'
 import { useRoute } from './shell/route'
 import { Terminal } from './terminal/Terminal'
 import { useMarketData } from './terminal/useMarketData'
+import { InkWipe } from './visuals/InkWipe'
 
 /**
  * The app: one live data connection shared by every page, a page chosen from
@@ -44,6 +45,7 @@ export default function App() {
       <div key={route} className={`dx-page-turn${presenter && route !== 'join' ? ' dx-presenter' : ''}${moment ? ' dx-hushed' : ''}`}>
         <Page route={route} />
       </div>
+      <InkWipe route={route} />
       <MomentOverlay />
       <HelpCard />
       <DemoBar />
