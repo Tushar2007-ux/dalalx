@@ -15,7 +15,7 @@
 .dx-account-rules ol { margin: var(--space-2) 0 0; padding-left: 1.4em; display: grid; gap: var(--space-2); font-family: var(--font-display); font-size: var(--text-deck); line-height: 1.4; }
 .dx-account-rules b { font-family: var(--font-ui); font-size: var(--text-ui); letter-spacing: 0.02em; }
 .dx-account-statement { margin-top: var(--space-5); display: grid; gap: var(--space-3); }
-.dx-account-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--space-3) var(--space-5); border-bottom: 3px double var(--rule-strong); padding-bottom: var(--space-3); }
+.dx-account-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-3) var(--space-5); border-bottom: 3px double var(--rule-strong); padding-bottom: var(--space-3); }
 @media (max-width: 760px) { .dx-account { grid-template-columns: minmax(0, 1fr); } }
 
 /* The ticket's account line and the portfolio's cash lines */
