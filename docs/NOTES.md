@@ -281,3 +281,57 @@ ranks by · *thread confinement still holds* — none of this touches the engine
 the browser only draws what the one worker per stock already published.
 
 Tests: 343 Java, 220 frontend.
+
+## Step 23 — Fourteen new features
+
+Each one is a small set of classes in the core, a thin adapter in the server,
+and a page or panel in the frontend. Tests: 363 core, 52 server, 239 frontend.
+
+**Order types (Strategy, Open/Closed).**
+- `STOP_LOSS`: parked in a `StopBook` (out of sight of the book) until the last
+  price reaches its trigger, then matched by `StopLossOrderMatcher` as a market
+  order. One stop's trades can set off the next; the chain stops if the circuit
+  breaker halts the stock.
+- `ICEBERG`: shows one slice (`displayQty`) at a time. When a slice is used up,
+  `PriceLevel.fillOldest` sends the next slice to the *back* of the queue, so
+  hidden size never jumps the line.
+- Neither needed a change to the existing matchers: two new classes, two lines
+  in `MatchingStrategies.standard`.
+
+**Amend.** `SymbolEngine.amend`: a smaller size at the same price is changed in
+place and keeps its queue position (`OrderReduced` event); a new price or more
+shares is a cancel/replace with a new id at the back of the queue.
+
+**Listing at runtime.** `Exchange.list` builds one more `SymbolWorker`. The
+worker map is *copy-on-write*: listing builds a new map and swaps it in with one
+`volatile` write, so routing threads never lock. Up to 12 stocks.
+
+**Journal, recovery and rewind (Command pattern).** Every book-changing command
+is written as one readable line (`JournalCodec`) by a single writer thread
+(`FileJournal`) fed by a `BlockingQueue`. On start-up `JournalKeeper` replays the
+newest session through the *same* engine (`Replayer`), with a `ReplayClock`
+pinned to each entry's time, before the web server opens or the bots start.
+Ids come out differently on replay, so the replayer maps old ids to new ones.
+`Rewind` plays a saved session into a separate, private `Exchange` at 1–600×.
+Measured: 19,119 entries (9,973 orders) recovered in 845 ms.
+
+**Accounts and the risk desk.** `Accounts` (name + PIN, stored as salted
+SHA-256) start with ₹10,00,000. `RiskDesk` is both an `OrderGate` (refuses a buy
+beyond free cash or a sell beyond free shares, and sets the money/shares aside)
+and an `EngineListener` (settles fills, releases on cancel/reduce/reject). The
+gate's check and the following accepted/rejected event run back-to-back on the
+same worker, so they always line up. Gates combine with `OrderGate.allOf`.
+
+**Bots.** `RuleBot` follows a `BotRecipe` built from a form (the trigger is an
+enum Strategy: FALLS / RISES / EVERY). `Tournament` scores each bot's profit
+from the starting whistle and announces the winner on the wire.
+`FrontRunningRule` catches a trader who buys just before someone else's block
+and sells into it at a profit; the new "Tipped Off" storyline demonstrates it.
+(It also flagged Momentum once, which genuinely fits the pattern: a reminder
+that surveillance rules open cases, people decide them.)
+
+**News, the evening edition, sound.** `NewsDesk` breaks a simulated story every
+60–150 s: it moves the bots' fair value (`FairValues`) and Momentum or Panic
+reacts. `DayTape` keeps the day's open/high/low/last/volume and the five biggest
+trades for the printable Evening Edition. Sound adds a typewriter clack on the
+tape and a chime for news (the bell, thud, stamp and fill tick already existed).

@@ -1,4 +1,5 @@
 import type {
+  AccountSession, AccountStatement, AmendResponse, BotRecipe, DayReport, JournalInfo, RewindView, TournamentStandings,
   Board, EngineSnapshot, GuestOrder, GuestView, Invite, Joined, Portfolio, RushResult,
   BookSnapshot, BotInfo, BotStyle, Candle, Case, RuleInfo, Storylines, WireHeadline, XRay, CancelResponse, Interval, OrderResult, PlaceOrder, SymbolInfo, Trade,
 } from './types'
@@ -17,8 +18,23 @@ export class ApiError extends Error {
   }
 }
 
+/** Where the browser keeps a signed-in account's session token. */
+export const SESSION_KEY = 'uncross-session'
+
+/** The signed-in account's token, if any (reading storage can fail in private mode). */
+export function sessionToken(): string | null {
+  try { return localStorage.getItem(SESSION_KEY) } catch { return null }
+}
+
+/** Every request carries the session header when someone is signed in, so their orders trade from their account. */
+function withSession(init?: RequestInit): RequestInit | undefined {
+  const token = sessionToken()
+  if (!token) return init
+  return { ...init, headers: { ...(init?.headers as Record<string, string> | undefined), 'X-Uncross-Session': token } }
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init)
+  const response = await fetch(url, withSession(init))
   if (!response.ok) {
     let message = `HTTP ${response.status}`
     try {
@@ -34,7 +50,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 
 /** For endpoints that answer with an empty body (204, or 200 with nothing). */
 async function requestNoBody(url: string, init?: RequestInit): Promise<void> {
-  const response = await fetch(url, init)
+  const response = await fetch(url, withSession(init))
   if (!response.ok) throw new ApiError(response.status, `HTTP ${response.status}`)
 }
 
@@ -52,6 +68,29 @@ export const api = {
   candles: (symbol: string, interval: Interval) => request<Candle[]>(`/api/candles/${symbol}?interval=${interval}`),
   placeOrder: (order: PlaceOrder) => request<OrderResult>('/api/orders', json(order)),
   cancelOrder: (orderId: number) => request<CancelResponse>(`/api/orders/${orderId}`, { method: 'DELETE' }),
+  amendOrder: (orderId: number, price: number, qty: number) =>
+    request<AmendResponse>(`/api/orders/${orderId}`, { ...json({ price, qty }), method: 'PATCH' }),
+  listStock: (symbol: string, name: string, referencePrice: number) =>
+    request<SymbolInfo>('/api/symbols', json({ symbol, name, referencePrice })),
+  openAccount: (name: string, pin: string) => request<AccountSession>('/api/accounts', json({ name, pin })),
+  signIn: (name: string, pin: string) => request<AccountSession>('/api/accounts/session', json({ name, pin })),
+  signOut: () => requestNoBody('/api/accounts/session', { method: 'DELETE' }),
+  account: () => request<AccountStatement>('/api/accounts/me'),
+  buildBot: (recipe: BotRecipe) => request<BotInfo>('/api/bots/rules', json(recipe)),
+  tournament: () => request<TournamentStandings>('/api/bots/tournament'),
+  startTournament: (seconds: number) => request<TournamentStandings>('/api/bots/tournament', json({ seconds })),
+  cancelTournament: () => requestNoBody('/api/bots/tournament', { method: 'DELETE' }),
+  newsDesk: () => request<{ enabled: boolean }>('/api/news/desk'),
+  setNewsDesk: (enabled: boolean) => request<{ enabled: boolean }>('/api/news/desk', { ...json({ enabled }), method: 'PUT' }),
+  breakNews: () => requestNoBody('/api/news/break', { method: 'POST' }),
+  day: () => request<DayReport>('/api/day'),
+  journal: () => request<JournalInfo>('/api/journal'),
+  startRewind: (session: string, speed: number) => request<RewindView>('/api/rewind', json({ session, speed })),
+  rewind: () => request<RewindView>('/api/rewind'),
+  pauseRewind: () => request<RewindView>('/api/rewind/pause', { method: 'POST' }),
+  resumeRewind: () => request<RewindView>('/api/rewind/resume', { method: 'POST' }),
+  rewindSpeed: (speed: number) => request<RewindView>('/api/rewind/speed', { ...json({ speed }), method: 'PUT' }),
+  stopRewind: () => requestNoBody('/api/rewind', { method: 'DELETE' }),
   bots: () => request<BotInfo[]>('/api/bots'),
   setBotActive: (id: string, active: boolean) =>
     request<BotInfo>(`/api/bots/${id}/${active ? 'resume' : 'pause'}`, { method: 'POST' }),

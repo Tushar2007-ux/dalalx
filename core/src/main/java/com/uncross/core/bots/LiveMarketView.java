@@ -10,11 +10,11 @@ import com.uncross.core.exchange.ListedStock;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * A {@link MarketView} kept up to date by listening to the engine's events
@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * immutable {@code Quote} records (replaced whole, never edited), and each
  * symbol's price history is a deque guarded by its own lock.
  */
-public final class LiveMarketView implements MarketView, EngineListener {
+public final class LiveMarketView implements MarketView, FairValues, EngineListener {
 
     /** How many recent trade prices to remember per symbol. */
     static final int HISTORY = 100;
@@ -33,16 +33,33 @@ public final class LiveMarketView implements MarketView, EngineListener {
     private record Quote(OptionalLong bid, OptionalLong ask) {
     }
 
-    private final Map<String, Long> reference = new LinkedHashMap<>();
+    // Read by the bots' thread, written when a stock is listed or news moves its fair value: concurrent.
+    private final Map<String, Long> reference = new ConcurrentHashMap<>();
+    private final List<String> symbols = new CopyOnWriteArrayList<>();
     private final Map<String, Quote> quotes = new ConcurrentHashMap<>();
     private final Map<String, Deque<Long>> prices = new ConcurrentHashMap<>();
 
     /** @param stocks the listed stocks and their reference prices */
     public LiveMarketView(List<ListedStock> stocks) {
-        for (ListedStock stock : stocks) {
-            reference.put(stock.symbol(), stock.referencePrice());
+        stocks.forEach(this::listed);
+    }
+
+    /** Starts following a stock listed while the market is running. */
+    public void listed(ListedStock stock) {
+        if (reference.putIfAbsent(stock.symbol(), stock.referencePrice()) == null) {
             prices.put(stock.symbol(), new ArrayDeque<>());
+            symbols.add(stock.symbol());
         }
+    }
+
+    /**
+     * Moves what the bots think a stock is worth by {@code basisPoints} (news
+     * does this). The Munim leans its quotes towards this figure, so the
+     * market price follows over the next minutes.
+     */
+    @Override
+    public void shiftReference(String symbol, long basisPoints) {
+        reference.computeIfPresent(symbol, (s, price) -> Ticks.moveBy(price, basisPoints));
     }
 
     @Override
@@ -78,7 +95,7 @@ public final class LiveMarketView implements MarketView, EngineListener {
 
     @Override
     public List<String> symbols() {
-        return List.copyOf(reference.keySet());
+        return List.copyOf(symbols);
     }
 
     @Override

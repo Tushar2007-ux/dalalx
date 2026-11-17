@@ -10,7 +10,7 @@ import java.time.Duration;
 import java.util.List;
 
 /**
- * Today's four storylines. Each is a small {@link Scenario} class; the
+ * Today's five storylines. Each is a small {@link Scenario} class; the
  * abstract {@link Base} holds the newspaper fields they all share, so each
  * story only writes its plot ({@code begin} and {@code step}).
  */
@@ -21,7 +21,7 @@ public final class Storylines {
 
     /** @return fresh instances of every storyline */
     public static List<Scenario> all() {
-        return List.of(new FlashCrash(), new Bubble(), new WhaleDump(), new CalmMarket());
+        return List.of(new FlashCrash(), new Bubble(), new WhaleDump(), new CalmMarket(), new TippedOff());
     }
 
     /** Holds the newspaper fields so each storyline only implements its plot. */
@@ -151,6 +151,49 @@ public final class Storylines {
         @Override
         public void step(ScenarioStage stage, Duration elapsed) {
             // Nothing to do each beat: the calm comes from the dials set in begin().
+        }
+    }
+
+    /**
+     * A clerk who knows the Whale is about to buy a block of TCS buys first,
+     * waits for the block to push the price up, then sells into it. The
+     * surveillance desk's front-running rule should open a case on the clerk.
+     */
+    static final class TippedOff extends Base {
+        static final String CLERK = "CLERK";
+        static final long CLERK_QTY = 800;
+        static final Duration BLOCK_STARTS = Duration.ofSeconds(4);
+        static final Duration CLERK_SELLS = Duration.ofSeconds(14);
+        static final Duration BLOCK_ENDS = Duration.ofSeconds(30);
+        static final long BLOCK_SLICE = 600;
+        private long held;
+        private boolean bought;
+
+        TippedOff() {
+            super("tipped-off", "Investigation", "Tipped Off: someone knew the Whale was coming",
+                    "A clerk buys TCS seconds before a block order, then sells into it. Will surveillance notice?",
+                    "TCS", Tone.UP, Duration.ofSeconds(45));
+        }
+
+        @Override
+        public void begin(ScenarioStage stage) {
+            held = 0;
+            bought = false;
+            stage.pause(WhaleBot.ID); // the block below is the Whale's; its own routine would muddle it
+        }
+
+        @Override
+        public void step(ScenarioStage stage, Duration elapsed) {
+            if (!bought) {
+                held = stage.sweep(CLERK, symbol(), Side.BUY, 30, CLERK_QTY).filledQty();
+                bought = true;
+            } else if (elapsed.compareTo(BLOCK_STARTS) >= 0 && elapsed.compareTo(BLOCK_ENDS) < 0) {
+                stage.sweep(WhaleBot.ID, symbol(), Side.BUY, 40, BLOCK_SLICE);
+            }
+            if (held > 0 && elapsed.compareTo(CLERK_SELLS) >= 0) {
+                // The bids trail the Whale's buying, so the clerk reaches down to them, a little at a time.
+                held -= stage.sweep(CLERK, symbol(), Side.SELL, -150, held).filledQty();
+            }
         }
     }
 }

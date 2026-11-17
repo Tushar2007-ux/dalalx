@@ -9,6 +9,7 @@ import com.uncross.core.events.EventBus;
 import com.uncross.core.events.MarketStatusChanged;
 import com.uncross.core.events.OrderAccepted;
 import com.uncross.core.events.OrderCancelled;
+import com.uncross.core.events.OrderReduced;
 import com.uncross.core.events.OrderRejected;
 import com.uncross.core.events.OrderView;
 import com.uncross.core.events.TradeExecuted;
@@ -74,6 +75,7 @@ public class MarketDataBridge implements EngineListener {
             case OrderAccepted e -> pendingActivity.add(activity("ACCEPTED", e.order(), null));
             case OrderRejected e -> pendingActivity.add(activity("REJECTED", e.order(), e.reason()));
             case OrderCancelled e -> pendingActivity.add(activity("CANCELLED", e.order(), e.reason()));
+            case OrderReduced e -> pendingActivity.add(activity("AMENDED", e.order(), "size reduced, place in queue kept"));
             case MarketStatusChanged e -> pendingStatus.add(e); // halts and reopens: rare, all of them matter
             case AuctionUpdate e -> latestAuctions.put(e.symbol(), e); // like the book: only the newest matters
         }

@@ -37,7 +37,8 @@ UI theme: **"The Morning Edition"** — a financial newspaper, with Day and Nigh
 
 ## Packages in core
 `com.uncross.core.model`, `.book`, `.matching`, `.events`, `.exchange`, `.bots`,
-`.scenarios`, `.breaker`, `.xray`, `.surveillance`, `.auction`, `.headlines`.
+`.scenarios`, `.breaker`, `.xray`, `.surveillance`, `.auction`, `.headlines`,
+`.marketdata`, `.accounts`, `.journal`, `.news`.
 
 ## Domain rules
 - Symbols (simulated): `RELIANCE`, `TCS`, `INFY`, `HDFCBANK`, `TATAMOTORS`.

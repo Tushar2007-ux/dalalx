@@ -48,8 +48,8 @@ final class PriceLevel {
                     "order price " + order.limitPrice() + " does not match level " + price);
         }
         queue.addLast(order);
-        totalQty += order.remainingQty();
-        adjust(order.traderId(), order.remainingQty());
+        totalQty += order.visibleQty();
+        adjust(order.traderId(), order.visibleQty());
     }
 
     /** @return the order at the front of the queue (next to trade), or {@code null} if empty */
@@ -70,8 +70,26 @@ final class PriceLevel {
         adjust(oldest.traderId(), -qty);
         if (!oldest.isActive()) {
             queue.removeFirst();
+        } else if (oldest.sliceUsedUp()) {
+            // An iceberg's slice is gone: the next slice goes to the BACK of the
+            // queue, behind everyone already waiting at this price. Hidden size
+            // never gets time priority it did not show.
+            queue.removeFirst();
+            oldest.showNextSlice();
+            queue.addLast(oldest);
+            totalQty += oldest.visibleQty();
+            adjust(oldest.traderId(), oldest.visibleQty());
         }
         return oldest;
+    }
+
+    /** Shrinks a resting order in place; it keeps its position in the queue. */
+    void reduce(Order order, long newRemaining) {
+        long before = order.visibleQty();
+        order.reduceTo(newRemaining);
+        long shown = before - order.visibleQty();
+        totalQty -= shown;
+        adjust(order.traderId(), -shown);
     }
 
     /**
@@ -84,8 +102,8 @@ final class PriceLevel {
     boolean remove(Order order) {
         boolean removed = queue.remove(order);
         if (removed) {
-            totalQty -= order.remainingQty();
-            adjust(order.traderId(), -order.remainingQty());
+            totalQty -= order.visibleQty();
+            adjust(order.traderId(), -order.visibleQty());
         }
         return removed;
     }
@@ -134,6 +152,6 @@ final class PriceLevel {
     /** @return every order in the queue, oldest first, as immutable values */
     LevelDetail toDetail() {
         return new LevelDetail(price, queue.stream()
-                .map(o -> new RestingOrder(o.id(), o.traderId(), o.remainingQty())).toList());
+                .map(o -> new RestingOrder(o.id(), o.traderId(), o.visibleQty())).toList());
     }
 }

@@ -18,3 +18,6 @@ npm-debug.log*
 .idea/
 *.iml
 out/
+
+# Uncross journal (the saved trading sessions)
+data/

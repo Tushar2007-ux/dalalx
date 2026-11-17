@@ -136,6 +136,19 @@ public final class OrderBook {
      * Returns the next order to trade on {@code side}: the oldest order at the
      * best price. Matching strategies use this to see who they'd trade against.
      */
+    /**
+     * Shrinks a resting order to {@code newRemaining} shares, keeping its place
+     * in the queue (used by an amend that only lowers the size).
+     */
+    public Optional<Order> reduce(long orderId, long newRemaining) {
+        Order order = ordersById.get(orderId);
+        if (order == null) {
+            return Optional.empty();
+        }
+        levelsFor(order.side()).get(order.limitPrice()).reduce(order, newRemaining);
+        return Optional.of(order);
+    }
+
     public Optional<Order> peekBest(Side side) {
         var best = levelsFor(side).firstEntry();
         return best == null ? Optional.empty() : Optional.of(best.getValue().peekOldest());

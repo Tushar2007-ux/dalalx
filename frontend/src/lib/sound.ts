@@ -2,12 +2,27 @@
  * The paper's sound effects, synthesised with the Web Audio API (no audio
  * files): a bell when trading resumes, a heavy thud when the circuit breaker
  * slams shut, a rubber stamp when a trader is caught, and a soft "tick" when
- * one of your orders fills.
+ * one of your orders fills. Since the second batch of features: a soft
+ * typewriter clack as trades print on the tape, a two-note chime when company
+ * news breaks, and the bell again when a bot tournament ends.
  *
  * Browsers only allow sound after the person has clicked or pressed a key,
  * so the audio context is created lazily and resumed on the first gesture.
  */
-export type Effect = 'bell' | 'thud' | 'stamp' | 'tick'
+export type Effect = 'bell' | 'thud' | 'stamp' | 'tick' | 'type' | 'chime'
+
+/** Which effect, if any, goes with a headline on the wire. Pure, for tests. */
+export function effectForHeadline(kicker: string): Effect | null {
+  if (kicker === 'Simulated news') return 'chime'
+  if (kicker === 'Tournament') return 'bell'
+  return null
+}
+
+/** The typewriter is rate-limited so a busy tape clatters, rather than roars. Pure, for tests. */
+export const TYPE_GAP_MS = 140
+export function typewriterDue(lastAt: number, now: number): boolean {
+  return now - lastAt >= TYPE_GAP_MS
+}
 
 /** Which effect goes with which big moment. Pure, for tests. */
 export function effectFor(moment: 'extra' | 'bell' | 'caught'): Effect {
@@ -91,6 +106,16 @@ export function play(effect: Effect): void {
     case 'tick':
       tone(c, 1320, t, 0.09, 0.08)
       tone(c, 1760, t + 0.06, 0.12, 0.06)
+      break
+    case 'type':
+      // One typebar striking the platen: a very short, bright click, quiet.
+      noise(c, t, 0.025, 0.18, 3500)
+      tone(c, 900 + Math.random() * 300, t, 0.03, 0.03, 'square')
+      break
+    case 'chime':
+      // The newsroom's "story coming in": a falling major third.
+      tone(c, 1046.5, t, 0.5, 0.12)
+      tone(c, 830.6, t + 0.18, 0.8, 0.12)
       break
   }
 }

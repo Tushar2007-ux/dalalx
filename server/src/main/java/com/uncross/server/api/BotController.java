@@ -1,5 +1,10 @@
 package com.uncross.server.api;
 
+import com.uncross.core.bots.BotRecipe;
+import com.uncross.core.bots.RuleBot;
+import com.uncross.core.bots.Tournament;
+import com.uncross.core.exchange.Exchange;
+import org.springframework.beans.factory.annotation.Value;
 import com.uncross.core.bots.BotLedger;
 import com.uncross.core.bots.BotRunner;
 import com.uncross.core.bots.BotStats;
@@ -51,10 +56,48 @@ public class BotController {
 
     private final BotRunner runner;
     private final BotLedger ledger;
+    private final Exchange exchange;
+    private final Tournament tournament;
+    private final int ticksPerSecond;
 
-    public BotController(BotRunner runner, BotLedger ledger) {
+    public BotController(BotRunner runner, BotLedger ledger, Exchange exchange, Tournament tournament,
+                         @Value("${uncross.bots.tick-ms:250}") long tickMillis) {
         this.runner = runner;
         this.ledger = ledger;
+        this.exchange = exchange;
+        this.tournament = tournament;
+        this.ticksPerSecond = (int) Math.max(1, 1000 / tickMillis);
+    }
+
+    /** Hires a bot built from the "build your own bot" form. */
+    @PostMapping("/rules")
+    @ResponseStatus(HttpStatus.CREATED)
+    public BotInfo build(@RequestBody BotRecipe recipe) {
+        if (exchange.stock(recipe.symbol()).isEmpty()) {
+            throw new IllegalArgumentException(recipe.symbol() + " is not listed");
+        }
+        RuleBot bot = new RuleBot(recipe, ticksPerSecond);
+        runner.hire(bot); // IllegalArgumentException (→ 400) if the name is taken
+        return info(bot);
+    }
+
+    public record StartRound(long seconds) {
+    }
+
+    @GetMapping("/tournament")
+    public Tournament.Standings tournament() {
+        return tournament.standings();
+    }
+
+    @PostMapping("/tournament")
+    public Tournament.Standings startTournament(@RequestBody StartRound body) {
+        return tournament.start(java.time.Duration.ofSeconds(body.seconds()));
+    }
+
+    @DeleteMapping("/tournament")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void cancelTournament() {
+        tournament.cancel();
     }
 
     @GetMapping

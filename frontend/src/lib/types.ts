@@ -5,7 +5,7 @@
  */
 
 export type Side = 'BUY' | 'SELL'
-export type OrderType = 'LIMIT' | 'MARKET' | 'IOC'
+export type OrderType = 'LIMIT' | 'MARKET' | 'IOC' | 'STOP_LOSS' | 'ICEBERG'
 export type OrderStatus = 'NEW' | 'PARTIALLY_FILLED' | 'FILLED' | 'CANCELLED' | 'REJECTED'
 
 export type MarketPhase = 'OPEN' | 'HALTED' | 'AUCTION'
@@ -101,6 +101,8 @@ export interface PlaceOrder {
   type: OrderType
   price: number
   qty: number
+  /** ICEBERG only: how many shares show in the book at a time. */
+  displayQty?: number
 }
 
 export interface OrderResult {
@@ -371,3 +373,89 @@ export interface GuestOrder {
   price?: number
   qty: number
 }
+
+/* ---- Added with accounts, amend, journal, rewind, tournament, news, day ---- */
+
+export interface AmendResponse {
+  orderId: number
+  amended: boolean
+  keptPriority: boolean
+  order: OrderView | null
+  trades: Trade[]
+  reason: string | null
+}
+
+export interface HoldingLine { symbol: string; shares: number; setAside: number; lastPrice: number; value: number }
+
+export interface AccountStatement {
+  name: string
+  traderId: string
+  cash: number
+  cashSetAside: number
+  availableCash: number
+  holdings: HoldingLine[]
+  worth: number
+  profit: number
+}
+
+export interface AccountSession { token: string; account: AccountStatement }
+
+export type BotTrigger = 'FALLS' | 'RISES' | 'EVERY'
+
+export interface BotRecipe {
+  name: string
+  symbol: string
+  when: BotTrigger
+  /** Basis points for FALLS/RISES (100 = 1%); seconds for EVERY. */
+  amount: number
+  side: Side
+  qty: number
+  maxShares: number
+}
+
+export interface TournamentScore { rank: number; traderId: string; name: string; pnl: number }
+
+export interface TournamentStandings {
+  state: 'IDLE' | 'RUNNING' | 'FINISHED'
+  startedAt: string | null
+  endsAt: string | null
+  scores: TournamentScore[]
+}
+
+export interface JournalSession { name: string; bytes: number; lastWritten: string }
+
+export interface JournalInfo {
+  status: { enabled: boolean; session: string | null; recoveredEntries: number; recoveredOrders: number; recoveryMillis: number }
+  sessions: JournalSession[]
+}
+
+export interface RewindStock { symbol: string; open: number; last: number; high: number; low: number; volume: number; trail: number[]; phase: string }
+export interface RewindTapeLine { at: string; symbol: string; price: number; qty: number; buyerId: string; sellerId: string }
+
+export interface RewindView {
+  session: string
+  state: 'PLAYING' | 'PAUSED' | 'FINISHED' | 'STOPPED'
+  speed: number
+  at: string | null
+  done: number
+  total: number
+  stocks: RewindStock[]
+  tape: RewindTapeLine[]
+}
+
+export interface DayStock {
+  symbol: string
+  name: string
+  reference: number
+  open: number
+  high: number
+  low: number
+  last: number
+  volume: number
+  turnover: number
+  trades: number
+}
+
+export interface DayBigTrade { at: string; symbol: string; price: number; qty: number; buyer: string; seller: string }
+
+export interface DayReport { stocks: DayStock[]; biggest: DayBigTrade[]; trades: number; turnover: number }

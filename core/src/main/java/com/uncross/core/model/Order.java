@@ -34,10 +34,13 @@ public final class Order {
     private final OrderType type;
     private final long limitPrice;
     private final long originalQty;
+    private final long displayQty;
 
-    // The only mutable fields. They change only through fill/cancel/reject.
+    // The only mutable fields. They change only through fill/cancel/reject/reduce.
     private long remainingQty;
     private OrderStatus status;
+    /** For an iceberg: what is left of the slice now showing in the book. */
+    private long sliceRemaining;
 
     /**
      * Creates a NEW order from an already-validated request.
@@ -63,6 +66,8 @@ public final class Order {
         this.limitPrice = request.price();
         this.originalQty = request.qty();
         this.remainingQty = request.qty();
+        this.displayQty = request.displayQty();
+        this.sliceRemaining = displayQty;
         this.status = OrderStatus.NEW;
     }
 
@@ -81,7 +86,48 @@ public final class Order {
                     "fill qty must be in 1.." + remainingQty + " but was " + qty);
         }
         remainingQty -= qty;
+        sliceRemaining = Math.max(0, sliceRemaining - qty);
         status = remainingQty == 0 ? OrderStatus.FILLED : OrderStatus.PARTIALLY_FILLED;
+    }
+
+    /**
+     * Shrinks the order to {@code newRemaining} shares without touching its
+     * place in the queue. Only a decrease keeps priority, which is why there is
+     * no "grow" method: a bigger order would be cutting in line.
+     */
+    public void reduceTo(long newRemaining) {
+        requireActive("reduce");
+        if (newRemaining <= 0 || newRemaining >= remainingQty) {
+            throw new IllegalArgumentException(
+                    "new size must be between 1 and " + (remainingQty - 1) + " but was " + newRemaining);
+        }
+        remainingQty = newRemaining;
+        sliceRemaining = Math.min(sliceRemaining, remainingQty);
+    }
+
+    /** True for an iceberg order, which shows only part of its size. */
+    public boolean isIceberg() {
+        return displayQty > 0;
+    }
+
+    /**
+     * How many shares the book shows for this order. For an iceberg that is
+     * the current slice; for everything else it is the whole remaining size.
+     */
+    public long visibleQty() {
+        return isIceberg() ? Math.min(sliceRemaining, remainingQty) : remainingQty;
+    }
+
+    /** True when an iceberg's showing slice is used up but hidden shares remain. */
+    public boolean sliceUsedUp() {
+        return isIceberg() && isActive() && sliceRemaining == 0;
+    }
+
+    /** Shows the next slice of an iceberg (the book then sends it to the back of the queue). */
+    public void showNextSlice() {
+        if (isIceberg()) {
+            sliceRemaining = Math.min(displayQty, remainingQty);
+        }
     }
 
     /**
@@ -165,6 +211,16 @@ public final class Order {
 
     public long originalQty() {
         return originalQty;
+    }
+
+    public long displayQty() {
+        return displayQty;
+    }
+
+    /** The request this order was made from, so it can be re-issued (an amend) or written down (the journal). */
+    public OrderRequest toRequest() {
+        return new OrderRequest(symbol, traderId, side, type, limitPrice, remainingQty,
+                isIceberg() ? Math.min(displayQty, Math.max(1, remainingQty - 1)) : 0);
     }
 
     public long remainingQty() {

@@ -1,5 +1,7 @@
 package com.uncross.server.config;
 
+import com.uncross.core.accounts.Accounts;
+import com.uncross.core.accounts.RiskDesk;
 import com.uncross.core.audience.Guest;
 import com.uncross.core.audience.GuestDesk;
 import com.uncross.core.bots.BotRunner;
@@ -7,13 +9,16 @@ import com.uncross.core.breaker.StatusBoard;
 import com.uncross.core.events.EventBus;
 import com.uncross.core.exchange.CommandSource;
 import com.uncross.core.exchange.Exchange;
+import com.uncross.core.exchange.ListedStock;
+import com.uncross.core.journal.ReplayClock;
+import com.uncross.core.marketdata.DayTape;
+import com.uncross.core.matching.OrderGate;
 import com.uncross.core.marketdata.CandleAggregator;
 import com.uncross.core.marketdata.TradeHistory;
 import com.uncross.core.surveillance.Suspensions;
 import com.uncross.core.xray.XRayDesk;
 import com.uncross.server.api.OrderController;
 import java.time.Clock;
-import java.util.Set;
 import org.springframework.beans.factory.ObjectProvider;
 import java.util.concurrent.TimeUnit;
 import org.springframework.context.annotation.Bean;
@@ -34,8 +39,30 @@ import org.springframework.context.annotation.Configuration;
 public class ExchangeConfig {
 
     @Bean
-    public Clock clock() {
-        return Clock.systemUTC();
+    public ReplayClock clock() {
+        // The real time, except while the journal is being replayed at start-up (see JournalKeeper).
+        return new ReplayClock(Clock.systemUTC());
+    }
+
+    @Bean
+    public Accounts accounts(Clock clock) {
+        return new Accounts(clock);
+    }
+
+    @Bean
+    public RiskDesk riskDesk(Accounts accounts, EventBus bus, ObjectProvider<Exchange> exchange) {
+        // The exchange is looked up lazily: it needs this desk as its gate, so it cannot exist yet.
+        RiskDesk desk = new RiskDesk(accounts, symbol -> exchange.getObject().stock(symbol)
+                .map(ListedStock::referencePrice).orElseThrow(() -> new IllegalArgumentException("unknown " + symbol)));
+        bus.register(desk);
+        return desk;
+    }
+
+    @Bean
+    public DayTape dayTape(EventBus bus) {
+        DayTape tape = new DayTape();
+        bus.register(tape);
+        return tape;
     }
 
     @Bean
@@ -76,8 +103,11 @@ public class ExchangeConfig {
      */
     @Bean
     public XRayDesk xrayDesk(ObjectProvider<BotRunner> runner, ObjectProvider<GuestDesk> guests) {
-        return new XRayDesk(Set.of(OrderController.HUMAN), id -> {
+        return new XRayDesk(id -> OrderController.HUMAN.equals(id) || Accounts.isAccount(id), id -> {
             if (OrderController.HUMAN.equals(id)) {
+                return "You";
+            }
+            if (Accounts.isAccount(id)) {
                 return "You";
             }
             if (Guest.isGuest(id) && guests.getIfAvailable() != null) {
@@ -95,13 +125,14 @@ public class ExchangeConfig {
 
     @Bean(destroyMethod = "")
     public Exchange exchange(EventBus bus, Clock clock, TradeHistory history, CandleAggregator candles, XRayDesk xrays,
-                             Suspensions suspensions) {
+                             Suspensions suspensions, RiskDesk riskDesk) {
         Exchange exchange = new Exchange(Exchange.DEFAULT_STOCKS, bus, clock);
         exchange.recordXRays(xrays);
-        exchange.guardWith(request -> suspensions.refusal(request.traderId()));
+        // Suspended traders are turned away first; the risk desk comes last because it sets money aside.
+        exchange.guardWith(OrderGate.allOf(request -> suspensions.refusal(request.traderId()), riskDesk));
         // Labels each order's source for the Engine Room (monitoring only).
         exchange.classifySourcesWith(trader -> OrderController.HUMAN.equals(trader) ? CommandSource.PRESENTER
-                : Guest.isGuest(trader) ? CommandSource.AUDIENCE : CommandSource.BOT);
+                : Guest.isGuest(trader) || Accounts.isAccount(trader) ? CommandSource.AUDIENCE : CommandSource.BOT);
         exchange.start();
         return exchange;
     }

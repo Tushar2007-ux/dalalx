@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { api } from '../lib/api'
 import { useMarket } from '../store/market'
 
 /**
@@ -20,7 +21,13 @@ export function ToolsMenu() {
   const setThree = useMarket((s) => s.setThree)
   const setHelpOpen = useMarket((s) => s.setHelpOpen)
   const [open, setOpen] = useState(false)
+  const [news, setNews] = useState<boolean | null>(null)
   const box = useRef<HTMLDivElement>(null)
+
+  // The news desk's switch lives on the server; read it when the menu opens.
+  useEffect(() => {
+    if (open) api.newsDesk().then((d) => setNews(d.enabled)).catch(() => setNews(null))
+  }, [open])
 
   // Clicking elsewhere, or pressing Escape, closes the menu.
   useEffect(() => {
@@ -45,10 +52,28 @@ export function ToolsMenu() {
             checked={viva} onClick={() => setViva(!viva)} />
           <Item label="Presenter mode" hint="Bigger type for a projector" shortcut="P"
             checked={presenter} onClick={() => setPresenter(!presenter)} />
-          <Item label="Sound" hint="Bell, circuit breaker and stamp" shortcut="M"
+          <Item label="Sound" hint="Bell, breaker, stamp, typewriter and news chime" shortcut="M"
             checked={sound} onClick={() => setSound(!sound)} />
           <Item label="3D" hint="Press intro, engine room and price hero" shortcut="D"
             checked={three} onClick={() => setThree(!three)} />
+          {news !== null && <Item label="Company news" hint="A simulated story every minute or two" shortcut=""
+            checked={news} onClick={() => api.setNewsDesk(!news).then((d) => setNews(d.enabled)).catch(() => {})} />}
+          <button type="button" role="menuitem" className="dx-tools-item dx-focus"
+            onClick={() => { setOpen(false); void api.breakNews().catch(() => {}) }}>
+            <span className="dx-tools-box" aria-hidden="true">✎</span>
+            <span className="dx-tools-text">Break a story now<small>Good or bad news for one stock</small></span>
+            <kbd />
+          </button>
+          <a role="menuitem" className="dx-tools-item dx-focus" href="#/rewind" onClick={() => setOpen(false)}>
+            <span className="dx-tools-box" aria-hidden="true">⟲</span>
+            <span className="dx-tools-text">Rewind<small>Play a saved session back</small></span>
+            <kbd />
+          </a>
+          <a role="menuitem" className="dx-tools-item dx-focus" href="#/edition" onClick={() => setOpen(false)}>
+            <span className="dx-tools-box" aria-hidden="true">▤</span>
+            <span className="dx-tools-text">Evening edition<small>Today’s paper, ready to print</small></span>
+            <kbd />
+          </a>
           <button type="button" role="menuitem" className="dx-tools-item dx-focus"
             onClick={() => { setOpen(false); setHelpOpen(true) }}>
             <span className="dx-tools-box" aria-hidden="true" />

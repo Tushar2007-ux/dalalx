@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { OrderResult } from '../lib/types'
-import { checkTicket, outcomeToast } from './ticket'
+import { checkTicket, outcomeToast, workingLine } from './ticket'
 
 const base = { symbol: 'TCS', side: 'BUY' as const, type: 'LIMIT' as const, priceText: '4090', qtyText: '10', reference: 409000 }
 
@@ -39,5 +39,24 @@ describe('outcomeToast', () => {
     expect(outcomeToast(result('CANCELLED', 10, 'not immediately fillable')).kind).toBe('cancelled')
     expect(outcomeToast(result('REJECTED', 10, 'no liquidity')).detail).toContain('no liquidity')
     expect(outcomeToast(result('NEW', 10)).kind).toBe('info')
+  })
+})
+
+describe('stop-loss and iceberg tickets', () => {
+  const base = { symbol: 'TCS', side: 'SELL' as const, priceText: '4000', qtyText: '500', reference: 400000 }
+
+  it('a stop uses the price as its trigger', () => {
+    expect(checkTicket({ ...base, type: 'STOP_LOSS' }).order).toEqual({ symbol: 'TCS', side: 'SELL', type: 'STOP_LOSS', price: 400000, qty: 500 })
+  })
+
+  it('an iceberg needs a display size smaller than the order', () => {
+    expect(checkTicket({ ...base, type: 'ICEBERG', displayText: '100' }).order?.displayQty).toBe(100)
+    expect(checkTicket({ ...base, type: 'ICEBERG', displayText: '500' }).error).toMatch(/Show between/)
+    expect(checkTicket({ ...base, type: 'ICEBERG', displayText: '' }).error).toMatch(/Show between/)
+  })
+
+  it('describes each working order by what it waits for', () => {
+    expect(workingLine({ type: 'STOP_LOSS', side: 'SELL', limitPrice: 395000, remainingQty: 10, originalQty: 10 })).toBe('10/10 · stop ≤ ₹3,950.00')
+    expect(workingLine({ type: 'ICEBERG', side: 'BUY', limitPrice: 395000, remainingQty: 900, originalQty: 1000 })).toBe('900/1,000 @ ₹3,950.00 · iceberg')
   })
 })

@@ -12,6 +12,9 @@ import { pushReading, Sparkline } from './Sparkline'
 import { useMarket } from '../store/market'
 import type { Headline } from '../terminal/headline'
 import { VivaTag } from '../viva/VivaTag'
+import { BotBuilder } from '../features/BotBuilder'
+import { TournamentPanel } from '../features/TournamentPanel'
+import '../features/features.css'
 
 const link = { appearance: 'none', border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 'var(--text-body)', color: 'var(--ink)', textDecoration: 'underline', textUnderlineOffset: 3 } as const
 const italic = { margin: 0, fontFamily: 'var(--font-display)', fontStyle: 'italic' } as const
@@ -41,6 +44,7 @@ export function Correspondents() {
   const [bots, setBots] = useState<BotInfo[]>([])
   const [stories, setStories] = useState<Storylines | null>(null)
   const [hiring, setHiring] = useState(false)
+  const [building, setBuilding] = useState(false)
   const [pnlHistory, setPnlHistory] = useState<Record<string, number[]>>({})
   const [asking, setAsking] = useState<Story | null>(null)
 
@@ -87,8 +91,13 @@ export function Correspondents() {
             {bots.length} on staff · {filing} filing · {bots.length - filing} on leave
           </div>
         </div>
-        <Button variant="primary" onClick={() => setHiring(true)} disabled={connection === 'offline'}>+ Hire a correspondent</Button>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+          <Button variant="secondary" onClick={() => setBuilding(true)} disabled={connection === 'offline'}>⚙ Build your own bot</Button>
+          <Button variant="primary" onClick={() => setHiring(true)} disabled={connection === 'offline'}>+ Hire a correspondent</Button>
+        </div>
       </div>
+
+      <TournamentPanel />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(380px, 100%), 1fr))', gap: '26px 28px', marginTop: 'var(--space-3)' }}>
         {bots.map((b) => <BotCard key={b.id} bot={b} history={pnlHistory[b.id] ?? []} onChange={replace} onFail={fail} onRemoved={load} />)}
@@ -111,6 +120,7 @@ export function Correspondents() {
         </div>
       </div>
 
+      <BotBuilder open={building} onClose={() => setBuilding(false)} onBuilt={(b) => { setBots((all) => [...all, b]); setBuilding(false) }} />
       <HireDialog open={hiring} onClose={() => setHiring(false)} onHired={(b) => { setBots((all) => [...all, b]); setHiring(false) }} onFail={fail} />
 
       <Modal open={!!asking} kicker="Run this story" title={asking ? `${asking.headline.split(':')[0]}?` : ''} onClose={() => setAsking(null)} width={480}

@@ -20,6 +20,10 @@ import { useRoute } from './shell/route'
 import { Terminal } from './terminal/Terminal'
 import { useMarketData } from './terminal/useMarketData'
 import { InkWipe } from './visuals/InkWipe'
+import { AccountPage } from './account/AccountPage'
+import { useAccount } from './account/useAccount'
+import { EditionPage } from './features/EditionPage'
+import { RewindPage } from './features/RewindPage'
 
 /**
  * The app: one live data connection shared by every page, a page chosen from
@@ -27,6 +31,7 @@ import { InkWipe } from './visuals/InkWipe'
  */
 export default function App() {
   useMarketData()
+  useAccount()
   useAutopilot()
   const route = useRoute()
   const presenter = useMarket((s) => s.presenter)
@@ -65,6 +70,9 @@ function Page({ route }: { route: ReturnType<typeof useRoute> }) {
     case 'how': return <HowItWorks />
     case 'wall': return <BigBoard />
     case 'join': return <JoinPage />
+    case 'account': return <AccountPage />
+    case 'rewind': return <RewindPage />
+    case 'edition': return <EditionPage />
     case 'demo': return <Terminal /> // the autopilot moves to its first page at once
     default: return <FrontPage />
   }

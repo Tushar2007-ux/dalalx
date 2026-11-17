@@ -15,15 +15,18 @@ import com.uncross.core.events.EventBus;
 import com.uncross.core.events.MarketStatusChanged;
 import com.uncross.core.events.OrderAccepted;
 import com.uncross.core.events.OrderCancelled;
+import com.uncross.core.events.OrderReduced;
 import com.uncross.core.events.OrderRejected;
 import com.uncross.core.events.OrderView;
 import com.uncross.core.events.TradeExecuted;
 import com.uncross.core.model.Order;
 import com.uncross.core.model.OrderRequest;
 import com.uncross.core.model.OrderStatus;
+import com.uncross.core.model.OrderType;
 import com.uncross.core.model.Trade;
 import com.uncross.core.xray.XRayRecorder;
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,8 +82,15 @@ public final class SymbolEngine implements MatchingEngine {
     /** The reason on an {@code OrderCancelled} event when the trader asked for the cancel. */
     public static final String CANCELLED_BY_TRADER = "cancelled by trader";
 
+    /** Why the old order disappears when an amend becomes a cancel/replace. */
+    public static final String REPLACED_BY_AMEND = "replaced by an amended order";
+
+    /** Most stops that one price move may set off in a chain, so a cascade always ends. */
+    static final int MAX_STOP_CHAIN = 1_000;
+
     private final String symbol;
     private final OrderBook book;
+    private final StopBook stops = new StopBook();
     private final OrderFactory factory;
     private final MatchingStrategies strategies;
     private final Map<Long, Order> recentOrders;
@@ -170,6 +180,9 @@ public final class SymbolEngine implements MatchingEngine {
             return refused;
         }
         OrderView arrived = OrderView.of(order); // frozen before matching changes it
+        if (order.type() == OrderType.STOP_LOSS) {
+            return parkStop(order, arrived);
+        }
         if (!session.state().matchesContinuously()) {
             return collectForAuction(order, arrived);
         }
@@ -182,7 +195,58 @@ public final class SymbolEngine implements MatchingEngine {
         }
         watchForBreaker(result.trades());
         rememberLastPrice(result.trades());
+        fireStops();
         return result;
+    }
+
+    /**
+     * A stop-loss is accepted and set aside in the {@link StopBook}. If the
+     * price is already past its trigger, it fires at once, the way a real
+     * stop placed "through the market" does.
+     */
+    private MatchResult parkStop(Order stop, OrderView arrived) {
+        events.publish(new OrderAccepted(symbol, clock.instant(), events.nextSequence(), arrived));
+        stops.park(stop);
+        fireStops();
+        return new MatchResult(stop, List.of(), stop.isActive(), null);
+    }
+
+    /**
+     * Fires every stop the last price has reached, as market orders. One
+     * stop's trades can move the price far enough to set off the next, which
+     * is exactly how a crash feeds itself; the loop follows that chain, but
+     * stops the moment the circuit breaker halts the stock.
+     */
+    private void fireStops() {
+        for (int fired = 0; fired < MAX_STOP_CHAIN && session.state().matchesContinuously(); ) {
+            List<Order> triggered = stops.takeTriggered(lastPrice);
+            if (triggered.isEmpty()) {
+                return;
+            }
+            for (Order stop : triggered) {
+                if (!session.state().matchesContinuously()) {
+                    stops.park(stop); // halted mid-chain: it waits for the reopen
+                    continue;
+                }
+                fire(stop);
+                fired++;
+            }
+        }
+    }
+
+    private void fire(Order stop) {
+        MatchResult result = strategies.forType(OrderType.STOP_LOSS).match(stop, book);
+        for (Trade trade : result.trades()) {
+            events.publish(new TradeExecuted(symbol, trade.timestamp(), events.nextSequence(), trade));
+        }
+        if (result.status() == OrderStatus.CANCELLED) {
+            publishCancelled(stop, result.reason());
+        }
+        if (!result.trades().isEmpty()) {
+            publishBook();
+        }
+        watchForBreaker(result.trades());
+        rememberLastPrice(result.trades());
     }
 
     /** During a call auction an order only joins the book; nothing matches until the auction ends. */
@@ -238,7 +302,8 @@ public final class SymbolEngine implements MatchingEngine {
      * @return how many orders were cancelled
      */
     public int cancelAllFor(String traderId) {
-        List<Long> ids = book.orderIdsOf(traderId);
+        List<Long> ids = new ArrayList<>(book.orderIdsOf(traderId));
+        ids.addAll(stops.orderIdsOf(traderId));
         ids.forEach(this::cancel);
         return ids.size();
     }
@@ -285,6 +350,7 @@ public final class SymbolEngine implements MatchingEngine {
             if (next.phase() == MarketPhase.AUCTION) {
                 publishAuction();
             }
+            fireStops(); // a stop the auction price reached fires once trading resumes
         });
     }
 
@@ -329,6 +395,12 @@ public final class SymbolEngine implements MatchingEngine {
 
     @Override
     public CancelResult cancel(long orderId) {
+        Optional<Order> stop = stops.remove(orderId);
+        if (stop.isPresent()) {
+            stop.get().cancel();
+            publishCancelled(stop.get(), CANCELLED_BY_TRADER);
+            return CancelResult.success(stop.get());
+        }
         Optional<Order> resting = book.remove(orderId);
         if (resting.isPresent()) {
             Order order = resting.get();
@@ -342,6 +414,64 @@ public final class SymbolEngine implements MatchingEngine {
         }
         Order known = recentOrders.get(orderId);
         return known == null ? CancelResult.unknown(orderId) : CancelResult.alreadyFinished(known);
+    }
+
+    /**
+     * Changes the price or size of an order that is still waiting (in the book,
+     * or as a stop). A smaller size at the same price is changed in place and
+     * keeps its queue position; anything else is a cancel/replace. See
+     * {@link AmendResult}.
+     */
+    public AmendResult amend(long orderId, long newPrice, long newQty) {
+        Optional<Order> waiting = book.find(orderId).or(() -> stops.find(orderId));
+        if (waiting.isEmpty()) {
+            Order known = recentOrders.get(orderId);
+            return known == null
+                    ? AmendResult.refused(orderId, null, CancelResult.UNKNOWN)
+                    : AmendResult.refused(orderId, known, "order is already " + known.status());
+        }
+        Order order = waiting.get();
+        OrderRequest changed = order.toRequest().withPriceAndQty(newPrice, newQty); // validates the new figures
+        if (newPrice == order.limitPrice() && newQty < order.remainingQty()) {
+            return reduceInPlace(order, newQty);
+        }
+        removeForReplace(order);
+        return AmendResult.replaced(orderId, submit(changed));
+    }
+
+    private AmendResult reduceInPlace(Order order, long newQty) {
+        long before = order.remainingQty();
+        if (order.type() == OrderType.STOP_LOSS) {
+            order.reduceTo(newQty); // a waiting stop has no queue position in the book to protect
+        } else {
+            book.reduce(order.id(), newQty);
+            publishBook();
+            if (session.phase() == MarketPhase.AUCTION) {
+                publishAuction();
+            }
+        }
+        events.publish(new OrderReduced(symbol, clock.instant(), events.nextSequence(), OrderView.of(order), before));
+        return AmendResult.inPlace(order);
+    }
+
+    private void removeForReplace(Order order) {
+        stops.remove(order.id());
+        book.remove(order.id());
+        order.cancel();
+        publishCancelled(order, REPLACED_BY_AMEND);
+        if (order.type() != OrderType.STOP_LOSS) {
+            publishBook();
+        }
+    }
+
+    /** Stop-loss orders still waiting for their trigger, oldest first. */
+    public List<Order> waitingStops() {
+        return stops.waiting();
+    }
+
+    /** The last traded price, or 0 if nothing has traded yet. */
+    public long lastPrice() {
+        return lastPrice;
     }
 
     @Override

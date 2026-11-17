@@ -18,7 +18,7 @@ import java.util.Optional;
  */
 public record CancelResult(long orderId, boolean cancelled, Order order, String reason) {
 
-    static final String UNKNOWN = "no such order";
+    public static final String UNKNOWN = "no such order";
 
     /** @return a successful cancel of {@code order} */
     public static CancelResult success(Order order) {

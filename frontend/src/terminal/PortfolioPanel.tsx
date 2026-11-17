@@ -14,6 +14,42 @@ import { VivaTag } from '../viva/VivaTag'
  * bots and the audience. Refreshed every two seconds and after each trade.
  */
 export function PortfolioPanel() {
+  const account = useMarket((s) => s.account)
+  return account ? <AccountPortfolio /> : <DeskPortfolio />
+}
+
+/** Signed in: the account's own statement, with what is set aside for waiting orders. */
+function AccountPortfolio() {
+  const account = useMarket((s) => s.account)!
+  return (
+    <section className="dx-portfolio">
+      <SectionLabel rule="bold" meta={<span className={account.profit > 0 ? 'is-up' : account.profit < 0 ? 'is-down' : undefined}>{signedRupees(account.profit)}</span>}>
+        {account.name}’s Portfolio
+      </SectionLabel>
+      {account.holdings.length > 0
+        ? <DataTable head={['Stock', 'Qty', 'Now', 'Value']}>
+            {account.holdings.map((h) => (
+              <tr key={h.symbol}>
+                <td>{h.symbol}</td>
+                <td>{formatQty(h.shares)}</td>
+                <td>{formatPaise(h.lastPrice)}</td>
+                <td>{formatPaise(h.value)}</td>
+              </tr>
+            ))}
+          </DataTable>
+        : <Empty>No shares yet. Buy something and it will be valued here at the live price.</Empty>}
+      <dl className="dx-portfolio-cash dx-num">
+        <dt>Cash</dt><dd>₹{formatPaise(account.cash)}</dd>
+        <dt>Set aside for orders</dt><dd>₹{formatPaise(account.cashSetAside)}</dd>
+        <dt>Free to spend</dt><dd>₹{formatPaise(account.availableCash)}</dd>
+      </dl>
+      <a href="#/account" className="dx-minilead-link">Full statement →</a>
+    </section>
+  )
+}
+
+/** Not signed in: the house desk ("YOU"), with no cash limit, ranked against the bots. */
+function DeskPortfolio() {
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null)
   const myTrades = useMarket((s) => s.lastTradeBy.YOU?.at)
   const board = useMarket((s) => s.board)

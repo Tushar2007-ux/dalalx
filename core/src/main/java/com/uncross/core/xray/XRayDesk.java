@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Keeps the X-Rays of the most recent orders sent by chosen traders (by
@@ -26,7 +27,7 @@ public final class XRayDesk implements XRayRecorder {
 
     public static final int CAPACITY = 50;
 
-    private final Set<String> watched;
+    private final Predicate<String> watched;
     private final Narrator narrator;
     private final Deque<XRay> xrays = new ArrayDeque<>();
 
@@ -35,13 +36,21 @@ public final class XRayDesk implements XRayRecorder {
      * @param names   trader id → display name, for the narration
      */
     public XRayDesk(Set<String> watched, Function<String, String> names) {
-        this.watched = Set.copyOf(watched);
+        this(Set.copyOf(watched)::contains, names);
+    }
+
+    /**
+     * @param watched says which trader ids are X-Rayed (e.g. the person at the screen and every signed-in account)
+     * @param names   trader id → display name, for the narration
+     */
+    public XRayDesk(Predicate<String> watched, Function<String, String> names) {
+        this.watched = java.util.Objects.requireNonNull(watched, "watched must not be null");
         this.narrator = new Narrator(names);
     }
 
     @Override
     public boolean wants(OrderRequest request) {
-        return watched.contains(request.traderId());
+        return watched.test(request.traderId());
     }
 
     @Override

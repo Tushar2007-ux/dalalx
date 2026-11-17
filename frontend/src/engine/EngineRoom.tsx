@@ -10,6 +10,8 @@ import { PressHall } from '../webgl/lazy'
 import { SOURCE_STYLE, arrivalRate, compact, queueFill, threadMood, ticketScale, ticketsFor } from './factory'
 import './engine.css'
 import { VivaTag } from '../viva/VivaTag'
+import { ListStockForm } from '../features/ListStockForm'
+import '../features/features.css'
 
 /** How long a ticket takes to ride the belt to the press. */
 const BELT_MS = 1700
@@ -104,7 +106,8 @@ export function EngineRoom() {
           exactly what it was. */}
       {tier !== 'off' && workers.length > 0 && (
         <figure className="dx-hall-wrap">
-          <Suspense fallback={null}><PressHall workers={workers} peak={peak} tier={tier} /></Suspense>
+          {/* Keyed by the number of presses: a newly listed stock rebuilds the hall with one more. */}
+          <Suspense fallback={null}><PressHall key={workers.length} workers={workers} peak={peak} tier={tier} /></Suspense>
           {/* Which press is which, and what it is doing, in type rather than
               in the scene: text drawn into WebGL is never as sharp, and these
               are the labels someone reads out loud in a viva. */}
@@ -141,6 +144,7 @@ export function EngineRoom() {
           Each bin holds up to 100,000 tickets. If it is ever full, a producer waits up to a second for room, then the order is refused with “too busy” (HTTP 503) instead of freezing the caller.
         </Explainer>
       </section>
+      <ListStockForm onListed={() => api.engine().then(applyEngine).catch(() => {})} />
     </Shell>
   )
 }

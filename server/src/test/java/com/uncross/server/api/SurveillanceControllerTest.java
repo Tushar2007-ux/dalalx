@@ -66,7 +66,7 @@ class SurveillanceControllerTest {
 
     @Test
     void rulesCanBeSwitchedOff() throws Exception {
-        mvc.perform(get("/api/surveillance/rules")).andExpect(jsonPath("$.length()").value(4));
+        mvc.perform(get("/api/surveillance/rules")).andExpect(jsonPath("$.length()").value(5));
         mvc.perform(put("/api/surveillance/rules/pump").contentType(MediaType.APPLICATION_JSON).content("{\"enabled\":false}"))
                 .andExpect(jsonPath("$[3].enabled").value(false));
         mvc.perform(put("/api/surveillance/rules/nope").contentType(MediaType.APPLICATION_JSON).content("{\"enabled\":false}"))

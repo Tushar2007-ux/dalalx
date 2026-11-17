@@ -1,5 +1,9 @@
 package com.uncross.server.api;
 
+import com.uncross.core.news.NewsDesk;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import com.uncross.core.headlines.Headline;
 import com.uncross.core.headlines.HeadlineWriter;
 import com.uncross.core.scenarios.Scenario;
@@ -45,9 +49,34 @@ public class NewsController {
     private final HeadlineWriter writer;
     private final ScenarioDirector director;
 
-    public NewsController(HeadlineWriter writer, ScenarioDirector director) {
+    private final NewsDesk news;
+
+    public NewsController(HeadlineWriter writer, ScenarioDirector director, NewsDesk news) {
         this.writer = writer;
         this.director = director;
+        this.news = news;
+    }
+
+    public record DeskSwitch(boolean enabled) {
+    }
+
+    /** Whether simulated company news is breaking on its own. */
+    @GetMapping("/news/desk")
+    public DeskSwitch desk() {
+        return new DeskSwitch(news.enabled());
+    }
+
+    @PutMapping("/news/desk")
+    public DeskSwitch setDesk(@RequestBody DeskSwitch body) {
+        news.setEnabled(body.enabled());
+        return desk();
+    }
+
+    /** Breaks a story on the next bot tick, whatever the timer says. */
+    @PostMapping("/news/break")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public void breakNews() {
+        news.breakNews();
     }
 
     @GetMapping("/wire")

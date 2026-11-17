@@ -25,6 +25,17 @@ export function useMarketData(): void {
     let stream: MarketStream | null = null
     let retry: ReturnType<typeof setTimeout> | undefined
     let stopped = false
+    const watched = new Set<string>()
+    // Starts following any stock not yet followed: at boot, and again whenever a new one is listed.
+    const follow = (symbols: { symbol: string }[]) => {
+      for (const { symbol } of symbols) {
+        if (watched.has(symbol) || !stream) continue
+        watched.add(symbol)
+        stream.watch(symbol)
+        // Every stock's recent trades, so its sparkline and map tile have a shape before the first live trade.
+        api.trades(symbol, 40).then((t) => !stopped && useMarket.getState().setTape(symbol, t)).catch(() => {})
+      }
+    }
 
     const boot = async () => {
       try {
@@ -35,7 +46,12 @@ export function useMarketData(): void {
           onBook: (b) => useMarket.getState().applyBook(b),
           onTrades: (sym, t) => useMarket.getState().applyTrades(sym, t),
           onActivity: (a) => useMarket.getState().applyActivity(a),
-          onHeadline: (h) => useMarket.getState().applyHeadline(h),
+          onHeadline: (h) => {
+            useMarket.getState().applyHeadline(h)
+            if (h.kicker === 'New listing') {
+              api.symbols().then((list) => { if (!stopped) { useMarket.getState().setSymbols(list); follow(list) } }).catch(() => {})
+            }
+          },
           onStatus: (st) => useMarket.getState().applyStatus(st),
           onCase: (c) => useMarket.getState().applyCase(c),
           onAuction: (a) => useMarket.getState().applyAuction(a),
@@ -43,9 +59,7 @@ export function useMarketData(): void {
           onEngine: (e) => useMarket.getState().applyEngine(e),
           onLeaderboard: (b) => useMarket.getState().applyBoard(b),
         })
-        symbols.forEach((s) => stream?.watch(s.symbol))
-        // Every stock's recent trades, so its sparkline and map tile have a shape before the first live trade.
-        symbols.forEach((s) => api.trades(s.symbol, 40).then((t) => !stopped && useMarket.getState().setTape(s.symbol, t)).catch(() => {}))
+        follow(symbols)
         api.wire().then((w) => !stopped && useMarket.getState().setWire(w)).catch(() => {})
         api.cases().then((c) => !stopped && useMarket.getState().setCases(c)).catch(() => {})
         api.leaderboard().then((b) => !stopped && useMarket.getState().applyBoard(b)).catch(() => {})

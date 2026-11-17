@@ -103,7 +103,9 @@ public abstract class AbstractOrderMatcher implements MatchingStrategy {
     /** Executes one trade between {@code incoming} and the best resting order. */
     private Trade tradeWithBest(Order incoming, OrderBook book, Side restingSide) {
         Order resting = book.peekBest(restingSide).orElseThrow();
-        long qty = Math.min(incoming.remainingQty(), resting.remainingQty());
+        // Against an iceberg, only the slice showing can trade; the loop in match()
+        // then meets its next slice (at the back of the queue) if it is still best.
+        long qty = Math.min(incoming.remainingQty(), resting.visibleQty());
         long price = resting.limitPrice(); // trades always execute at the RESTING price
         book.fillBest(restingSide, qty);
         incoming.fill(qty);

@@ -9,6 +9,7 @@ import { TickerStrip } from './TickerStrip'
 import { BreakingBand } from '../visuals/BreakingBand'
 import { MastheadPnl } from '../visuals/MastheadPnl'
 import '../visuals/visuals.css'
+import '../features/features.css'
 import './shell.css'
 
 const EDITION_NAMES = { day: 'Day Edition', night: 'Night Edition' } as const
@@ -49,6 +50,7 @@ export function Shell({ route, headline, page, section, status, band, full = fal
         ))}
       </nav>
       <span className="dx-sections-right">
+      <AccountLink />
       <MastheadPnl />
       <ToolsMenu />
       <a href="#/wall" className="dx-focus dx-sections-board" title="Full-screen wall display for the projector (W)">Big Board ⤢</a>
@@ -103,4 +105,14 @@ function AutoToast({ toast, onClose }: { toast: ToastItem; onClose: () => void }
     return () => clearTimeout(timer)
   }, [])
   return <Toast kind={toast.kind} title={toast.title} detail={toast.detail} time={toast.time} onClose={onClose} />
+}
+
+/** "Sign in", or the signed-in account's name, in the section bar. */
+function AccountLink() {
+  const account = useMarket((s) => s.account)
+  return (
+    <a href="#/account" className="dx-focus dx-account-link" title={account ? `Trading as ${account.name}` : 'Trade with your own ₹10,00,000'}>
+      {account ? <>◉ {account.name}</> : 'Sign in'}
+    </a>
+  )
 }

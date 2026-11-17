@@ -63,6 +63,8 @@ class OrderFactoryAndStrategiesTest {
         map.put(OrderType.LIMIT, new LimitOrderMatcher(() -> 1, clock));
         map.put(OrderType.MARKET, new MarketOrderMatcher(() -> 1, clock));
         map.put(OrderType.IOC, new IocOrderMatcher(() -> 1, clock));
+        map.put(OrderType.STOP_LOSS, new StopLossOrderMatcher(() -> 1, clock));
+        map.put(OrderType.ICEBERG, new IcebergOrderMatcher(() -> 1, clock));
         MatchingStrategies strategies = new MatchingStrategies(map);
 
         map.clear(); // changing the caller's map must not affect the registry

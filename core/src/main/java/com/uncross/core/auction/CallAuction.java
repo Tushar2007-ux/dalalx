@@ -80,7 +80,7 @@ public final class CallAuction {
         while (book.bestBid().orElse(Long.MIN_VALUE) >= price && book.bestAsk().orElse(Long.MAX_VALUE) <= price) {
             Order bid = book.peekBest(Side.BUY).orElseThrow();
             Order ask = book.peekBest(Side.SELL).orElseThrow();
-            long qty = Math.min(bid.remainingQty(), ask.remainingQty());
+            long qty = Math.min(bid.visibleQty(), ask.visibleQty()); // an iceberg fills one slice at a time
             book.fillBest(Side.BUY, qty);
             book.fillBest(Side.SELL, qty);
             // No one was the aggressor in an auction; by convention, the side of the later order.

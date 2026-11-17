@@ -4,6 +4,9 @@ import com.uncross.core.book.BookSnapshot;
 import com.uncross.core.breaker.BreakerRule;
 import com.uncross.core.breaker.TradingSession;
 import com.uncross.core.events.EventBus;
+import com.uncross.core.journal.Journal;
+import com.uncross.core.journal.JournalEntry;
+import com.uncross.core.matching.AmendResult;
 import com.uncross.core.matching.CancelResult;
 import com.uncross.core.matching.MatchResult;
 import com.uncross.core.matching.MatchingStrategies;
@@ -11,6 +14,7 @@ import com.uncross.core.matching.OrderFactory;
 import com.uncross.core.matching.OrderGate;
 import com.uncross.core.matching.SymbolEngine;
 import com.uncross.core.model.OrderRequest;
+import com.uncross.core.model.OrderStatus;
 import com.uncross.core.xray.XRayRecorder;
 import java.time.Clock;
 import java.util.Collections;
@@ -24,8 +28,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 /**
  * The whole stock exchange: one {@link SymbolWorker} per listed stock, all
@@ -46,7 +53,15 @@ import java.util.function.Function;
  *   <li>a small map from order id to symbol, so {@link #cancel(long)} needs only
  *       the id. It is size-bounded and synchronised, and is touched once per
  *       order, never during matching.</li>
+ *   <li>the map of workers itself, which {@link #list} can grow while the
+ *       market runs. It is <em>copy-on-write</em>: listing builds a new map and
+ *       swaps it in with one {@code volatile} write, so the many threads
+ *       routing orders read it without ever taking a lock.</li>
  * </ul>
+ *
+ * <p>Every command that changes a book is also written to a {@link Journal}
+ * (by default {@link Journal#NONE}), which is what lets the day be recovered
+ * after a restart, or rewound and watched again.
  */
 public final class Exchange {
 
@@ -60,12 +75,28 @@ public final class Exchange {
 
     private static final int ROUTE_HISTORY = 500_000;
 
-    private final Map<String, ListedStock> stocks = new LinkedHashMap<>();
-    private final Map<String, SymbolWorker> workers = new LinkedHashMap<>();
+    /** Most stocks the exchange will list: five to start, room for seven more. */
+    public static final int MAX_STOCKS = 12;
+
+    private static final Pattern SYMBOL = Pattern.compile("[A-Z][A-Z0-9]{1,11}");
+
+    // Copy-on-write: replaced whole (never edited) when a stock is listed. See the class comment.
+    private volatile Map<String, ListedStock> stocks = Map.of();
+    private volatile Map<String, SymbolWorker> workers = Map.of();
+    private final OrderFactory factory;
+    private final MatchingStrategies strategies;
+    private final Clock clock;
+    private final BreakerRule breaker;
+    private final List<Consumer<ListedStock>> listingListeners = new CopyOnWriteArrayList<>();
+    private volatile Journal journal = Journal.NONE;
+    private volatile boolean started;
     private final Map<Long, Route> routes;
     private final EventBus events;
     private final AtomicLong ids = new AtomicLong();
     private ScheduledExecutorService ticker;
+    // Remembered so a stock listed later is set up like the rest.
+    private volatile XRayRecorder xrays = XRayRecorder.NONE;
+    private volatile OrderGate gate = OrderGate.OPEN;
     private volatile Function<String, CommandSource> sourceOfTrader = trader -> CommandSource.BOT;
 
     /** Where an order lives and who sent it, so a cancel needs only the id. */
@@ -98,16 +129,73 @@ public final class Exchange {
         // One counter for order ids, sequences and trade ids: all unique and increasing.
         // The factory and matchers hold no mutable state of their own (only this
         // AtomicLong and the clock), so all workers can safely share them.
-        OrderFactory factory = new OrderFactory(ids::incrementAndGet, ids::incrementAndGet, clock);
-        MatchingStrategies strategies = MatchingStrategies.standard(ids::incrementAndGet, clock);
+        this.factory = new OrderFactory(ids::incrementAndGet, ids::incrementAndGet, clock);
+        this.strategies = MatchingStrategies.standard(ids::incrementAndGet, clock);
+        this.clock = Objects.requireNonNull(clock, "clock must not be null");
+        this.breaker = breaker;
         for (ListedStock stock : listed) {
-            stocks.put(stock.symbol(), stock);
-            TradingSession session = breaker == null
-                    ? TradingSession.alwaysOpen(stock.symbol())
-                    : TradingSession.withBreaker(stock.symbol(), breaker);
-            workers.put(stock.symbol(),
-                    new SymbolWorker(new SymbolEngine(stock.symbol(), factory, strategies, events, clock, session)));
+            addStock(stock);
         }
+    }
+
+    /** Builds the worker for one stock and swaps in new (copied) maps that include it. */
+    private synchronized SymbolWorker addStock(ListedStock stock) {
+        TradingSession session = breaker == null
+                ? TradingSession.alwaysOpen(stock.symbol())
+                : TradingSession.withBreaker(stock.symbol(), breaker);
+        SymbolWorker worker = new SymbolWorker(
+                new SymbolEngine(stock.symbol(), factory, strategies, events, clock, session));
+        Map<String, ListedStock> newStocks = new LinkedHashMap<>(stocks);
+        Map<String, SymbolWorker> newWorkers = new LinkedHashMap<>(workers);
+        newStocks.put(stock.symbol(), stock);
+        newWorkers.put(stock.symbol(), worker);
+        stocks = Collections.unmodifiableMap(newStocks);
+        workers = Collections.unmodifiableMap(newWorkers);
+        return worker;
+    }
+
+    /**
+     * Lists a new stock while the market is running: it gets its own worker
+     * thread, its own book and its own circuit breaker, exactly like the five
+     * it started with. Nothing else in the exchange changes, which is the
+     * payoff of "one worker per stock": a stock is a unit you can add.
+     *
+     * @throws IllegalArgumentException if the symbol is badly formed, already
+     *         listed, or the exchange is full
+     */
+    public ListedStock list(ListedStock stock) {
+        Objects.requireNonNull(stock, "stock must not be null");
+        SymbolWorker worker;
+        synchronized (this) {
+            if (!SYMBOL.matcher(stock.symbol()).matches()) {
+                throw new IllegalArgumentException("a symbol is 2–12 capital letters or digits, starting with a letter");
+            }
+            if (stocks.containsKey(stock.symbol())) {
+                throw new IllegalArgumentException(stock.symbol() + " is already listed");
+            }
+            if (stocks.size() >= MAX_STOCKS) {
+                throw new IllegalArgumentException("the exchange is full: at most " + MAX_STOCKS + " stocks");
+            }
+            worker = addStock(stock);
+            worker.engine().recordXRays(xrays);
+            worker.engine().guardWith(gate);
+            if (started) {
+                worker.start();
+            }
+        }
+        journal.record(new JournalEntry.Listed(clock.instant(), stock));
+        listingListeners.forEach(listener -> listener.accept(stock));
+        return stock;
+    }
+
+    /** Called (on the caller's thread) after each new listing, e.g. so the bots' view of the market learns the symbol. */
+    public void onListing(Consumer<ListedStock> listener) {
+        listingListeners.add(Objects.requireNonNull(listener, "listener must not be null"));
+    }
+
+    /** From now on, write every book-changing command to {@code newJournal}. */
+    public void journalTo(Journal newJournal) {
+        this.journal = Objects.requireNonNull(newJournal, "journal must not be null");
     }
 
     private static Map<Long, Route> boundedMap(int maxSize) {
@@ -129,12 +217,14 @@ public final class Exchange {
 
     /** Lets {@code recorder} X-Ray the orders it wants, on every stock. Call before {@link #start()}. */
     public void recordXRays(XRayRecorder recorder) {
+        this.xrays = Objects.requireNonNull(recorder, "recorder must not be null");
         workers.values().forEach(w -> w.engine().recordXRays(recorder));
     }
 
     /** Puts {@code gate} in front of every stock's engine. Call before {@link #start()}. */
-    public void guardWith(OrderGate gate) {
-        workers.values().forEach(w -> w.engine().guardWith(gate));
+    public void guardWith(OrderGate newGate) {
+        this.gate = Objects.requireNonNull(newGate, "gate must not be null");
+        workers.values().forEach(w -> w.engine().guardWith(newGate));
     }
 
     /**
@@ -147,12 +237,19 @@ public final class Exchange {
         List<CompletableFuture<Integer>> perStock = workers.values().stream()
                 .map(w -> w.enqueue("cancel-all", engine -> engine.cancelAllFor(traderId))).toList();
         return CompletableFuture.allOf(perStock.toArray(CompletableFuture[]::new))
-                .thenApply(done -> perStock.stream().mapToInt(CompletableFuture::join).sum());
+                .thenApply(done -> {
+                    int cancelled = perStock.stream().mapToInt(CompletableFuture::join).sum();
+                    if (cancelled > 0) {
+                        journal.record(new JournalEntry.CancelledAll(clock.instant(), traderId));
+                    }
+                    return cancelled;
+                });
     }
 
     /** Starts every symbol's worker thread and the exchange clock. */
-    public void start() {
+    public synchronized void start() {
         workers.values().forEach(SymbolWorker::start);
+        started = true;
         startClock();
     }
 
@@ -196,6 +293,10 @@ public final class Exchange {
         return workerFor(request.symbol()).enqueue("submit", source, engine -> {
             MatchResult result = engine.submit(request);
             routes.put(result.incoming().id(), new Route(request.symbol(), source));
+            if (result.status() != OrderStatus.REJECTED) {
+                // The order's own arrival time, so a replay re-enters it at that moment.
+                journal.record(new JournalEntry.Submitted(result.incoming().timestamp(), result.incoming().id(), request));
+            }
             return result;
         });
     }
@@ -209,7 +310,33 @@ public final class Exchange {
         if (route == null) {
             return CompletableFuture.completedFuture(CancelResult.unknown(orderId));
         }
-        return workerFor(route.symbol()).enqueue("cancel", route.source(), engine -> engine.cancel(orderId));
+        return workerFor(route.symbol()).enqueue("cancel", route.source(), engine -> {
+            CancelResult result = engine.cancel(orderId);
+            if (result.cancelled()) {
+                journal.record(new JournalEntry.Cancelled(clock.instant(), orderId));
+            }
+            return result;
+        });
+    }
+
+    /**
+     * Changes the price or size of a waiting order. See {@link AmendResult}
+     * for which changes keep the order's place in the queue.
+     */
+    public CompletableFuture<AmendResult> amend(long orderId, long newPrice, long newQty) {
+        Route route = routes.get(orderId);
+        if (route == null) {
+            return CompletableFuture.completedFuture(
+                    new AmendResult(orderId, false, false, null, null, CancelResult.UNKNOWN));
+        }
+        return workerFor(route.symbol()).enqueue("amend", route.source(), engine -> {
+            AmendResult result = engine.amend(orderId, newPrice, newQty);
+            if (result.amended()) {
+                routes.put(result.order().id(), route);
+                journal.record(new JournalEntry.Amended(clock.instant(), orderId, newPrice, newQty, result.order().id()));
+            }
+            return result;
+        });
     }
 
     /** @return an immutable view of the top {@code depth} levels of one book */

@@ -3,6 +3,7 @@ package com.uncross.server.api;
 import com.uncross.core.breaker.MarketPhase;
 import com.uncross.core.events.AuctionUpdate;
 import com.uncross.core.events.OrderView;
+import com.uncross.core.matching.AmendResult;
 import com.uncross.core.matching.CancelResult;
 import com.uncross.core.matching.MatchResult;
 import com.uncross.core.model.OrderType;
@@ -30,7 +31,28 @@ public final class Dtos {
      *
      * @param traderId optional; defaults to {@code "YOU"} (the person at the screen)
      */
-    public record PlaceOrder(String symbol, String traderId, Side side, OrderType type, long price, long qty) {
+    public record PlaceOrder(String symbol, String traderId, Side side, OrderType type, long price, long qty,
+                             Long displayQty) {
+
+        /** The usual order, with no iceberg display size. */
+        public PlaceOrder(String symbol, String traderId, Side side, OrderType type, long price, long qty) {
+            this(symbol, traderId, side, type, price, qty, null);
+        }
+    }
+
+    /** What an amend sends: the order's new price (paise) and new size. */
+    public record AmendOrder(long price, long qty) {
+    }
+
+    /** The answer to an amend: {@code order} is the order now standing (the same one, or its replacement). */
+    public record AmendResponse(long orderId, boolean amended, boolean keptPriority, OrderView order,
+                                List<Trade> trades, String reason) {
+
+        static AmendResponse of(AmendResult result) {
+            return new AmendResponse(result.orderId(), result.amended(), result.keptPriority(),
+                    result.order() == null ? null : OrderView.of(result.order()),
+                    result.replacementResult().map(MatchResult::trades).orElse(List.of()), result.reason());
+        }
     }
 
     /** The answer to a placed order. */

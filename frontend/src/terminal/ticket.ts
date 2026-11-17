@@ -16,6 +16,8 @@ export interface TicketInput {
   type: OrderType
   priceText: string
   qtyText: string
+  /** ICEBERG only: how many shares to show at a time. */
+  displayText?: string
   reference?: number
 }
 
@@ -37,7 +39,30 @@ export function checkTicket(t: TicketInput): TicketCheck {
     const [low, high] = bandOf(t.reference)
     if (price < low || price > high) return { error: "Outside today's circuit band" }
   }
+  if (t.type === 'ICEBERG') {
+    const text = (t.displayText ?? '').trim()
+    const shown = /^\d+$/.test(text) ? Number(text) : NaN
+    if (!(shown >= 1 && shown < qty)) return { error: `Show between 1 and ${Math.max(1, qty - 1)} shares at a time` }
+    return { order: { symbol: t.symbol, side: t.side, type: 'ICEBERG', price, qty, displayQty: shown } }
+  }
   return { order: { symbol: t.symbol, side: t.side, type: t.type, price, qty } }
+}
+
+/** The ticket's choice of order types, with a line on what each does. */
+export const ORDER_TYPES: { value: string; label: string; hint: string }[] = [
+  { value: 'limit', label: 'Limit', hint: 'Rests in the book at your price.' },
+  { value: 'market', label: 'Market', hint: 'Fills now at the best available price.' },
+  { value: 'ioc', label: 'IOC', hint: 'Immediate or cancel: fills what it can, cancels the rest.' },
+  { value: 'stop_loss', label: 'Stop', hint: 'Waits unseen; when the price reaches your trigger it trades at the market.' },
+  { value: 'iceberg', label: 'Iceberg', hint: 'A limit order that shows only part of its size at a time.' },
+]
+
+/** One line for a working order in "Your Orders": what it is waiting for. */
+export function workingLine(o: { type: OrderType; side: Side; limitPrice: number; remainingQty: number; originalQty: number }): string {
+  const size = `${formatQty(o.remainingQty)}/${formatQty(o.originalQty)}`
+  if (o.type === 'STOP_LOSS') return `${size} · stop ${o.side === 'SELL' ? '≤' : '≥'} ₹${formatPaise(o.limitPrice)}`
+  if (o.type === 'ICEBERG') return `${size} @ ₹${formatPaise(o.limitPrice)} · iceberg`
+  return `${size} @ ₹${formatPaise(o.limitPrice)}`
 }
 
 /** Volume-weighted average price of the fills, in paise. */

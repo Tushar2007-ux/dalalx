@@ -7,7 +7,7 @@ import { pushFill, pushPrice, type MyFill } from '../visuals/signals'
 import type {
   Board, EngineSnapshot,
   AuctionUpdate, BookSnapshot, Candle, Case, Interval, MarketStatus, MarketStatusChanged, OrderActivity, OrderView, SymbolInfo, Trade,
-  WireHeadline,
+  WireHeadline, AccountStatement
 } from '../lib/types'
 
 /**
@@ -109,6 +109,9 @@ export interface MarketState {
   three: boolean
   /** Whether the keyboard-shortcut card is open. */
   helpOpen: boolean
+  /** The signed-in account (null when trading as the anonymous "YOU" desk). */
+  account: AccountStatement | null
+  setAccount: (account: AccountStatement | null) => void
   /** Price (paise) the ticket should show after a click on a book level; bumped `nonce` re-applies the same price. */
   ticketPrefill: { price: number; nonce: number } | null
 
@@ -221,6 +224,8 @@ export const useMarket = create<MarketState>()((set, get) => ({
   presenter: savedFlag('uncross-presenter'),
   ticketSide: null,
   helpOpen: false,
+  account: null,
+  setAccount: (account) => set((s) => (s.account?.traderId === account?.traderId ? { account } : { account, myOrders: {}, myFills: {} })),
   sound: (() => { try { return localStorage.getItem('uncross-sound') !== '0' } catch { return true } })(),
   three: (() => { try { return localStorage.getItem('uncross-three') !== '0' } catch { return true } })(),
   setSound: (sound) => { saveFlag('uncross-sound', sound); set({ sound }) },
@@ -308,10 +313,11 @@ export const useMarket = create<MarketState>()((set, get) => ({
     }
     let trail = s.trail[symbol]
     let mine = s.myFills[symbol]
+    const me = s.account?.traderId ?? ME
     for (const t of trades) {
       trail = pushPrice(trail, t.price)
-      if (t.buyerId === ME || t.sellerId === ME) {
-        mine = pushFill(mine, { at: Date.parse(t.timestamp), price: t.price, side: t.buyerId === ME ? 'BUY' : 'SELL', qty: t.qty })
+      if (t.buyerId === me || t.sellerId === me) {
+        mine = pushFill(mine, { at: Date.parse(t.timestamp), price: t.price, side: t.buyerId === me ? 'BUY' : 'SELL', qty: t.qty })
       }
     }
     set({
@@ -328,8 +334,8 @@ export const useMarket = create<MarketState>()((set, get) => ({
     filled.forEach(get().toast)
     // A resting order of mine was hit: the ticket gets its stamp.
     if (filled.length) {
-      const hit = trades.find((t) => t.buyerId === ME || t.sellerId === ME)
-      if (hit) get().stampFill(hit.buyerId === ME ? 'BUY' : 'SELL', `${formatQty(hit.qty)} ${symbol} @ ₹${formatPaise(hit.price)}`)
+      const hit = trades.find((t) => t.buyerId === me || t.sellerId === me)
+      if (hit) get().stampFill(hit.buyerId === me ? 'BUY' : 'SELL', `${formatQty(hit.qty)} ${symbol} @ ₹${formatPaise(hit.price)}`)
     }
   },
 
@@ -405,3 +411,8 @@ export const useMarket = create<MarketState>()((set, get) => ({
     ? s
     : { wire: [headline, ...s.wire].slice(0, WIRE_SIZE) })),
 }))
+
+/** The trader id this browser trades as: the signed-in account's, or the anonymous desk ("YOU"). */
+export function myTraderId(): string {
+  return useMarket.getState().account?.traderId ?? ME
+}

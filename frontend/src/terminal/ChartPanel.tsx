@@ -29,6 +29,7 @@ export function ChartPanel() {
   const price = useMarket((s) => s.lastPrice[s.selected])
   const chart = useMarket((s) => s.chart)
   const tape = useMarket((s) => s.tapes[s.selected])
+  const me = useMarket((s) => s.account?.traderId ?? ME)
 
   const myFills = useMarket((s) => s.myFills[s.selected])
 
@@ -68,7 +69,7 @@ export function ChartPanel() {
           <TradeTapeRow time={clockTime(t.timestamp)} symbol={t.symbol}
             side={t.aggressorSide === 'BUY' ? 'buy' : 'sell'} price={toRupees(t.price)} qty={t.qty}
             buyer={nameOf(t.buyerId)} seller={nameOf(t.sellerId)} buyerBot={botKey(t.buyerId)} sellerBot={botKey(t.sellerId)}
-            mine={t.buyerId === ME || t.sellerId === ME} fresh={i === 0} />
+            mine={t.buyerId === me || t.sellerId === me} fresh={i === 0} />
           </div>
         ))}
         {!tape?.length && <p style={{ margin: '8px 0', fontFamily: 'var(--font-display)', fontStyle: 'italic', color: 'var(--ink-muted)' }}>

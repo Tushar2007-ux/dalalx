@@ -5,6 +5,8 @@ import com.uncross.core.bots.BotRunner;
 import com.uncross.core.bots.ExchangeGateway;
 import com.uncross.core.bots.LiveMarketView;
 import com.uncross.core.bots.StandardBots;
+import com.uncross.core.bots.Tournament;
+import java.time.Clock;
 import com.uncross.core.events.EventBus;
 import com.uncross.core.exchange.Exchange;
 import java.util.Random;
@@ -27,6 +29,7 @@ public class BotConfig {
     public LiveMarketView liveMarketView(Exchange exchange, EventBus bus) {
         LiveMarketView view = new LiveMarketView(exchange.stocks());
         bus.register(view);
+        exchange.onListing(view::listed); // a stock listed later is traded by the bots too
         return view;
     }
 
@@ -49,9 +52,14 @@ public class BotConfig {
                                @Value("${uncross.bots.tick-ms:250}") long tickMillis) {
         BotRunner runner = new BotRunner(StandardBots.create(), market, new ExchangeGateway(exchange),
                 new Random(), tickMillis);
-        if (enabled) {
-            runner.start();
-        }
+        // Started by JournalKeeper once the day's journal has been replayed, so no bot trades mid-replay.
         return runner;
+    }
+
+    @Bean
+    public Tournament tournament(BotRunner runner, BotLedger ledger, Clock clock) {
+        Tournament tournament = new Tournament(runner, id -> ledger.stats(id).pnl(), clock);
+        runner.addHook(tournament);
+        return tournament;
     }
 }

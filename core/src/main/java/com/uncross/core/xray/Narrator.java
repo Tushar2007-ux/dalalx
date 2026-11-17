@@ -63,6 +63,9 @@ public final class Narrator {
             case LIMIT -> "at " + (f.side() == Side.BUY ? "no more than " : "no less than ") + Money.format(f.limit()) + " a share";
             case IOC -> "at " + (f.side() == Side.BUY ? "no more than " : "no less than ") + Money.format(f.limit())
                     + ", immediately or not at all";
+            case STOP_LOSS -> "at the market, now that the price has reached its trigger of " + Money.format(f.limit());
+            case ICEBERG -> "at " + (f.side() == Side.BUY ? "no more than " : "no less than ") + Money.format(f.limit())
+                    + ", showing only part of its size";
         };
         return new Step(StepKind.ARRIVE, "The order arrives",
                 "A " + typeName(f.type()) + " order to " + verb + " " + Money.groupIndian(f.qty()) + " " + f.symbol() + " " + price
@@ -78,7 +81,7 @@ public final class Narrator {
         boolean crosses = crosses(f, best);
         return new Step(StepKind.CHECK, "Check the best " + oppositeWord(f.side()),
                 "The best " + oppositeName(f.side()) + " is at " + Money.format(best) + ". "
-                        + (crosses ? (f.type() == OrderType.MARKET ? "A market order takes it" : "That is within your limit")
+                        + (crosses ? (f.type() == OrderType.MARKET || f.type() == OrderType.STOP_LOSS ? "A market order takes it" : "That is within your limit")
                                 + ", so the order can trade straight away."
                                 : "That is beyond your limit of " + Money.format(f.limit()) + ", so nothing trades."));
     }
@@ -136,8 +139,8 @@ public final class Narrator {
     }
 
     private static boolean crosses(Facts f, long price) {
-        if (f.type() == OrderType.MARKET) {
-            return true;
+        if (f.type() == OrderType.MARKET || f.type() == OrderType.STOP_LOSS) {
+            return true; // a triggered stop sells (or buys) at the market
         }
         return f.side() == Side.BUY ? price <= f.limit() : price >= f.limit();
     }
@@ -147,6 +150,8 @@ public final class Narrator {
             case LIMIT -> "limit";
             case MARKET -> "market";
             case IOC -> "immediate-or-cancel";
+            case STOP_LOSS -> "stop-loss";
+            case ICEBERG -> "iceberg";
         };
     }
 

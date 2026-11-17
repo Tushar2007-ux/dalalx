@@ -69,7 +69,7 @@ public final class SurveillanceDesk implements EngineListener {
 
     /** @return the four standard rules */
     public static List<SurveillanceRule> standardRules() {
-        return List.of(new SpoofingRule(), new LayeringRule(), new WashTradeRule(), new PumpRule());
+        return List.of(new SpoofingRule(), new LayeringRule(), new WashTradeRule(), new PumpRule(), new FrontRunningRule());
     }
 
     public void addListener(CaseListener listener) {

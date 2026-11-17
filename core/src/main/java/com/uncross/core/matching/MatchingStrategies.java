@@ -56,6 +56,8 @@ public final class MatchingStrategies {
         map.put(OrderType.LIMIT, new LimitOrderMatcher(tradeIds, clock));
         map.put(OrderType.MARKET, new MarketOrderMatcher(tradeIds, clock));
         map.put(OrderType.IOC, new IocOrderMatcher(tradeIds, clock));
+        map.put(OrderType.STOP_LOSS, new StopLossOrderMatcher(tradeIds, clock));
+        map.put(OrderType.ICEBERG, new IcebergOrderMatcher(tradeIds, clock));
         return new MatchingStrategies(map);
     }
 

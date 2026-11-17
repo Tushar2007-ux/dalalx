@@ -6,10 +6,10 @@ import { useEffect, useState } from 'react'
  */
 export type Route =
   | 'front' | 'floor' | 'xray' | 'correspondents' | 'surveillance' | 'engine' | 'audience' | 'how'
-  | 'wall' | 'join' | 'demo'
+  | 'wall' | 'join' | 'demo' | 'account' | 'rewind' | 'edition'
 
-/** Pages with the newspaper around them (everything except the big board, the phone page and the demo). */
-export type ShellRoute = Exclude<Route, 'demo' | 'wall' | 'join'>
+/** Pages with the newspaper around them (everything except the big board, the phone page, the demo and the printable evening edition). */
+export type ShellRoute = Exclude<Route, 'demo' | 'wall' | 'join' | 'edition'>
 
 /** The pages in the section bar, in reading order. */
 export const ROUTES: { route: ShellRoute; hash: string; label: string }[] = [
@@ -23,8 +23,10 @@ export const ROUTES: { route: ShellRoute; hash: string; label: string }[] = [
   { route: 'how', hash: '#/how', label: 'How It Works' },
 ]
 
-/** Pages reached by link only: the full-screen big board, the phone page and the demo autopilot. */
-const EXTRA: Record<string, Route> = { '#/wall': 'wall', '#/join': 'join', '#/demo': 'demo' }
+/** Pages reached by link only: the big board, the phone page, the demo autopilot, your account, the rewind and the evening edition. */
+const EXTRA: Record<string, Route> = {
+  '#/wall': 'wall', '#/join': 'join', '#/demo': 'demo', '#/account': 'account', '#/rewind': 'rewind', '#/edition': 'edition',
+}
 
 /** Anything unknown shows the front page. */
 export function routeOf(hash: string): Route {

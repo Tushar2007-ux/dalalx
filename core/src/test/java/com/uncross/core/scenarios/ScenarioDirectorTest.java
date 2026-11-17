@@ -129,8 +129,8 @@ class ScenarioDirectorTest {
     }
 
     @Test
-    void theStandardCatalogueHasFourStories() {
+    void theStandardCatalogueHasFiveStories() {
         assertThat(Storylines.all()).extracting(Scenario::id)
-                .containsExactly("flash-crash", "bubble", "whale-dump", "calm");
+                .containsExactly("flash-crash", "bubble", "whale-dump", "calm", "tipped-off");
     }
 }

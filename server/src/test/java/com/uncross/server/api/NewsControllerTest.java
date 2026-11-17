@@ -25,7 +25,7 @@ class NewsControllerTest {
     void listsTheStorylinesWithNothingRunning() throws Exception {
         mvc.perform(get("/api/scenarios"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.stories.length()").value(4))
+                .andExpect(jsonPath("$.stories.length()").value(5))
                 .andExpect(jsonPath("$.stories[0].id").value("flash-crash"))
                 .andExpect(jsonPath("$.stories[0].durationSeconds").value(90))
                 .andExpect(jsonPath("$.running.id").doesNotExist());
