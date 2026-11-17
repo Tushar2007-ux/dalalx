@@ -1,0 +1,341 @@
+<section class="part" id="idea">
+  <div class="part-head"><span class="num" aria-hidden="true">01</span><h2>The idea in one page</h2></div>
+  <p class="lede drop">Object-Oriented Modelling means building software out of <b>objects</b>: small units that each hold some data and the behaviour that belongs with it, and that talk to each other through clear interfaces.</p>
+  <p>The test of a good object-oriented design is not "did we use classes". It is: <b>when something new is needed, how much existing code do we have to change?</b> In a good design the answer is "very little", because each new thing is a new object that plugs into a place made for it.</p>
+  <p>Uncross was built to pass that test, and it has a real track record to prove it. After the first version was finished, fourteen features were added (two order types, accounts, a journal, news, a tournament, a new surveillance rule and more), and each one arrived mostly as <b>new classes</b> plugged into existing interfaces.</p>
+  <div class="say"><b>The sentence to remember</b>"Every feature in Uncross is an object that plugs into an interface. New order type: a new Strategy. New bot: a new subclass. New feature that reacts to trades: a new Observer. The engine itself rarely changes."</div>
+  <div class="grid4">
+    <a class="card" href="#encapsulation"><span class="big">4</span><h4>Pillars</h4><p>Encapsulation, abstraction, inheritance, polymorphism.</p><span class="go">Parts 3–6 →</span></a>
+    <a class="card" href="#relations"><span class="big">6</span><h4>UML relationships</h4><p>Composition, aggregation, association and the rest.</p><span class="go">Part 7 →</span></a>
+    <a class="card" href="#solid"><span class="big">5</span><h4>SOLID rules</h4><p>Single responsibility through dependency inversion.</p><span class="go">Part 8 →</span></a>
+    <a class="card" href="#patterns"><span class="big">11</span><h4>Design patterns</h4><p>Strategy, Template Method, Observer, State, Command…</p><span class="go">Part 9 →</span></a>
+  </div>
+</section>
+
+<section class="part" id="objects">
+  <div class="part-head"><span class="num" aria-hidden="true">02</span><h2>The objects of the domain</h2></div>
+  <p class="lede">Modelling starts by finding the nouns of the real world and turning them into classes. If you can explain the real thing, you can explain the class.</p>
+  <div class="tablewrap"><table><thead><tr><th>Real world</th><th>Class</th><th>Kind</th><th>Its responsibility</th></tr></thead><tbody>
+    <tr><td>A request to trade</td><td><code>OrderRequest</code></td><td>record</td><td>What someone asked for, before the exchange accepts it.</td></tr>
+    <tr><td>An accepted order</td><td><code>Order</code></td><td>class (mutable)</td><td>Tracks how much is left and its status as it fills.</td></tr>
+    <tr><td>A trade</td><td><code>Trade</code></td><td>record</td><td>A finished fact: price, quantity, buyer, seller.</td></tr>
+    <tr><td>Buy or sell</td><td><code>Side</code></td><td>enum</td><td>Two values, and knows its own opposite.</td></tr>
+    <tr><td>The list of waiting orders</td><td><code>OrderBook</code></td><td>class</td><td>Keeps bids and asks sorted by price, queued by time.</td></tr>
+    <tr><td>One price in the book</td><td><code>PriceLevel</code></td><td>class</td><td>The first-come-first-served queue at one price.</td></tr>
+    <tr><td>The matching rules</td><td><code>MatchingStrategy</code> + 5 matchers</td><td>interface + classes</td><td>How each order type trades against the book.</td></tr>
+    <tr><td>One stock's engine</td><td><code>SymbolEngine</code></td><td>class</td><td>Ties book, rules and market status together for one stock.</td></tr>
+    <tr><td>The exchange</td><td><code>Exchange</code></td><td>class</td><td>The front door: routes each order to the right stock's worker.</td></tr>
+    <tr><td>Market status</td><td><code>MarketState</code>: Open, Halted, Auction</td><td>interface + states</td><td>What is allowed right now.</td></tr>
+    <tr><td>A trader account</td><td><code>Account</code></td><td>class</td><td>Cash, shares, and what is set aside.</td></tr>
+    <tr><td>A robot trader</td><td><code>TradingBot</code> + 8 bots</td><td>interface + classes</td><td>Decides what to trade each tick.</td></tr>
+    <tr><td>A cheating rule</td><td><code>SurveillanceRule</code> + 5 rules</td><td>interface + classes</td><td>Spots one pattern of abuse.</td></tr>
+    <tr><td>Something that happened</td><td><code>EngineEvent</code> + its records</td><td>sealed interface</td><td>Announced to everyone who listens.</td></tr>
+  </tbody></table></div>
+  <p>The core is organised into <b>16 packages</b>, one per area of responsibility: <code>model</code>, <code>book</code>, <code>matching</code>, <code>events</code>, <code>exchange</code>, <code>bots</code>, <code>scenarios</code>, <code>breaker</code>, <code>xray</code>, <code>surveillance</code>, <code>auction</code>, <code>headlines</code>, <code>marketdata</code>, <code>accounts</code>, <code>journal</code>, <code>news</code>. Packages are modules at a smaller scale: related classes live together, unrelated ones apart.</p>
+</section>
+
+<section class="part" id="encapsulation">
+  <div class="part-head"><span class="num" aria-hidden="true">03</span><p class="kicker">Pillar 1</p><h2>Encapsulation</h2></div>
+  <p class="lede">An object keeps its data private and only lets the outside world change it through methods that check the change is valid. The object protects its own rules.</p>
+  <h3>Example 1: an <code>Order</code> cannot be put into an impossible state</h3>
+  <p>Every field of <code>Order</code> is <code>private</code>. Nobody can write <code>order.remainingQty = -5</code>. The only way to reduce what is left is <code>fill()</code>, which refuses anything invalid and updates the status in the same step:</p>
+<pre><code><span class="c">// core/.../model/Order.java</span>
+<span class="k">private long</span> remainingQty;
+<span class="k">private</span> OrderStatus status;
+
+<span class="k">public void</span> fill(<span class="k">long</span> qty) {
+    requireActive("fill");                    <span class="c">// can't fill a cancelled order</span>
+    <span class="k">if</span> (qty &lt;= 0 || qty &gt; remainingQty) {
+        <span class="k">throw new</span> IllegalArgumentException(...); <span class="c">// can't overfill</span>
+    }
+    remainingQty -= qty;
+    status = remainingQty == 0 ? OrderStatus.FILLED : OrderStatus.PARTIALLY_FILLED;
+}</code></pre>
+  <p>Notice there is <code>reduceTo()</code> but deliberately <b>no "grow" method</b>. A bigger order would be cutting in line, so the class simply does not offer it. The rule of the market is built into the shape of the object.</p>
+  <h3>Example 2: <code>OrderBook</code> hides how it stores orders</h3>
+  <p>Inside, the book uses two <code>TreeMap</code>s (bids sorted high-to-low, asks low-to-high) and a <code>HashMap</code> from id to order. None of that is visible. Outsiders only see meaningful operations: <code>add</code>, <code>remove</code>, <code>peekBest(side)</code>, <code>fillBest(side, qty)</code>, <code>bestBid()</code>, <code>snapshot(depth)</code>. We could replace the TreeMaps with arrays tomorrow and no other class would notice.</p>
+  <h3>Example 3: behaviour lives with its data</h3>
+  <pre><code><span class="k">public enum</span> Side {
+    BUY, SELL;
+    <span class="k">public</span> Side opposite() { <span class="k">return this</span> == BUY ? SELL : BUY; }
+}</code></pre>
+  <p>The fact that buy and sell are opposites lives inside <code>Side</code>, instead of being repeated as <code>if</code> statements across the matching code.</p>
+  <h3>Example 4: an account guards its own money</h3>
+  <p><code>Account</code>'s check-and-reserve methods (<code>reserveBuy</code>, <code>reserveSell</code>) are <code>synchronized</code> and package-private. Only the risk desk in the same package can call them, and the check ("is there enough free cash?") and the reservation happen as one indivisible step.</p>
+  <div class="say"><b>How to say it</b>"Encapsulation in Uncross means an object enforces its own rules. You cannot overfill an Order, grow it in place, or spend an Account's money twice, because the class does not give you a way to."</div>
+</section>
+
+<section class="part" id="abstraction">
+  <div class="part-head"><span class="num" aria-hidden="true">04</span><p class="kicker">Pillar 2</p><h2>Abstraction</h2></div>
+  <p class="lede">Abstraction means depending on <b>what</b> something does, not <b>how</b> it does it. In Java this is mostly done with interfaces.</p>
+  <div class="tablewrap"><table><thead><tr><th>Interface</th><th>What it promises</th><th>Who uses it without knowing the details</th></tr></thead><tbody>
+    <tr><td><code>MatchingStrategy</code></td><td><code>match(order, book)</code> returns a result</td><td><code>SymbolEngine</code> never knows which order type it is matching.</td></tr>
+    <tr><td><code>MatchingEngine</code></td><td>submit, cancel, snapshot for one stock</td><td>The worker thread that drives it.</td></tr>
+    <tr><td><code>MarketState</code></td><td>what is allowed now, and what comes next</td><td><code>TradingSession</code>.</td></tr>
+    <tr><td><code>EngineListener</code></td><td><code>onEvent(event)</code></td><td>The <code>EventBus</code>, which has 10+ different listeners.</td></tr>
+    <tr><td><code>TradingBot</code></td><td><code>act(context)</code> each tick</td><td><code>BotRunner</code>, which runs every bot the same way.</td></tr>
+    <tr><td><code>MarketView</code> / <code>OrderGateway</code></td><td>read prices / send orders</td><td>Bots. They never touch the <code>Exchange</code> directly.</td></tr>
+    <tr><td><code>SurveillanceRule</code></td><td><code>inspect(event, activity)</code> returns findings</td><td><code>SurveillanceDesk</code>.</td></tr>
+    <tr><td><code>OrderGate</code></td><td>should this order be refused, and why?</td><td>The exchange, before anything reaches a book.</td></tr>
+    <tr><td><code>Journal</code></td><td>write down a command</td><td>The exchange; the real one is <code>FileJournal</code>.</td></tr>
+  </tbody></table></div>
+  <p>The best example is how bots see the market. A bot receives a <code>BotContext</code> holding only a <code>MarketView</code> (to read prices) and an <code>OrderGateway</code> (to send orders). It has no idea the exchange has worker threads, queues, a journal or a risk desk. In tests we hand the bot a fake view and gateway, and it cannot tell the difference.</p>
+</section>
+
+<section class="part" id="inheritance">
+  <div class="part-head"><span class="num" aria-hidden="true">05</span><p class="kicker">Pillar 3</p><h2>Inheritance</h2></div>
+  <p class="lede">A subclass reuses and specialises a parent class. Uncross uses inheritance carefully: only where the children truly are "a kind of" the parent and share real code.</p>
+  <h3>Five matchers share one matching loop</h3>
+  <p><code>AbstractOrderMatcher</code> holds the loop every order type shares: "while the order still wants shares and the best opposite price is acceptable, trade with it". Each subclass fills in only what makes it different.</p>
+  <figure><div class="frame"><img alt="Class diagram: MatchingStrategy interface, AbstractOrderMatcher, five matcher subclasses, MatchingStrategies registry and SymbolEngine" src="{{strategy}}"></div>
+  <figcaption><b>Matching.</b> One interface, one abstract parent, five children. Italic methods are abstract: each child must supply them. <code>SymbolEngine</code> owns its book and its registry of strategies (filled diamonds: composition).</figcaption></figure>
+  <h3>Eight bots share one base</h3>
+  <p><code>AbstractBot</code> gives every bot its id, name, tuning and helper methods for placing <code>limit</code> and <code>ioc</code> orders, and for withdrawing its orders. Each bot (Market Maker, Momentum, Panic Seller, Whale, Contrarian, Noise, Spoofer, and the user-built <code>RuleBot</code>) only writes <code>act()</code>: its own decision.</p>
+  <h3>Inheriting from the Java library</h3>
+  <ul>
+    <li><code>ReplayClock extends Clock</code>: during recovery, the engine is handed a clock pinned to each journal entry's time. The engine just asks "what time is it?" and does not know it is being replayed.</li>
+    <li><code>UnknownSymbolException extends IllegalArgumentException</code>: a specific, meaningful exception instead of a generic one.</li>
+  </ul>
+  <h3>Using <code>final</code> to stop inheritance where it does not belong</h3>
+  <p>Almost every concrete class is <code>final</code>, and the shared methods in the abstract parents are <code>final</code> too (for example <code>AbstractOrderMatcher.match</code>, <code>AbstractBot.name</code>). A subclass may fill in the blanks it is given, but may not rewrite the algorithm. This follows the advice "design for inheritance, or else prohibit it".</p>
+  <div class="box"><h4>Composition is preferred elsewhere</h4><p>Where "is-a" does not truly hold, the design uses composition instead. <code>SymbolEngine</code> is not a kind of order book; it <b>has</b> an order book, a factory, strategies and a trading session. <code>RiskDesk</code> is not a subclass of anything; it implements two interfaces. "Favour composition over inheritance" is visible throughout.</p></div>
+</section>
+
+<section class="part" id="polymorphism">
+  <div class="part-head"><span class="num" aria-hidden="true">06</span><p class="kicker">Pillar 4</p><h2>Polymorphism</h2></div>
+  <p class="lede">One call, many behaviours: the same method call does different things depending on the actual object behind it, chosen at run time.</p>
+  <h3>The single most important line in the engine</h3>
+  <pre><code><span class="c">// core/.../matching/SymbolEngine.java</span>
+MatchResult result = strategies.forType(order.type()).match(order, book);</code></pre>
+  <p>There is no <code>if (type == LIMIT) ... else if (type == MARKET) ...</code>. The registry hands back the right object, and calling <code>match</code> on it runs Limit, Market, IOC, Stop-loss or Iceberg behaviour. This is <b>runtime (dynamic) polymorphism</b>, by overriding.</p>
+  <div class="vs">
+    <div class="bad"><p class="lab">Without polymorphism</p>
+<pre><code><span class="k">switch</span> (order.type()) {
+  <span class="k">case</span> LIMIT  -&gt; matchLimit(order);
+  <span class="k">case</span> MARKET -&gt; matchMarket(order);
+  <span class="k">case</span> IOC    -&gt; matchIoc(order);
+  <span class="c">// every new type: edit here,</span>
+  <span class="c">// and in every other switch</span>
+}</code></pre></div>
+    <div class="good"><p class="lab">With polymorphism (Uncross)</p>
+<pre><code>strategies.forType(order.type())
+          .match(order, book);
+<span class="c">// a new type is a new class;</span>
+<span class="c">// this line never changes</span></code></pre></div>
+  </div>
+  <h3>More of the same idea</h3>
+  <ul>
+    <li><b>Market status:</b> <code>state.onClock(now)</code>. <code>OpenState</code> returns itself; <code>HaltedState</code> returns itself until the halt ends, then the next state. The caller just keeps whatever comes back.</li>
+    <li><b>Events:</b> <code>listener.onEvent(event)</code> sends the same event to the surveillance desk, the risk desk, the candle chart and the headline writer, and each does something completely different.</li>
+    <li><b>Bots:</b> <code>bot.act(context)</code> once per tick, for every bot, no matter which kind.</li>
+    <li><b>Surveillance:</b> <code>rule.inspect(event, activity)</code> for each of the five rules.</li>
+  </ul>
+  <h3>Compile-time polymorphism too</h3>
+  <p>Overloading (same name, different parameters) appears as well: <code>MarketState</code> has both <code>refusal()</code> and <code>refusal(OrderType)</code>. The second, a <b>default method</b>, normally just calls the first, but <code>AuctionState</code> overrides it to accept only limit orders during an auction.</p>
+</section>
+
+<section class="part" id="relations">
+  <div class="part-head"><span class="num" aria-hidden="true">07</span><h2>UML relationships, with Uncross examples</h2></div>
+  <p class="lede">These are the six kinds of line in a UML class diagram. Being able to give a real example of each from your own project is exactly what an examiner looks for.</p>
+  <div class="tablewrap"><table><thead><tr><th>Relationship</th><th>Meaning</th><th>UML line</th><th>In Uncross</th></tr></thead><tbody>
+    <tr><td><b>Generalization</b></td><td>"is a kind of" (class extends class)</td><td class="uml">——▷ solid, hollow triangle</td><td><code>MomentumBot</code> → <code>AbstractBot</code>; <code>LimitOrderMatcher</code> → <code>AbstractOrderMatcher</code></td></tr>
+    <tr><td><b>Realization</b></td><td>"implements" an interface</td><td class="uml">- - -▷ dashed, hollow triangle</td><td><code>AbstractOrderMatcher</code> ⇢ <code>MatchingStrategy</code>; <code>SpoofingRule</code> ⇢ <code>SurveillanceRule</code></td></tr>
+    <tr><td><b>Composition</b></td><td>"owns, and the part dies with the whole"</td><td class="uml">◆—— filled diamond</td><td><code>SymbolEngine</code> ◆ <code>OrderBook</code>; <code>OrderBook</code> ◆ <code>PriceLevel</code>. A price level has no life outside its book.</td></tr>
+    <tr><td><b>Aggregation</b></td><td>"has, but the part can exist on its own"</td><td class="uml">◇—— hollow diamond</td><td><code>EventBus</code> ◇ <code>EngineListener</code>s: listeners are created elsewhere and just register.</td></tr>
+    <tr><td><b>Association</b></td><td>a lasting link between objects</td><td class="uml">——&gt; solid line</td><td><code>BotContext</code> → <code>MarketView</code>; <code>TradingSession</code> → <code>CircuitBreaker</code></td></tr>
+    <tr><td><b>Dependency</b></td><td>"uses briefly" (parameter, local variable)</td><td class="uml">- - -&gt; dashed arrow</td><td><code>OrderFactory</code> uses <code>OrderRequest</code> to build an <code>Order</code>; a bot uses <code>BotContext</code> during <code>act()</code>.</td></tr>
+  </tbody></table></div>
+  <p>The project's <code>docs/uml/</code> folder has nine diagrams: matching, events, concurrency, two state diagrams, bots, surveillance, the place-order sequence and the module diagram. The diagrams in this guide are updated versions that include the newer classes.</p>
+  <figure><div class="frame"><img alt="Class diagram: TradingBot interface, AbstractBot and eight bot subclasses, BotContext with MarketView and OrderGateway" src="{{bots}}"></div>
+  <figcaption><b>Bots.</b> Generalization (eight subclasses), realization (<code>ExchangeGateway</code> implements <code>OrderGateway</code>), association (<code>BotContext</code> to its two interfaces) and dependency (<code>AbstractBot</code> uses <code>BotContext</code>) in one picture.</figcaption></figure>
+</section>
+
+<section class="part" id="solid">
+  <div class="part-head"><span class="num" aria-hidden="true">08</span><h2>The SOLID principles</h2></div>
+  <p class="lede">Five rules for designs that stay easy to change. Each one has a concrete home in Uncross.</p>
+
+  <h3>S — Single Responsibility</h3>
+  <p><b>A class should have one reason to change.</b></p>
+  <p>The matching work is split so each class has one job. <code>OrderBook</code> stores orders. A matcher decides how one order type trades. <code>OrderFactory</code> builds valid orders. <code>CircuitBreaker</code> watches price speed. <code>SymbolEngine</code> coordinates them. The stop-loss feature is split the same way: <code>StopBook</code> decides <b>when</b> a stop fires, and <code>StopLossOrderMatcher</code> decides <b>how</b> it trades. Two small classes instead of one confused one.</p>
+
+  <h3>O — Open/Closed</h3>
+  <p><b>Open for extension, closed for modification.</b></p>
+  <p>The flagship example. Adding stop-loss and iceberg needed <b>zero edits</b> to the existing matchers: two new classes and two lines in the registry.</p>
+<pre><code><span class="c">// core/.../matching/MatchingStrategies.java</span>
+map.put(OrderType.LIMIT,     <span class="k">new</span> LimitOrderMatcher(tradeIds, clock));
+map.put(OrderType.MARKET,    <span class="k">new</span> MarketOrderMatcher(tradeIds, clock));
+map.put(OrderType.IOC,       <span class="k">new</span> IocOrderMatcher(tradeIds, clock));
+map.put(OrderType.STOP_LOSS, <span class="k">new</span> StopLossOrderMatcher(tradeIds, clock)); <span class="c">// added later</span>
+map.put(OrderType.ICEBERG,   <span class="k">new</span> IcebergOrderMatcher(tradeIds, clock));  <span class="c">// added later</span></code></pre>
+  <p>The same holds for bots (a new bot is a new subclass), surveillance (front-running was added as one new <code>SurveillanceRule</code>) and features that react to trades (a new <code>EngineListener</code>).</p>
+
+  <h3>L — Liskov Substitution</h3>
+  <p><b>Anywhere a parent type is expected, any child must work correctly.</b></p>
+  <p>Any of the five matchers can be handed to <code>SymbolEngine</code>; any of the eight bots can be run by <code>BotRunner</code>; any <code>MarketState</code> can be held by <code>TradingSession</code>. The engine's tests run the same scenarios through different implementations. The abstract parents make substitution safe by keeping the shared algorithm <code>final</code>, so a child cannot break it.</p>
+
+  <h3>I — Interface Segregation</h3>
+  <p><b>Prefer several small interfaces to one big one.</b></p>
+  <p>Bots get two narrow interfaces, <code>MarketView</code> (read) and <code>OrderGateway</code> (trade), instead of the whole <code>Exchange</code>. <code>EngineListener</code> has exactly one method. <code>OrderGate</code> has exactly one method. <code>LiveMarketView</code> shows the other side: one class implementing <code>MarketView</code>, <code>FairValues</code> and <code>EngineListener</code>, so each user sees only the slice it needs.</p>
+
+  <h3>D — Dependency Inversion</h3>
+  <p><b>High-level code depends on abstractions, not on details.</b></p>
+  <ul>
+    <li>Within the core: <code>SymbolEngine</code> depends on <code>MatchingStrategy</code>, not on any concrete matcher. The exchange depends on <code>Journal</code> and <code>OrderGate</code>, not on files or accounts.</li>
+    <li>Between modules: <code>core</code> has <b>no Spring import anywhere</b>. The Spring <code>server</code> depends on the core, never the reverse. The web is a detail plugged in from outside.</li>
+    <li>Time is injected: classes receive a <code>Clock</code> instead of calling the system clock. That is what lets recovery replay the past with a <code>ReplayClock</code>, and lets tests control time exactly.</li>
+  </ul>
+  <div class="say"><b>A quick way to show all five</b>"Single responsibility: StopBook versus StopLossOrderMatcher. Open/Closed: the registry. Liskov: any matcher in SymbolEngine. Interface segregation: bots see MarketView and OrderGateway, not the Exchange. Dependency inversion: no Spring in core, and an injected Clock."</div>
+</section>
+
+<section class="part" id="patterns">
+  <div class="part-head"><span class="num" aria-hidden="true">09</span><h2>Design patterns</h2></div>
+  <p class="lede">A design pattern is a named, proven solution to a common design problem. Every pattern here is named in the Javadoc of the class that uses it.</p>
+
+  <h3>1. Strategy</h3>
+  <p><b>Problem:</b> several ways of doing one job, chosen at run time. <b>Solution:</b> put each way in its own class behind one interface.</p>
+  <p><b>In Uncross:</b> order matching (5 matchers behind <code>MatchingStrategy</code>), bot behaviour (8 bots behind <code>TradingBot</code>), order checks (<code>OrderGate</code>), and even the trigger of a user-built bot: the <code>When</code> enum (FALLS / RISES / EVERY) gives each constant its own behaviour.</p>
+
+  <h3>2. Template Method</h3>
+  <p><b>Problem:</b> several classes share an algorithm but differ in a few steps. <b>Solution:</b> the parent writes the algorithm once in a <code>final</code> method and calls abstract "hook" methods for the steps that vary.</p>
+<pre><code><span class="c">// AbstractOrderMatcher — the template</span>
+<span class="k">public final</span> MatchResult match(Order incoming, OrderBook book) {
+    validate(incoming, book);
+    List&lt;Trade&gt; trades = <span class="k">new</span> ArrayList&lt;&gt;();
+    <span class="k">while</span> (incoming.isActive() &amp;&amp; bestIsAcceptable(incoming, book, ...)) {
+        trades.add(tradeWithBest(incoming, book, ...));  <span class="c">// always at the RESTING price</span>
+    }
+    <span class="k">return</span> finish(incoming, book, trades);              <span class="c">// hook: rest? cancel? </span>
+}
+<span class="k">protected abstract</span> OrderType handledType();                   <span class="c">// hook</span>
+<span class="k">protected abstract boolean</span> acceptsPrice(Order in, <span class="k">long</span> price);  <span class="c">// hook</span>
+<span class="k">protected abstract</span> MatchResult finish(...);                     <span class="c">// hook</span></code></pre>
+  <p>Limit, Market and IOC differ only in the hooks: Market accepts any price; Limit and IOC accept prices within the limit; Limit's <code>finish</code> rests the remainder, IOC's cancels it.</p>
+
+  <h3>3. Factory</h3>
+  <p><b>Problem:</b> creating an object correctly needs several steps that should not be repeated everywhere. <b>Solution:</b> one class whose job is creating.</p>
+  <p><b>In Uncross:</b> <code>OrderFactory.create(request)</code> gives each new <code>Order</code> its id, sequence number and timestamp from injected sources. <code>MatchingStrategies.standard(...)</code> is a static factory method building the registry; <code>StandardBots</code> builds the regular bot cast.</p>
+
+  <h3>4. Observer</h3>
+  <p><b>Problem:</b> many parts of the system must react when something happens, without the source knowing about them. <b>Solution:</b> the source publishes events; observers register to receive them.</p>
+  <figure><div class="frame"><img alt="Class diagram: EventBus aggregating EngineListeners, the sealed EngineEvent with its records, and six listener implementations" src="{{observer}}"></div>
+  <figcaption><b>Observer.</b> The <code>EventBus</code> holds any number of <code>EngineListener</code>s and publishes each <code>EngineEvent</code> to all of them. Surveillance, risk, charts, headlines, the day's tape and bot accounting are all just listeners.</figcaption></figure>
+  <p>The bus uses a <code>CopyOnWriteArrayList</code> for listeners: events are published constantly while registrations are rare, so iterating needs no lock. One failing listener cannot stop the others.</p>
+
+  <h3>5. State</h3>
+  <p><b>Problem:</b> an object behaves differently depending on its situation, and <code>if</code> checks spread everywhere. <b>Solution:</b> each situation is its own object, and the object swaps its current state.</p>
+  <figure><div class="frame"><img alt="Class diagram: MarketState interface with OpenState, HaltedState and AuctionState; TradingSession holds the current state and a CircuitBreaker" src="{{state}}"></div>
+  <figcaption><b>State.</b> <code>TradingSession</code> holds one <code>MarketState</code>. The circuit breaker moves it Open → Halted → Auction → Open, and each state answers "is this order allowed?" in its own way.</figcaption></figure>
+<pre><code><span class="c">// HaltedState decides its own next state</span>
+<span class="k">public</span> MarketState onClock(Instant now) {
+    <span class="k">return</span> now.isBefore(endsAt) ? <span class="k">this</span> : reopen.apply(now);
+}</code></pre>
+
+  <h3>6. Command</h3>
+  <p><b>Problem:</b> requests need to be queued, logged and replayed. <b>Solution:</b> turn each request into an object.</p>
+  <p><b>In Uncross:</b> every submit, cancel and amend becomes a <code>Command</code> object placed on the stock's queue. The same commands are written to the journal as <code>JournalEntry</code> records and replayed through the same engine on restart (Recovery) or into a private exchange (Rewind). A request that is an object can be stored, sent to another thread, and run again later.</p>
+
+  <h3>7. Singleton</h3>
+  <p><code>OpenState</code> has no data, so one shared instance is enough: <code>OpenState.INSTANCE</code>, with a <code>private</code> constructor so no one can make another.</p>
+
+  <h3>8. Null Object</h3>
+  <p><code>OrderGate.OPEN</code> is a gate that refuses nothing. Code can always call a gate without checking for <code>null</code>; when there is no risk desk, the "do nothing" gate is used.</p>
+
+  <h3>9. Composite</h3>
+  <p><code>OrderGate.allOf(gateA, gateB, ...)</code> combines several gates into one object that is itself an <code>OrderGate</code>. The exchange still sees one gate, whether it is one rule or many.</p>
+
+  <h3>10. Adapter</h3>
+  <p><b>Problem:</b> two parts expect different interfaces. <b>Solution:</b> a small class that translates.</p>
+  <p><code>ExchangeGateway</code> adapts the <code>Exchange</code> (asynchronous, returns futures) to the simple <code>OrderGateway</code> interface bots expect. At a larger scale, the whole <code>server</code> module is a set of adapters: Spring controllers translate HTTP and WebSocket messages into core calls.</p>
+
+  <h3>11. Facade</h3>
+  <p><code>Exchange</code> is a single front door to a complex subsystem: workers, queues, engines, journal, gates. Callers use a handful of methods (<code>submit</code>, <code>cancel</code>, <code>amend</code>, <code>snapshot</code>, <code>list</code>) and never see the machinery behind them.</p>
+</section>
+
+<section class="part" id="java">
+  <div class="part-head"><span class="num" aria-hidden="true">10</span><h2>Modern Java features that support the design</h2></div>
+  <div class="grid2">
+    <div class="card"><h4>Records = immutable value objects</h4><p><code>Trade</code>, <code>OrderRequest</code>, every event, <code>BookSnapshot</code>, <code>BotRecipe</code>. Fields are final; equality is by value; <code>equals</code>, <code>hashCode</code>, <code>toString</code> come free. Immutable objects are safe to share between threads.</p></div>
+    <div class="card"><h4>Sealed interfaces = a closed family</h4><p><code>EngineEvent</code> and <code>JournalEntry</code> list exactly which records may implement them (<code>permits ...</code>). The compiler then knows every case, so a <code>switch</code> over events can be checked for completeness.</p></div>
+    <div class="card"><h4>Pattern-matching switch</h4><p><code>BotLedger.onEvent</code> does <code>switch (event) { case TradeExecuted e -&gt; ...; case OrderAccepted e -&gt; ...; }</code>: type test and cast in one safe step.</p></div>
+    <div class="card"><h4>Enums with behaviour</h4><p><code>Side.opposite()</code>; the bot-recipe <code>When</code> enum where each constant implements its own trigger logic. Type-safe: a typo like <code>"BUUY"</code> cannot compile.</p></div>
+    <div class="card"><h4>Functional interfaces and lambdas</h4><p><code>EngineListener</code> and <code>OrderGate</code> have one method each, so a small listener or gate can be a lambda. <code>OrderGate.allOf</code> returns a lambda.</p></div>
+    <div class="card"><h4>Optional instead of null</h4><p><code>peekBest()</code> returns <code>Optional&lt;Order&gt;</code>; <code>refusal()</code> returns <code>Optional&lt;String&gt;</code>. "Nothing here" is explicit in the type.</p></div>
+    <div class="card"><h4>long paise, never double</h4><p>Money is a <code>long</code> number of paise: ₹102.50 is <code>10250</code>. Exact arithmetic, no rounding errors. The <code>Money</code> class formats it for display.</p></div>
+    <div class="card"><h4>No Lombok, no framework in core</h4><p>Every getter and constructor is visible plain Java, so the design can be read and examined directly.</p></div>
+  </div>
+</section>
+
+<section class="part" id="concurrency">
+  <div class="part-head"><span class="num" aria-hidden="true">11</span><h2>Objects and threads: ownership as a design decision</h2></div>
+  <p class="lede">In object-oriented terms, the concurrency model is a rule about <b>which object owns which other object</b>, and who may talk to it.</p>
+  <ul>
+    <li>Each stock has one <code>SymbolWorker</code>, which owns one <code>SymbolEngine</code>, which owns one <code>OrderBook</code>. Ownership is strict composition.</li>
+    <li>The worker is the only thread that ever touches that book. This is <b>thread confinement</b>, and it is why <code>OrderBook</code> is deliberately <b>not</b> thread-safe and needs no locks.</li>
+    <li>Everyone else talks to the worker by message: they put a <code>Command</code> object into its <code>BlockingQueue</code> and get back a <code>CompletableFuture</code> (a promise of the result). This is <b>producer–consumer</b>.</li>
+    <li>Objects that cross threads are immutable records (events, snapshots, trades), so sharing them is safe by construction.</li>
+    <li>The few objects that really are shared (an <code>Account</code> used by several stocks' workers, the list of workers) protect themselves: <code>synchronized</code> methods, or copy-on-write with a <code>volatile</code> reference.</li>
+  </ul>
+  <div class="say"><b>How to say it</b>"Our concurrency design is really an encapsulation decision: each order book belongs to exactly one thread, other code sends it messages, and what crosses between threads is immutable."</div>
+</section>
+
+<section class="part" id="casestudy">
+  <div class="part-head"><span class="num" aria-hidden="true">12</span><h2>Case study: how Iceberg was added</h2></div>
+  <p class="lede">The best evidence of good OOM is a real change. Walk through this one in the viva.</p>
+  <ol>
+    <li><b>Model it.</b> An iceberg is a limit order that shows only a slice (<code>displayQty</code>) at a time. So it needs a <code>displayQty</code> in the request and slice-tracking in <code>Order</code> (<code>visibleQty()</code>, <code>sliceUsedUp()</code>, <code>showNextSlice()</code>), all encapsulated in the order itself.</li>
+    <li><b>Add the type.</b> One new constant <code>ICEBERG</code> in the <code>OrderType</code> enum.</li>
+    <li><b>Write the strategy.</b> <code>IcebergOrderMatcher extends AbstractOrderMatcher</code>, supplying the three hooks. The shared matching loop is inherited, untouched.</li>
+    <li><b>Register it.</b> One line in <code>MatchingStrategies.standard</code>.</li>
+    <li><b>Keep it fair.</b> When a slice is used up, <code>PriceLevel</code> sends the next slice to the back of the queue, so hidden size never jumps the line. That rule lives in the class that owns the queue.</li>
+    <li><b>Test it.</b> JUnit tests for slicing, queue position and partial fills, while every older test kept passing.</li>
+  </ol>
+  <p>Not touched: <code>LimitOrderMatcher</code>, <code>MarketOrderMatcher</code>, <code>IocOrderMatcher</code>, <code>SymbolEngine</code>'s dispatch line, the event system, the bots, surveillance. That list of untouched classes <b>is</b> the Open/Closed principle.</p>
+</section>
+
+<section class="part" id="cheat">
+  <div class="part-head"><span class="num" aria-hidden="true">13</span><h2>One-page cheat sheet</h2></div>
+  <div class="tools"><label class="search"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" placeholder="Filter, e.g. Observer or Strategy" data-filter="#cheatTable" aria-label="Filter, e.g. Observer or Strategy"></label><span class="count"></span></div>
+  <div class="tablewrap"><table id="cheatTable"><thead><tr><th>Principle / pattern</th><th>Where to point</th><th>One line to say</th></tr></thead><tbody>
+    <tr><td>Encapsulation</td><td><code>Order.fill</code>, <code>OrderBook</code></td><td>Objects enforce their own rules; you cannot overfill an order.</td></tr>
+    <tr><td>Abstraction</td><td><code>MarketView</code>, <code>OrderGateway</code></td><td>Bots see what the market does, not how.</td></tr>
+    <tr><td>Inheritance</td><td><code>AbstractOrderMatcher</code>, <code>AbstractBot</code></td><td>Shared code once; children fill in the differences.</td></tr>
+    <tr><td>Polymorphism</td><td><code>strategies.forType(type).match(...)</code></td><td>One line, five behaviours, no if-chain.</td></tr>
+    <tr><td>Composition</td><td><code>SymbolEngine</code> ◆ <code>OrderBook</code></td><td>The engine has a book; it is not a book.</td></tr>
+    <tr><td>Single responsibility</td><td><code>StopBook</code> / <code>StopLossOrderMatcher</code></td><td>When versus how: two classes.</td></tr>
+    <tr><td>Open/Closed</td><td><code>MatchingStrategies.standard</code></td><td>Two order types added, no matcher edited.</td></tr>
+    <tr><td>Liskov</td><td>any matcher, any bot, any state</td><td>Any child works wherever the parent is expected.</td></tr>
+    <tr><td>Interface segregation</td><td><code>MarketView</code> + <code>OrderGateway</code></td><td>Small interfaces, not the whole exchange.</td></tr>
+    <tr><td>Dependency inversion</td><td>no Spring in <code>core</code>; injected <code>Clock</code></td><td>The web is a detail plugged in from outside.</td></tr>
+    <tr><td>Strategy</td><td>matchers, bots, gates</td><td>Swap the how at run time.</td></tr>
+    <tr><td>Template Method</td><td><code>AbstractOrderMatcher.match</code></td><td>Final algorithm, abstract hooks.</td></tr>
+    <tr><td>Factory</td><td><code>OrderFactory</code></td><td>Every order built valid, in one place.</td></tr>
+    <tr><td>Observer</td><td><code>EventBus</code>, <code>EngineListener</code></td><td>The engine announces; features listen.</td></tr>
+    <tr><td>State</td><td><code>MarketState</code> + 3 states</td><td>Open, Halted, Auction as objects.</td></tr>
+    <tr><td>Command</td><td><code>Command</code>, journal</td><td>Requests as objects: queued, logged, replayed.</td></tr>
+    <tr><td>Singleton</td><td><code>OpenState.INSTANCE</code></td><td>Stateless, so one instance.</td></tr>
+    <tr><td>Null Object</td><td><code>OrderGate.OPEN</code></td><td>A gate that refuses nothing, instead of null.</td></tr>
+    <tr><td>Composite</td><td><code>OrderGate.allOf</code></td><td>Many gates acting as one.</td></tr>
+    <tr><td>Adapter</td><td><code>ExchangeGateway</code>, server controllers</td><td>Translate one interface into another.</td></tr>
+    <tr><td>Facade</td><td><code>Exchange</code></td><td>One front door to a complex system.</td></tr>
+  </tbody></table></div>
+  <p class="empty">Nothing matches. Try a shorter word.</p>
+</section>
+
+<section class="part" id="qa">
+  <div class="part-head"><span class="num" aria-hidden="true">14</span><h2>Viva questions on OOM</h2></div>
+  <div class="qa">
+  <div class="tools"><span class="count"></span><span style="flex:1"></span><button class="btn" type="button" data-qa="open">Open all</button><button class="btn" type="button" data-qa="close">Close all</button><button class="btn" type="button" data-qa="reset">Start practice again</button><div class="meter"><i></i></div></div>
+<details><summary>What is the difference between Strategy and State? Both look the same in a diagram.</summary><div class="ans"><p>The structure is the same (an interface with several implementations), but the intent differs. With Strategy, the <b>caller chooses</b> the behaviour (the order's type picks the matcher), and strategies do not know about each other. With State, the <b>object changes its own state over time</b>, and states know their successors: <code>HaltedState.onClock</code> returns the next state itself.</p></div></details>
+  <details><summary>Why an abstract class for matchers and not just the interface?</summary><div class="ans"><p>The interface defines the contract; the abstract class holds the shared loop so it is written once. Other code depends only on the interface (<code>MatchingStrategy</code>), so a completely different matcher could still implement it directly without extending the abstract class.</p></div></details>
+  <details><summary>Abstract class versus interface: when do you use which?</summary><div class="ans"><p>An interface for a role many unrelated classes can play (<code>EngineListener</code> is implemented by surveillance, risk and charts, which have nothing else in common). An abstract class when the children share real code and state (<code>AbstractBot</code> shares id, tuning and order helpers).</p></div></details>
+  <details><summary>Composition or aggregation between SymbolEngine and OrderBook?</summary><div class="ans"><p>Composition. The engine creates the book, owns it alone, and the book has no life without it. Contrast with <code>EventBus</code> and its listeners: listeners are created elsewhere and outlive registration, so that is aggregation.</p></div></details>
+  <details><summary>Why is Order a class but Trade a record?</summary><div class="ans"><p>An order changes over its life: it fills, partially fills, or is cancelled, so it is a mutable class that guards its changes. A trade is a fact that happened and never changes, so it is an immutable record.</p></div></details>
+  <details><summary>Where is polymorphism in your project?</summary><div class="ans"><p>Most clearly in <code>strategies.forType(order.type()).match(order, book)</code>: one call runs one of five behaviours depending on the object. Also <code>listener.onEvent</code>, <code>bot.act</code>, <code>state.onClock</code> and <code>rule.inspect</code>.</p></div></details>
+  <details><summary>Show me the Open/Closed principle.</summary><div class="ans"><p>Open <code>MatchingStrategies.standard</code>. Stop-loss and iceberg were added later as two new classes and two lines here; no existing matcher was modified, and all earlier tests kept passing.</p></div></details>
+  <details><summary>How does your design make testing easier?</summary><div class="ans"><p>Because classes depend on interfaces and injected values, tests swap in simple fakes: a fixed <code>Clock</code>, a counter for ids, a fake <code>MarketView</code> for a bot. The core has no framework, so its tests run in seconds without starting a server.</p></div></details>
+  <details><summary>Why are most classes final?</summary><div class="ans"><p>A class not designed for extension can be broken by a subclass that overrides something it relied on. Making it <code>final</code> states the intent clearly. The abstract parents are the deliberate exceptions, and even there the shared algorithm is <code>final</code>.</p></div></details>
+  <details><summary>Your OrderBook is not thread-safe. Isn't that bad design?</summary><div class="ans"><p>It is deliberate. The book is confined to one worker thread, which owns it. Adding locks would cost speed and protect against something that cannot happen. The rule is documented in the class's comments wherever it matters.</p></div></details>
+  <details><summary>Which pattern lets you recover after a crash?</summary><div class="ans"><p>Command. Each request is an object, so it can be written to the journal and replayed through the same engine later. Dependency inversion helps too: a <code>ReplayClock</code> is injected so replayed trades keep their original times.</p></div></details>
+  <details><summary>Where is the Factory pattern and why do you need it?</summary><div class="ans"><p><code>OrderFactory.create(request)</code>. Every order must get a unique id, a sequence number for time priority, and a timestamp. Putting that in one class means no code path can build an order missing them.</p></div></details>
+</div>
+</section>

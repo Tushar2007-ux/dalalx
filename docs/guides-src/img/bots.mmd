@@ -1,0 +1,35 @@
+classDiagram
+    direction TB
+    class TradingBot {
+        <<interface>>
+        +id() String
+        +act(BotContext)
+        +withdraw(OrderGateway)
+    }
+    class AbstractBot {
+        <<abstract>>
+        #limit(ctx, symbol, side, price, qty)
+        #ioc(ctx, symbol, side, price, qty)
+        +act(BotContext)*
+    }
+    class BotContext {
+        <<record>>
+        MarketView market
+        OrderGateway orders
+        RandomGenerator random
+    }
+    class MarketView { <<interface>> }
+    class OrderGateway { <<interface>> }
+    TradingBot <|.. AbstractBot
+    AbstractBot <|-- MarketMakerBot
+    AbstractBot <|-- MomentumBot
+    AbstractBot <|-- PanicSellerBot
+    AbstractBot <|-- WhaleBot
+    AbstractBot <|-- ContrarianBot
+    AbstractBot <|-- NoiseBot
+    AbstractBot <|-- SpooferBot
+    AbstractBot <|-- RuleBot
+    AbstractBot ..> BotContext : uses
+    BotContext --> MarketView
+    BotContext --> OrderGateway
+    OrderGateway <|.. ExchangeGateway

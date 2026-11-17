@@ -1,0 +1,420 @@
+<!-- 1 -->
+<section class="part" id="start">
+  <div class="part-head"><span class="num" aria-hidden="true">01</span><h2>Start here</h2></div>
+  <p class="lede drop">Uncross is a pretend stock exchange running on a computer. People and robots send in "I want to buy" and "I want to sell" requests, and the program pairs them up into trades, fairly and very fast. The website lets you watch all of it happen, styled like a financial newspaper.</p>
+  <p>That is the whole idea. Everything else in this guide is detail on top of that one sentence. Read it in order the first time, because each part builds on the one before. </p>
+  <div class="grid4">
+    <a class="card" href="#market"><span class="big">2</span><h4>The market</h4><p>Order book, bids, asks, how a trade happens.</p><span class="go">Read first →</span></a>
+    <a class="card" href="#orders"><span class="big">3</span><h4>Order types</h4><p>Limit, Market, IOC, Stop-loss, Iceberg.</p><span class="go">5 minutes →</span></a>
+    <a class="card" href="#tour"><span class="big">5</span><h4>Every page</h4><p>What each screen shows and what to say.</p><span class="go">The tour →</span></a>
+    <a class="card" href="#plan"><span class="big">11</span><h4>The plan</h4><p>A timed 12-minute script with a rehearsal clock.</p><span class="go">Rehearse →</span></a>
+  </div>
+  <p>Short on time? Those four parts are enough to present. Press <kbd>j</kbd> and <kbd>k</kbd> to jump between parts.</p>
+  <div class="say"><b>Your one-line opening</b>"An exchange is a matchmaker for buyers and sellers. We built one from scratch in Java, and this website lets you watch it think."</div>
+  <h3>Why it is called Uncross</h3>
+  <p>When a buyer is willing to pay at least what a seller is asking, their prices "cross". The engine's job is to settle that crossing by turning it into a trade. "Uncrossing" the book is the real exchange term for exactly this job, so the name describes what the program does.</p>
+  <h3>Why it looks like a newspaper</h3>
+  <p>The theme is called <b>"The Morning Edition"</b>. Each page of the site is a section of a financial paper: a Front Page with headlines, a Trading Floor, Correspondents (the bots), Investigations (catching cheaters). There is a light <b>Day edition</b> and a dark <b>Night edition</b>. The design is only clothing; the important part is the engine underneath.</p>
+</section>
+
+<!-- 2 -->
+<section class="part" id="market">
+  <div class="part-head"><span class="num" aria-hidden="true">02</span><h2>The stock market in plain words</h2></div>
+  <h3>What is a share?</h3>
+  <p>A company like Tata Consultancy Services (TCS) is split into many small pieces called <b>shares</b>. Owning one share means owning a tiny piece of the company. People buy shares hoping the price goes up, and sell them when they want the money back.</p>
+  <h3>What is a stock exchange?</h3>
+  <p>A place (today, a computer) where buyers and sellers of shares meet. In India the real ones are the NSE and BSE. The exchange does not buy or sell anything itself; it only <b>matches</b> buyers with sellers and records the trades. Think of it as a marketplace manager standing between two crowds.</p>
+  <h3>What is an order?</h3>
+  <p>An order is a message saying what you want. For example: <i>"Buy 100 shares of RELIANCE, and I will pay at most ₹102.50 each."</i> It has four parts: <b>which stock</b>, <b>buy or sell</b>, <b>how many</b> (quantity), and usually <b>what price</b>.</p>
+  <h3>What is the order book?</h3>
+  <p>Most orders cannot trade the moment they arrive, because nobody on the other side wants that price yet. Those orders wait in a list called the <b>order book</b>. Every stock has its own book with two sides:</p>
+  <div class="grid2">
+    <div class="card"><h4>Bids (buyers)</h4><p>People who want to buy, and the highest price each will pay. The <b>best bid</b> is the highest one. Shown in green.</p></div>
+    <div class="card"><h4>Asks (sellers)</h4><p>People who want to sell, and the lowest price each will accept. The <b>best ask</b> is the lowest one. Shown in red.</p></div>
+  </div>
+  <p>The gap between the best ask and the best bid is the <b>spread</b>. While the best buyer wants to pay less than the best seller wants to receive, nothing trades. Everyone waits.</p>
+  <div class="book" role="img" aria-label="A small order book for RELIANCE">
+    <div class="hd">ORDER BOOK · RELIANCE</div>
+    <div class="r ask"><span>ASK</span><span class="p">102.60</span><span>300</span><span class="n">a seller wants ₹102.60</span></div>
+    <div class="r ask"><span>ASK</span><span class="p">102.50</span><span>200</span><span class="n">best ask (cheapest seller)</span></div>
+    <div class="spread">— the spread: 10 paise —</div>
+    <div class="r bid"><span>BID</span><span class="p">102.40</span><span>400</span><span class="n">best bid (highest buyer)</span></div>
+    <div class="r bid"><span>BID</span><span class="p">102.30</span><span>250</span><span class="n">a buyer offering ₹102.30</span></div>
+  </div>
+  <h3>How a trade happens: the matching rule</h3>
+  <p>Now someone sends <i>"Buy 500 at ₹102.50."</i> Step through what the engine does. Use the arrows, or press Play.</p>
+  <div class="stepper" id="matchDemo">
+    <div class="book book-live" aria-live="polite"></div>
+    <div>
+      <p class="st-title"></p>
+      <p class="cap"></p>
+      <div class="controls"><div class="dots"></div><button class="btn" type="button" data-s="prev">← Back</button><button class="btn primary" type="button" data-s="next">Next →</button><button class="btn" type="button" data-s="play">Play</button></div>
+      <p class="hint">Notice: the trade happens at ₹102.50, the price of the order that was already waiting.</p>
+    </div>
+  </div>
+  <div class="box">
+    <h4>The one rule everything follows: price, then time</h4>
+    <p><b>Better price goes first.</b> A seller asking less is served before a seller asking more. <b>At the same price, whoever came first goes first</b>, like a queue at a ticket counter. This is called <b>price–time priority</b>, and it is how real exchanges are fair. Our engine follows it exactly.</p>
+  </div>
+  <h3>Money is counted in paise, never with decimals</h3>
+  <p>In the code, ₹102.50 is stored as the whole number <code>10250</code> (paise). Computers cannot store numbers like 0.1 exactly when they use decimals (<code>double</code>), so tiny errors creep in. On an exchange doing thousands of trades, those tiny errors add up to real money. Whole numbers of paise are always exact. If anyone asks "how do you store money?", this is the answer, and it is a good one.</p>
+</section>
+
+<!-- 3 -->
+<section class="part" id="orders">
+  <div class="part-head"><span class="num" aria-hidden="true">03</span><h2>The five kinds of order</h2></div>
+  <p class="lede">Each kind of order is a different instruction about how patient you are and how much you want to show.</p>
+  <div class="tablewrap"><table><thead><tr><th>Order</th><th>In plain words</th><th>Everyday comparison</th></tr></thead><tbody>
+    <tr><td><b>Limit</b></td><td>"Buy at this price or better. If nobody will sell that cheap yet, I will wait in the book."</td><td>Telling a shopkeeper "call me if it drops to ₹500".</td></tr>
+    <tr><td><b>Market</b></td><td>"Buy right now at whatever the best price is." Trades immediately, never waits.</td><td>Paying the price on the tag, no bargaining.</td></tr>
+    <tr><td><b>IOC</b> (Immediate or Cancel)</td><td>"Trade whatever you can right now at my price; cancel the rest. Do not leave me waiting."</td><td>"Give me as many as you have at this price, and I'm leaving."</td></tr>
+    <tr><td><b>Stop-loss</b></td><td>"If the price falls to ₹1,690, sell my shares." It hides until the price reaches the trigger, then acts like a market order.</td><td>A safety alarm that sells before you lose too much.</td></tr>
+    <tr><td><b>Iceberg</b></td><td>A big order that shows only a small slice at a time. When the slice is used up, the next slice appears.</td><td>Only the tip of an iceberg is visible above water.</td></tr>
+  </tbody></table></div>
+  <h4>Two fairness details worth knowing</h4>
+  <ul>
+    <li><b>Iceberg slices go to the back of the queue.</b> Otherwise a big fund could show 100 shares, stand first in line, and quietly fill 900 more ahead of everyone. Each new slice re-joins the line at the back.</li>
+    <li><b>Stops can chain.</b> One stop selling pushes the price down, which can trigger the next stop, and the next. That is how crashes feed themselves. The engine follows the chain, but stops it the moment the circuit breaker halts the stock.</li>
+  </ul>
+  <h4>Amending an order</h4>
+  <p>You can change an order that is waiting. If you only <b>reduce</b> the quantity at the same price, you <b>keep your place</b> in the queue. If you change the price or ask for more shares, it counts as cancelling and re-entering, so you go to the back. Otherwise you could hold your place in line while changing what you are in line for.</p>
+  <div class="say"><b>A strong point to make</b>"When we added stop-loss and iceberg, we did not edit a single existing matcher. We wrote two new classes and added two lines to a registry. That is the Open/Closed principle working in real code."</div>
+</section>
+
+<!-- 4 -->
+<section class="part" id="what">
+  <div class="part-head"><span class="num" aria-hidden="true">04</span><h2>What Uncross is made of</h2></div>
+  <p class="lede">Three pieces of software, each with one job, plus the people and robots who trade on it.</p>
+  <div class="grid3">
+    <div class="card"><h4>The engine (core)</h4><p>Pure Java 21. Holds the order books, does the matching, runs the bots, the circuit breaker, the cheat detection. It knows nothing about websites. This is the brain.</p></div>
+    <div class="card"><h4>The server</h4><p>Spring Boot. Only a translator: it takes web requests, hands them to the engine, and streams the engine's news back to browsers over a WebSocket (a live connection). No business logic lives here.</p></div>
+    <div class="card"><h4>The website (frontend)</h4><p>React and TypeScript. Draws the newspaper. It only shows what the engine already decided; it never decides anything itself.</p></div>
+  </div>
+  <h3>The five stocks</h3>
+  <p><code>RELIANCE</code>, <code>TCS</code>, <code>INFY</code>, <code>HDFCBANK</code>, <code>TATAMOTORS</code>. These are real company names, but the prices are simulated, not real market data. You can also list new stocks while it runs (up to 12 in total).</p>
+  <h3>Who trades on it</h3>
+  <div class="tablewrap"><table><thead><tr><th>Who</th><th>How</th></tr></thead><tbody>
+    <tr><td><b>You, the presenter</b></td><td>The order ticket on the Trading Floor.</td></tr>
+    <tr><td><b>The audience</b></td><td>On their phones, through the Join page (scan a QR code). Each gets a name and plays for the leaderboard.</td></tr>
+    <tr><td><b>Bots</b></td><td>Robot traders with personalities, running all the time so the market is never empty.</td></tr>
+    <tr><td><b>Account holders</b></td><td>Anyone who opens an account with a name and PIN gets ₹10,00,000 of pretend money.</td></tr>
+  </tbody></table></div>
+</section>
+
+<!-- 5 -->
+<section class="part" id="tour">
+  <div class="part-head"><span class="num" aria-hidden="true">05</span><h2>A tour of every page</h2></div>
+  <p class="lede">The bar at the top of the site has eight sections. Six more pages are reached by links. For each page: what it is, what you see, and what to say.</p>
+  <div class="chips"><a href="#page-front-page">Front Page</a><a href="#page-trading-floor">Trading Floor</a><a href="#page-x-ray">X-Ray</a><a href="#page-correspondents">Correspondents</a><a href="#page-investigations">Investigations</a><a href="#page-engine-room">Engine Room</a><a href="#page-audience">Audience</a><a href="#page-how-it-works">How It Works</a><a href="#page-account">Account</a><a href="#page-rewind">Rewind</a><a href="#page-evening-edition">Evening Edition</a><a href="#page-big-board-and-demo">Big Board and Demo</a></div>
+
+  <div class="page" id="page-front-page"><span class="pn" aria-hidden="true">01</span><h3>Front Page <span class="tag">#/</span></h3>
+    <p><b>What it is:</b> the newspaper's front page for the market right now.</p>
+    <p><b>What you see:</b> a headline written automatically from what is happening ("RELIANCE fell 10.2% in 60 seconds"), the prices of all stocks with small line charts (sparklines), the market status of each stock, and the running news wire.</p>
+    <p><b>What to say:</b> "These headlines are not typed by us. The engine notices events, like a big move or a halt, and a headline writer turns them into a sentence."</p></div>
+
+  <div class="page" id="page-trading-floor"><span class="pn" aria-hidden="true">02</span><h3>Trading Floor <span class="tag">#/floor</span></h3>
+    <p><b>What it is:</b> the main working screen. If you show only one page, show this.</p>
+    <p><b>What you see:</b></p>
+    <ul>
+      <li><b>Price</b> of the chosen stock in large digits, with how much it moved.</li>
+      <li><b>The order book</b>: asks in red on top, bids in green below, the spread in between. Rows flash when they change.</li>
+      <li><b>The chart</b> of the price over time.</li>
+      <li><b>The order ticket</b>: choose Buy or Sell, the order type (Limit, Market, IOC, Stop, Iceberg), quantity and price, then send. Each type has a one-line explanation under it.</li>
+      <li><b>The tape</b> (teleprinter): every trade printed as it happens, like an old ticker machine.</li>
+      <li><b>Your portfolio</b> and the bots' profit and loss.</li>
+      <li>During a halt, a <b>countdown ring</b>; during an auction, <b>supply and demand curves</b>.</li>
+    </ul>
+    <p><b>What to do in the demo:</b> place a limit buy above the best ask and watch it trade instantly, then place one below the best bid and watch it rest in the book.</p></div>
+
+  <div class="page" id="page-x-ray"><span class="pn" aria-hidden="true">03</span><h3>X-Ray <span class="tag">#/xray</span></h3>
+    <p><b>What it is:</b> the engine in slow motion, with commentary. This is the best page for explaining matching to someone new.</p>
+    <p><b>What you see:</b> one order going through the engine step by step: arrives, compared with the best price, trades, rests. A narrator writes each step in plain English. You can play it at 0.5×, 1× or 2×. It also shows <b>who</b> is behind each price level (which trader holds the most shares there).</p>
+    <p><b>What to say:</b> "Matching normally takes a few microseconds, far too fast to see. X-Ray records the events and replays them slowly so you can follow the rule: price first, then time."</p></div>
+
+  <div class="page" id="page-correspondents"><span class="pn" aria-hidden="true">04</span><h3>Correspondents <span class="tag">#/correspondents</span></h3>
+    <p><b>What it is:</b> the bots, presented as the paper's reporters, each with a portrait and personality.</p>
+    <p><b>What you see:</b> each bot's strategy, its trades and profit. You can hire new bots, <b>build your own bot</b> with a form (for example "Buy 100 INFY whenever it falls 0.3%"), and run a <b>tournament</b> where bots compete for profit over a fixed time.</p>
+    <p>Part 7 describes every bot.</p></div>
+
+  <div class="page" id="page-investigations"><span class="pn" aria-hidden="true">05</span><h3>Investigations <span class="tag">#/surveillance</span></h3>
+    <p><b>What it is:</b> market surveillance, the exchange's police desk.</p>
+    <p><b>What you see:</b> case files opened automatically when a trader's pattern looks like cheating, each with its evidence: the exact orders, the timings, the numbers. A case can lead to a <b>suspension</b>, which cancels that trader's waiting orders.</p>
+    <p><b>What to say:</b> "Five rules watch the same stream of events the chart reads. A rule only opens a case; a person decides it. That matters, because a rule can flag an innocent pattern."</p></div>
+
+  <div class="page" id="page-engine-room"><span class="pn" aria-hidden="true">06</span><h3>Engine Room <span class="tag">#/engine</span></h3>
+    <p><b>What it is:</b> the machinery made visible: threads, queues and speed.</p>
+    <p><b>What you see:</b> one worker per stock, how full each worker's queue is, how busy it is, and three explainers: producer–consumer, thread confinement, back-pressure. The <b>Rush Hour</b> button makes eight threads fire 40,000 orders at the exchange at once so you can watch it cope.</p>
+    <p><b>What to say:</b> "Each stock has one worker thread that alone owns its order book. Everyone else drops requests into that worker's queue. No locks needed, because only one thread ever touches the book." (Part 8 explains this simply.)</p></div>
+
+  <div class="page" id="page-audience"><span class="pn" aria-hidden="true">07</span><h3>Audience <span class="tag">#/audience</span></h3>
+    <p><b>What it is:</b> the leaderboard for people trading from their phones.</p>
+    <p><b>What you see:</b> a QR code to join, the ranking by profit, and a podium for the top three. Phones open the <b>Join</b> page <span class="tag">#/join</span>, a simple phone-sized trading screen.</p>
+    <p><b>What to say:</b> "Take out your phones. You are now traders on the same engine, the same book, against the same bots."</p></div>
+
+  <div class="page" id="page-how-it-works"><span class="pn" aria-hidden="true">08</span><h3>How It Works <span class="tag">#/how</span></h3>
+    <p><b>What it is:</b> the site explaining itself: the architecture, the matching rule, the design patterns, with diagrams. Good to fall back on if a question catches you out.</p></div>
+
+  <div class="page" id="page-account"><span class="pn" aria-hidden="true">09</span><h3>Account <span class="tag">#/account</span></h3>
+    <p><b>What it is:</b> a personal trading account. Open one with a name and a PIN and you get ₹10,00,000 of pretend money and no shares.</p>
+    <p><b>What you see:</b> your worth, profit, cash, <b>cash free to spend</b>, money <b>set aside</b> for waiting orders, and your holdings.</p>
+    <p><b>The rule:</b> no money, no trade. You cannot buy beyond your free cash or sell shares you do not own (no short selling). When you place a buy order, its cost is set aside straight away, so the same rupee can never pay for two orders. The PIN is stored hashed with a salt, never as plain text.</p></div>
+
+  <div class="page" id="page-rewind"><span class="pn" aria-hidden="true">10</span><h3>Rewind <span class="tag">#/rewind</span></h3>
+    <p><b>What it is:</b> a replay of a past session, like a match recording.</p>
+    <p><b>What you see:</b> a saved day played back at up to 600× speed, with prices, sparklines and the tape as they were. It plays into a separate, private copy of the exchange, so nothing touches the live market.</p></div>
+
+  <div class="page" id="page-evening-edition"><span class="pn" aria-hidden="true">11</span><h3>Evening Edition <span class="tag">#/edition</span></h3>
+    <p><b>What it is:</b> a printable end-of-day newspaper: each stock's open, high, low, last price and volume, the five biggest trades, and the day's stories.</p></div>
+
+  <div class="page" id="page-big-board-and-demo"><span class="pn" aria-hidden="true">12</span><h3>Big Board and Demo <span class="tag">#/wall</span> <span class="tag">#/demo</span></h3>
+    <p><b>Big Board</b> is a full-screen price wall for a projector. <b>Demo</b> is an autopilot that walks the whole site by itself in about two minutes: front page, floor, an order, X-Ray, the bots, a flash crash, the circuit breaker, the auction, reopening, the investigation and its ruling. Useful as a backup if your hands are busy or nerves hit.</p></div>
+</section>
+
+<!-- 6 -->
+<section class="part" id="systems">
+  <div class="part-head"><span class="num" aria-hidden="true">06</span><h2>The special systems</h2></div>
+
+  <h3>Circuit breaker: the emergency brake</h3>
+  <p>If a stock moves <b>10% within 60 seconds</b>, up or down, trading in it <b>halts for 30 seconds</b>. Real exchanges (NSE, NYSE) do this too.</p>
+  <p><b>Why:</b> not to stop people losing money, but to break a panic loop. Falling prices scare people into selling, which makes prices fall further. A pause lets everyone breathe and think.</p>
+  <div class="flow" id="breakerFlow"><span>OPEN</span><i>→ 10% move in 60 s →</i><span>HALTED</span><i>→ 30 s →</i><span>AUCTION</span><i>→ 30 s →</i><span>OPEN</span></div>
+  <div class="play-row"><button class="btn primary" type="button" id="breakerPlay">Play the sequence</button><span class="cap2" id="breakerCap" aria-live="polite"></span></div>
+  <p>Each stage is its own object (the <b>State pattern</b>). The code never asks "are we halted?" with if-statements everywhere; it asks the current state what is allowed.</p>
+
+  <h3>Call auction: reopening fairly</h3>
+  <p>While halted, orders are collected but none trade. At the reopen, instead of letting the fastest trader grab the best deal, the engine finds the <b>one price at which the most shares can trade</b>, and everyone trades at that single price.</p>
+  <p><b>Simple picture:</b> buyers form a demand curve (more buyers at lower prices), sellers form a supply curve (more sellers at higher prices). Where the two curves cross is the auction price. The Trading Floor draws these curves live during an auction.</p>
+  <div class="say"><b>Why it is fair</b>"If trading just restarted, whoever sends their order first wins the price gap. With one auction price for everybody, arriving first stops mattering."</div>
+
+  <h3>Surveillance: five ways to cheat, five rules</h3>
+  <div class="tablewrap"><table><thead><tr><th>Rule</th><th>The cheat, in plain words</th></tr></thead><tbody>
+    <tr><td><b>Spoofing</b></td><td>Placing huge orders you never intend to fill, to fool others about demand, then cancelling them all at once.</td></tr>
+    <tr><td><b>Layering</b></td><td>Stacking many fake orders on several prices next to each other to make the book look deeper than it is.</td></tr>
+    <tr><td><b>Wash trades</b></td><td>Trading with yourself (you are both buyer and seller) to fake activity.</td></tr>
+    <tr><td><b>Pump</b></td><td>One account pushing a price up through its own buying.</td></tr>
+    <tr><td><b>Front-running</b></td><td>Buying just before someone else's big order (because you knew it was coming) and selling into it at a profit.</td></tr>
+  </tbody></table></div>
+
+  <h3>The journal: nothing is lost on a restart</h3>
+  <p>Every command that changes a book is written to a file, one line each, like a diary. If the server stops and starts again, it reads the diary from the top and plays every command through the <b>same engine</b>, rebuilding the exact same market. Measured: <b>45,039 commands replayed in 2.1 seconds</b>.</p>
+  <p>Two tricks make the replay exact: the clock is pinned to each entry's original time, so trades keep their timestamps; and because order numbers come out differently the second time, the replayer keeps a table mapping old numbers to new ones. Rewind uses the same diary.</p>
+  <p><b>The honest limit:</b> the diary is written by a background thread, so a sudden crash can lose the last few milliseconds. A real exchange waits for the disk before confirming. Say this yourself before someone asks; it shows you understand the trade-off.</p>
+
+  <h3>The risk desk</h3>
+  <p>Before an order reaches the book, the risk desk checks the account: enough free cash for a buy, enough shares for a sell. If yes, it sets the money or shares aside. After a trade it settles the money; on a cancel it gives back what was set aside. The check and the settlement run on the stock's own worker, one after the other, so they can never get out of step.</p>
+
+  <h3>Simulated news</h3>
+  <p>Every 60 to 150 seconds, a made-up company story breaks ("TCS wins a large contract"). It changes what the bots think a stock is worth, and the bots react, so the price moves for a reason, just like real markets reacting to news. A chime plays when news breaks.</p>
+
+  <h3>Headlines and sound</h3>
+  <p>A headline writer turns engine events into newspaper sentences for the Front Page. Sounds add atmosphere: a typewriter clack for each trade on the tape, a bell, a stamp for a ruling, a chime for news.</p>
+</section>
+
+<!-- 7 -->
+<section class="part" id="bots">
+  <div class="part-head"><span class="num" aria-hidden="true">07</span><h2>The bots and the storylines</h2></div>
+  <p class="lede">An exchange with nobody trading is boring to demonstrate. The bots keep the market alive, and each one behaves like a real kind of trader.</p>
+  <div class="tablewrap"><table><thead><tr><th>Bot</th><th>Behaviour</th><th>Real-world equivalent</th></tr></thead><tbody>
+    <tr><td><b>Munim</b> (market maker)</td><td>Always offers to both buy and sell, a little apart. Earns the small difference.</td><td>Market makers who keep markets liquid.</td></tr>
+    <tr><td><b>Momentum</b></td><td>Buys what is rising, sells what is falling.</td><td>Trend followers.</td></tr>
+    <tr><td><b>Panic Seller</b></td><td>Dumps shares when prices drop sharply.</td><td>Frightened investors.</td></tr>
+    <tr><td><b>Whale</b></td><td>Occasionally places one enormous order that moves the price.</td><td>Big institutions and funds.</td></tr>
+    <tr><td><b>Contrarian</b></td><td>"Buys the fear, sells the cheer": does the opposite of the crowd.</td><td>Value investors.</td></tr>
+    <tr><td><b>Noise</b></td><td>Small random orders.</td><td>Ordinary small traders.</td></tr>
+    <tr><td><b>Spoofer</b></td><td>Cheats on purpose: places fake orders and pulls them, so surveillance has something to catch.</td><td>A market manipulator.</td></tr>
+    <tr><td><b>Your bot</b> (RuleBot)</td><td>Built from a form: "when the price falls / rises by X, or every N seconds, buy or sell Y shares".</td><td>A simple trading algorithm.</td></tr>
+  </tbody></table></div>
+  <p>Every bot follows the same interface (a "brain" that decides what to do each tick), so adding a new bot is writing one new class and nothing else. That is the <b>Strategy pattern</b>.</p>
+  <h3>The tournament</h3>
+  <p>Bots compete for a fixed time. When the whistle blows, each bot's profit from the start is scored, and the winner is announced on the news wire.</p>
+  <h3>The storylines (scenarios)</h3>
+  <p>Ready-made dramas you can start with one click to show a feature on demand:</p>
+  <div class="tablewrap"><table><thead><tr><th>Storyline</th><th>What happens</th><th>What it shows off</th></tr></thead><tbody>
+    <tr><td><b>Flash Crash</b></td><td>RELIANCE loses its footing in ninety seconds.</td><td>Circuit breaker, halt, call auction.</td></tr>
+    <tr><td><b>Bubble</b></td><td>INFY runs up on nothing but momentum.</td><td>How trend-followers inflate prices.</td></tr>
+    <tr><td><b>Whale Dump</b></td><td>2 lakh HDFCBANK shares hit the market.</td><td>A big order eating through the book.</td></tr>
+    <tr><td><b>Calm Market</b></td><td>Tight spreads, small moves, steady tape.</td><td>A normal day; a good background.</td></tr>
+    <tr><td><b>Tipped Off</b></td><td>Someone knew the Whale was coming on TCS.</td><td>The front-running rule catching the insider.</td></tr>
+  </tbody></table></div>
+</section>
+
+<!-- 8 -->
+<section class="part" id="hood">
+  <div class="part-head"><span class="num" aria-hidden="true">08</span><h2>Under the hood, explained simply</h2></div>
+  <h3>The bank counter analogy: one clerk per stock</h3>
+  <p>Imagine a bank with five counters, one per stock. Each counter has exactly <b>one clerk</b>, and only that clerk may touch that counter's ledger (the order book). Customers do not walk behind the counter; they drop their request slip into the counter's <b>tray</b>, and the clerk handles slips one at a time, in order.</p>
+  <div class="grid3">
+    <div class="card"><h4>The clerk</h4><p>= one <b>worker thread</b> per stock (<code>SymbolWorker</code>).</p></div>
+    <div class="card"><h4>The tray</h4><p>= a <b>BlockingQueue</b>: many people can put slips in safely at once.</p></div>
+    <div class="card"><h4>The ledger</h4><p>= the <b>order book</b>, deliberately not thread-safe, because only its own clerk ever touches it.</p></div>
+  </div>
+  <p>This is called <b>thread confinement</b>. Because only one thread touches a book, there is no need for locks inside it, so there are no deadlocks and no half-finished updates. Five stocks run in parallel on five threads, but each book is always handled by one.</p>
+  <ul>
+    <li><b>Producer–consumer:</b> many producers (web requests, bots, phones) put commands in the tray; one consumer (the clerk) takes them out.</li>
+    <li><b>Back-pressure:</b> if a tray is full, a new request waits up to one second for space instead of piling up forever. The system slows down gracefully instead of falling over.</li>
+    <li><b>Getting an answer back:</b> when you send an order you get a <code>CompletableFuture</code>, a receipt that fills in with the result once the clerk has processed your slip.</li>
+  </ul>
+  <h3>Events: the engine announces, everyone listens</h3>
+  <p>Every time something happens (an order accepted, a trade, a cancel, a halt), the engine publishes an <b>event</b>. The chart, the tape, X-Ray, surveillance, the headline writer, the journal and the risk desk all listen to the same stream. The engine does not know or care who is listening. This is the <b>Observer pattern</b>, and it is why so many features could be added without touching the engine: each one is just another listener.</p>
+  <h3>The journey of one order</h3>
+  <div class="flow"><span>Phone / browser</span><i>→</i><span>Server (REST)</span><i>→</i><span>Risk check</span><i>→</i><span>Stock's queue</span><i>→</i><span>Worker matches</span><i>→</i><span>Events</span><i>→</i><span>WebSocket</span><i>→</i><span>Every screen</span></div>
+  <h3>Why three separate modules?</h3>
+  <p>The engine (<code>core</code>) has <b>no Spring import anywhere</b>. Dependencies point inward only: the server uses the engine, never the other way round. So the engine can be tested on its own in seconds (415 Java tests), and you could swap the website for a desktop app without changing one line of the engine. That is the <b>Dependency Inversion</b> idea.</p>
+  <h3>The numbers to remember</h3>
+  <div class="stats">
+    <div class="stat"><span class="v">415</span><span class="l">Java tests</span></div>
+    <div class="stat"><span class="v">239</span><span class="l">Frontend tests</span></div>
+    <div class="stat"><span class="v">5 <small>/ 12 max</small></span><span class="l">Stocks, one thread each</span></div>
+    <div class="stat"><span class="v">₹10L</span><span class="l">Starting cash</span></div>
+  </div>
+  <div class="stats">
+    <div class="stat"><span class="v">10% <small>in 60 s</small></span><span class="l">Trips the breaker</span></div>
+    <div class="stat"><span class="v">30 + 30 <small>s</small></span><span class="l">Halt, then auction</span></div>
+    <div class="stat"><span class="v">169,315</span><span class="l">Orders per second</span></div>
+    <div class="stat"><span class="v">2.1 <small>s</small></span><span class="l">To replay 45,039 commands</span></div>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="part" id="patterns">
+  <div class="part-head"><span class="num" aria-hidden="true">09</span><h2>The OOP design patterns</h2></div>
+  <p class="lede">This is an Object-Oriented Modelling course, so this part matters most for marks. For each pattern: the idea in one line, and where it lives in Uncross.</p>
+  <div class="tablewrap"><table><thead><tr><th>Pattern</th><th>The idea</th><th>Where in Uncross</th></tr></thead><tbody>
+    <tr><td><b>Strategy</b></td><td>Swap the "how" without changing the code that uses it.</td><td>Each order type has its own matcher class; each bot has its own brain; order checks (gates) are interchangeable.</td></tr>
+    <tr><td><b>Factory</b></td><td>One place that knows how to build objects correctly.</td><td>Order creation goes through a factory, so every order is valid and gets an id and timestamp.</td></tr>
+    <tr><td><b>Observer</b></td><td>One object announces; many listen without being known.</td><td>Engine events feed the chart, tape, X-Ray, surveillance, headlines, journal, risk desk.</td></tr>
+    <tr><td><b>State</b></td><td>An object behaves differently depending on which state object it holds.</td><td>Market status: Open, Halted, Auction.</td></tr>
+    <tr><td><b>Command</b></td><td>Turn a request into an object you can queue, store and replay.</td><td>Every order or cancel is a command placed on the worker's queue, written to the journal and replayed on restart.</td></tr>
+    <tr><td><b>Open/Closed principle</b></td><td>Open for extension, closed for modification.</td><td>Stop-loss and iceberg added as new classes; no existing matcher was edited.</td></tr>
+    <tr><td><b>Records (immutability)</b></td><td>Value objects that cannot change after creation.</td><td>Events, trades and prices are Java <code>record</code>s, so they are safe to share between threads.</td></tr>
+  </tbody></table></div>
+  <div class="say"><b>If asked "show me a pattern in your code"</b>Open the matcher registry and point at the line for each order type. Then say: "Adding iceberg was one new class plus this one line. Nothing above it changed."</div>
+</section>
+
+<!-- 10 -->
+<section class="part" id="speed">
+  <div class="part-head"><span class="num" aria-hidden="true">10</span><h2>The speed story</h2></div>
+  <p class="lede">The strongest moment in the presentation. Tell it as a short story in three beats.</p>
+  <ol class="steps">
+    <li><b>We measured.</b> The first benchmark managed only <b>3,485 orders per second</b>. Embarrassingly slow.</li>
+    <li><b>The cause was a surprise.</b> Matching was fine. The slow part was X-Ray: to name the biggest trader at each price, it walked through every single order waiting at that price, tens of thousands of steps per order.</li>
+    <li><b>One fix.</b> Keep a running total of shares per trader at each price instead of recounting. After that: <b>169,315 orders per second</b>, about <b>48× faster</b>, with every test still passing.</li>
+  </ol>
+  <p>End to end through the queues: 72,380 orders per second, a typical order takes 43 microseconds.</p>
+  <div class="say"><b>The lesson to say out loud</b>"Measure before you optimise. Everything we would have guessed was already fast. The slow part was the feature that explains the engine, not the engine."</div>
+  <p>If asked "is 169,000 good?": for one thread on a small machine in Java, it is reasonable. Real exchanges do millions with special hardware. What matters here is the 48× improvement and how we found it.</p>
+</section>
+
+<!-- 11 -->
+<section class="part" id="plan">
+  <div class="part-head"><span class="num" aria-hidden="true">11</span><h2>The presentation plan</h2></div>
+  <p class="lede">About 12 minutes plus questions. Use the 20-slide deck for the story and switch to the live site at the marked points. If you are presenting as a group, the parts below split naturally between people.</p>
+  <div class="rehearse">
+    <span class="clock" id="rehClock">0:00</span><span class="of">/ 12:00</span>
+    <button class="btn primary" type="button" id="rehGo">Start</button><button class="btn" type="button" id="rehReset">Reset</button>
+    <p class="hint" id="rehHint" aria-live="polite"></p>
+  </div>
+  <div class="tablewrap"><table id="planTable"><thead><tr><th>Time</th><th>Section</th><th>What to do</th></tr></thead><tbody>
+    <tr><td class="time">0:00</td><td><b>The problem</b></td><td>What an exchange is, the order book, price–time priority (Part 2). Keep it to two minutes.</td></tr>
+    <tr><td class="time">2:00</td><td><b>Architecture</b></td><td>Three modules, dependencies inward, no Spring in core (Part 8).</td></tr>
+    <tr><td class="time">3:00</td><td><b>Live: Trading Floor</b></td><td>Place a limit order that trades and one that rests. Point at the book and the tape.</td></tr>
+    <tr><td class="time">4:30</td><td><b>Live: X-Ray</b></td><td>Replay an order slowly. Read the narrator's steps aloud.</td></tr>
+    <tr><td class="time">5:30</td><td><b>Order types and Open/Closed</b></td><td>Stop-loss and iceberg; "no matcher edited" (Part 3).</td></tr>
+    <tr><td class="time">6:30</td><td><b>Concurrency</b></td><td>The clerk-and-tray analogy; Engine Room; press Rush Hour (Part 8).</td></tr>
+    <tr><td class="time">7:30</td><td><b>Live: Flash Crash</b></td><td>Start the storyline. Watch the halt, the countdown, the auction curves, the reopen (Part 6).</td></tr>
+    <tr><td class="time">9:00</td><td><b>Bots and surveillance</b></td><td>Correspondents, then Investigations: the Spoofer caught with evidence.</td></tr>
+    <tr><td class="time">10:00</td><td><b>Journal, accounts</b></td><td>Restart recovery number; the account page with money set aside.</td></tr>
+    <tr><td class="time">10:45</td><td><b>Speed story</b></td><td>3,485 → 169,315 (Part 10).</td></tr>
+    <tr><td class="time">11:30</td><td><b>Audience</b></td><td>"Take out your phones." Show the QR code and leave the leaderboard running during questions.</td></tr>
+  </tbody></table></div>
+  <h3>Tips for delivery</h3>
+  <ul>
+    <li>Explain the order book with the RELIANCE example from Part 2 before showing any code. Once people understand the book, everything else makes sense.</li>
+    <li>Say the honest limitation (journal flush) before you are asked. Examiners reward knowing your weak spots.</li>
+    <li>Use the same words every time: "order book", "best bid", "best ask", "rests", "fills". Switching words confuses listeners.</li>
+    <li>If a live step misbehaves, say "let me show the recorded version" and open the Demo autopilot. Do not debug in front of the room.</li>
+    <li>Have the How It Works page open in a spare tab; it answers most "how does X work?" questions with a diagram.</li>
+  </ul>
+</section>
+
+<!-- 12 -->
+<section class="part" id="demo">
+  <div class="part-head"><span class="num" aria-hidden="true">12</span><h2>Running the live demo</h2></div>
+  <h3>Starting it</h3>
+  <ol class="steps">
+    <li>Check Java: run <code>java -version</code>; it must say 21 or higher. Node 20 or higher is also needed.</li>
+    <li>In the project folder, run <code>./run.sh</code>. It starts the server on port 8080 and the website on port 5173. The first run takes a few minutes while things download; after that it takes seconds.</li>
+    <li>Open <code>http://localhost:5173</code> in the browser.</li>
+    <li>Press <b>Ctrl+C</b> in the terminal to stop both.</li>
+  </ol>
+  <h3>Before you walk in</h3>
+  <div class="tools"><span class="count" id="prepCount"></span><span style="flex:1"></span><button class="btn" type="button" id="prepReset">Clear ticks</button><div class="meter"><i id="prepMeter"></i></div></div>
+  <ul class="checklist" id="prepList">
+    <li><label><input type="checkbox"><span>Run <code>java -version</code> on the presentation laptop (21 or higher) and start the site once with <code>./run.sh</code> the day before, so everything is downloaded.</span></label></li>
+    <li><label><input type="checkbox"><span>Start the site ten minutes early and let the bots trade, so the books are full and the charts have history.</span></label></li>
+    <li><label><input type="checkbox"><span>Pick Day or Night edition to suit the room's projector (Night is easier on a dark screen).</span></label></li>
+    <li><label><input type="checkbox"><span>For phones to join, the laptop and the phones must be on the same Wi-Fi, and the QR code must point at the laptop's address, not "localhost". Test this once beforehand.</span></label></li>
+    <li><label><input type="checkbox"><span>Open an account in advance so the account page has something to show.</span></label></li>
+    <li><label><input type="checkbox"><span>Turn the volume to a sensible level; the typewriter and chime sounds help the atmosphere.</span></label></li>
+    <li><label><input type="checkbox"><span>Open the How It Works page in a spare tab, and keep the Demo autopilot (<code>#/demo</code>) ready as a backup.</span></label></li>
+  </ul>
+</section>
+
+<!-- 13 -->
+<section class="part" id="qa">
+  <div class="part-head"><span class="num" aria-hidden="true">13</span><h2>Questions you may be asked</h2></div>
+  <p class="lede">Click a question to see a good answer. Practise saying them in your own words.</p>
+
+  <div class="qa">
+  <div class="tools"><span class="count"></span><span style="flex:1"></span><button class="btn" type="button" data-qa="open">Open all</button><button class="btn" type="button" data-qa="close">Close all</button><button class="btn" type="button" data-qa="reset">Start practice again</button><div class="meter"><i></i></div></div>
+<details><summary>Why not use <code>double</code> for prices?</summary><div class="ans"><p>A double cannot store most decimal numbers exactly (0.1 is stored as 0.1000000000000000055…). Over thousands of trades the errors add up. We store paise as a <code>long</code>, so ₹102.50 is exactly 10250, and all arithmetic is exact.</p></div></details>
+  <details><summary>Why one thread per stock instead of locks?</summary><div class="ans"><p>Locks are easy to get wrong: deadlocks, forgotten locks, slow contention. If only one thread ever touches a book, the book needs no locks at all. Different stocks still run in parallel on their own threads. Matching on one stock never needs data from another, so splitting by stock costs nothing.</p></div></details>
+  <details><summary>What happens if many orders arrive at the same instant?</summary><div class="ans"><p>They all go into the stock's queue, which is thread-safe, and the worker processes them one at a time in arrival order. That gives a clear, fair order to "same time" requests. If the queue fills up, senders wait up to one second (back-pressure) instead of overloading memory.</p></div></details>
+  <details><summary>Your order book is not thread-safe. Isn't that a bug?</summary><div class="ans"><p>It is a deliberate design choice called thread confinement. The book is only ever accessed by its own worker thread, so making it thread-safe would add cost and give nothing. The comments in the code explain this wherever it matters.</p></div></details>
+  <details><summary>How would you add a new order type?</summary><div class="ans"><p>Write one new matcher class that implements the matching Strategy interface and register it with one line. That is exactly how stop-loss and iceberg were added; no existing matcher was edited. Open/Closed principle.</p></div></details>
+  <details><summary>Where is the Observer pattern?</summary><div class="ans"><p>The engine publishes events (order accepted, trade, cancel, halt). Listeners such as the chart, tape, X-Ray, surveillance, headline writer, journal and risk desk subscribe. The engine does not know who is listening, so new features are added as new listeners.</p></div></details>
+  <details><summary>Where is the State pattern?</summary><div class="ans"><p>Each stock's market status is a state object: Open, Halted, or Auction. Each state decides what is allowed (for example, Halted accepts no trades; Auction accepts only limit orders). The circuit breaker switches the state object instead of setting flags.</p></div></details>
+  <details><summary>How does the call auction pick its price?</summary><div class="ans"><p>It looks at every candidate price and counts how many shares could trade there: buyers willing to pay at least that much against sellers willing to accept at most that much. It picks the price where that number is largest, which is where the demand and supply curves cross. Everyone who trades gets that one price.</p></div></details>
+  <details><summary>Can surveillance accuse someone wrongly?</summary><div class="ans"><p>Yes, and we say so. Once, the front-running rule flagged the Momentum bot, whose behaviour genuinely fit the pattern. That is why a rule only opens a case with its evidence; a person makes the ruling. Real exchanges work the same way.</p></div></details>
+  <details><summary>What if the server crashes?</summary><div class="ans"><p>On start-up it replays the journal through the same engine and rebuilds every book exactly, before the website opens or bots start. 45,039 commands took 2.1 seconds. The limit: the journal is written by a background thread, so the last few milliseconds before a crash can be lost. A real exchange waits for the disk before confirming each order; that would be the next improvement.</p></div></details>
+  <details><summary>How do you stop someone spending the same money twice?</summary><div class="ans"><p>When a buy order is accepted, its full cost is set aside immediately, reducing "free cash". A second order can only use what is still free. Because the check and the later settlement run on the same worker thread one after another, they can never interleave.</p></div></details>
+  <details><summary>Why is the server separate from core?</summary><div class="ans"><p>So the engine depends on nothing about the web. It can be tested alone in seconds, and the web layer could be replaced without changing the engine. The server only translates HTTP and WebSocket messages into engine calls; it holds no business logic.</p></div></details>
+  <details><summary>Why records?</summary><div class="ans"><p>Records are immutable: once created they cannot change. Events and trades are shared between threads (the worker publishes, listeners read), and immutable objects are always safe to share. They also give equals, hashCode and toString for free.</p></div></details>
+  <details><summary>How fast is it, and how did you know?</summary><div class="ans"><p>We wrote a benchmark with fixed random seeds and a warm-up round, so results repeat. The engine alone does about 169,000 orders per second, a median of 4.6 microseconds per order. The first run was 48 times slower; profiling showed the X-Ray feature was the bottleneck, and one data-structure change fixed it.</p></div></details>
+  <details><summary>How did you test it?</summary><div class="ans"><p>415 Java tests with JUnit 5 and AssertJ, and 239 frontend tests. Each feature was built tests-first. Matching rules, partial fills, the breaker, the auction, surveillance rules, recovery and the risk desk all have their own tests.</p></div></details>
+  <details><summary>What would you add next?</summary><div class="ans"><p>Waiting for the disk before confirming orders (true durability), real authentication instead of a PIN, more order types such as good-till-date, and running across several machines.</p></div></details>
+</div>
+</section>
+
+<!-- 14 -->
+<section class="part" id="glossary">
+  <div class="part-head"><span class="num" aria-hidden="true">14</span><h2>Glossary</h2></div>
+  <div class="tools"><label class="search"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" placeholder="Search the glossary, e.g. spread" data-filter="#glossaryTable" aria-label="Search the glossary, e.g. spread"></label><span class="count"></span></div>
+  <div class="tablewrap"><table id="glossaryTable"><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody>
+    <tr><td>Share / stock</td><td>A small piece of ownership of a company.</td></tr>
+    <tr><td>Order</td><td>A request to buy or sell a number of shares, often at a price limit.</td></tr>
+    <tr><td>Order book</td><td>The list of waiting orders for one stock, buyers and sellers.</td></tr>
+    <tr><td>Bid / Ask</td><td>A buyer's price / a seller's price.</td></tr>
+    <tr><td>Best bid / best ask</td><td>The highest buyer price / the lowest seller price.</td></tr>
+    <tr><td>Spread</td><td>The gap between the best ask and the best bid.</td></tr>
+    <tr><td>Fill / partial fill</td><td>An order trading completely / trading only part of its quantity.</td></tr>
+    <tr><td>Rest</td><td>When an order (or its remainder) waits in the book.</td></tr>
+    <tr><td>Price–time priority</td><td>Better price goes first; at the same price, earlier order goes first.</td></tr>
+    <tr><td>Liquidity</td><td>How easy it is to trade without moving the price much; more orders waiting means more liquidity.</td></tr>
+    <tr><td>Market maker</td><td>A trader who always quotes both a buy and a sell price (our Munim bot).</td></tr>
+    <tr><td>Short selling</td><td>Selling shares you don't own. Not allowed in Uncross.</td></tr>
+    <tr><td>P&amp;L</td><td>Profit and loss.</td></tr>
+    <tr><td>Paise</td><td>1/100 of a rupee. All money in the code is whole paise.</td></tr>
+    <tr><td>Circuit breaker</td><td>An automatic halt when a price moves too far too fast.</td></tr>
+    <tr><td>Call auction</td><td>Collect orders, then trade them all at one price that maximises volume.</td></tr>
+    <tr><td>Tape</td><td>The running list of trades as they happen.</td></tr>
+    <tr><td>Thread</td><td>One line of work a program runs; several can run at once.</td></tr>
+    <tr><td>Thread confinement</td><td>Only one thread is allowed to touch a piece of data, so it needs no locks.</td></tr>
+    <tr><td>BlockingQueue</td><td>A thread-safe queue; the tray where requests wait for the worker.</td></tr>
+    <tr><td>WebSocket</td><td>A live, two-way connection so the server can push updates to the browser instantly.</td></tr>
+    <tr><td>REST</td><td>Ordinary web requests (send an order, get the account) over HTTP.</td></tr>
+    <tr><td>Journal</td><td>The file where every book-changing command is written, for recovery and rewind.</td></tr>
+    <tr><td>Microsecond (µs)</td><td>One millionth of a second.</td></tr>
+  </tbody></table></div>
+  <p class="empty">No word matches. Try a shorter search.</p>
+</section>

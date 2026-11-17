@@ -1,0 +1,35 @@
+classDiagram
+    direction TB
+    class MatchingStrategy {
+        <<interface>>
+        +match(Order, OrderBook) MatchResult
+    }
+    class AbstractOrderMatcher {
+        <<abstract>>
+        +match(Order, OrderBook) MatchResult «final»
+        #handledType() OrderType*
+        #acceptsPrice(Order, long) boolean*
+        #finish(Order, OrderBook, List~Trade~) MatchResult*
+    }
+    class MatchingStrategies {
+        -EnumMap~OrderType,MatchingStrategy~ byType
+        +standard(...)$ MatchingStrategies
+        +forType(OrderType) MatchingStrategy
+    }
+    class SymbolEngine {
+        -OrderBook book
+        -OrderFactory factory
+        -MatchingStrategies strategies
+        -TradingSession session
+        +submit(OrderRequest) MatchResult
+    }
+    MatchingStrategy <|.. AbstractOrderMatcher
+    AbstractOrderMatcher <|-- LimitOrderMatcher
+    AbstractOrderMatcher <|-- MarketOrderMatcher
+    AbstractOrderMatcher <|-- IocOrderMatcher
+    AbstractOrderMatcher <|-- StopLossOrderMatcher
+    AbstractOrderMatcher <|-- IcebergOrderMatcher
+    MatchingStrategies o--> "5" MatchingStrategy
+    SymbolEngine *--> MatchingStrategies
+    SymbolEngine *--> OrderBook
+    SymbolEngine --> OrderFactory : creates orders

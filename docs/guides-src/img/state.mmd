@@ -1,0 +1,32 @@
+classDiagram
+    direction LR
+    class MarketState {
+        <<interface>>
+        +phase() MarketPhase
+        +refusal(OrderType) Optional~String~
+        +onClock(Instant) MarketState
+    }
+    class OpenState {
+        <<singleton>>
+        +INSTANCE$ OpenState
+    }
+    class HaltedState {
+        <<record>>
+        Instant endsAt
+        String why
+    }
+    class AuctionState {
+        <<record>>
+        Instant endsAt
+    }
+    class TradingSession {
+        -MarketState state
+        -CircuitBreaker breaker
+        +onTrade(Trade)
+        +onClock(Instant)
+    }
+    MarketState <|.. OpenState
+    MarketState <|.. HaltedState
+    MarketState <|.. AuctionState
+    TradingSession o--> MarketState : current state
+    TradingSession *--> CircuitBreaker

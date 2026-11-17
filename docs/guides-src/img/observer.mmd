@@ -1,0 +1,26 @@
+classDiagram
+    direction TB
+    class EngineEvent {
+        <<sealed interface>>
+    }
+    class EngineListener {
+        <<interface>>
+        +onEvent(EngineEvent)
+    }
+    class EventBus {
+        -List~EngineListener~ listeners
+        +register(EngineListener)
+        +publish(EngineEvent)
+    }
+    EngineEvent <|.. OrderAccepted
+    EngineEvent <|.. TradeExecuted
+    EngineEvent <|.. OrderCancelled
+    EngineEvent <|.. MarketStatusChanged
+    EventBus o--> "*" EngineListener
+    EventBus ..> EngineEvent : publishes
+    EngineListener <|.. SurveillanceDesk
+    EngineListener <|.. RiskDesk
+    EngineListener <|.. CandleAggregator
+    EngineListener <|.. HeadlineWriter
+    EngineListener <|.. DayTape
+    EngineListener <|.. BotLedger
