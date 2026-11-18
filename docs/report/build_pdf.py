@@ -75,7 +75,7 @@ COVER_HTML = f"""<!doctype html><html><head><meta charset='utf-8'><style>{COVER}
     <p class='sub'>A multi-stock exchange simulator with a price-time matching engine, designed to demonstrate object-oriented modelling.</p>
   </div>
   <div class='meta'>
-    <div><span>Submitted by</span><span>Ritcha<br>Surbhi<br>Tushar Rana (IIT2025165)</span></div>
+    <div><span>Submitted by</span><span>Richa<br>Surbhi<br>Tushar Rana (IIT2025165)</span></div>
     <div><span>Course</span><span>Object-Oriented Modelling</span></div>
     <div><span>Institute</span><span>Indian Institute of Information Technology, Allahabad</span></div>
     <div><span>Source</span><span>github.com/Tushar2007-ux/dalalx</span></div>
@@ -534,7 +534,7 @@ w = PdfWriter()
 for part in ['cover.pdf', 'body.pdf', 'back.pdf']:
     for pg in PdfReader(str(tmpdir / part)).pages:
         w.add_page(pg)
-w.add_metadata({'/Title': 'Uncross — Project Report', '/Author': 'Ritcha, Surbhi, Tushar Rana'})
+w.add_metadata({'/Title': 'Uncross — Project Report', '/Author': 'Richa, Surbhi, Tushar Rana'})
 with open(OUT, 'wb') as f:
     w.write(f)
 print('wrote', OUT, 'chapter pages', pages)
